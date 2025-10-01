@@ -1,13 +1,10 @@
-package com.example.articles.composables.screens
+package com.example.articles.ui.composables.screens
 
 import android.annotation.SuppressLint
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBarsIgnoringVisibility
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.FloatingActionButton
@@ -16,12 +13,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.articles.R
-import com.example.articles.composables.utils.Toolbar
+import com.example.articles.ui.composables.utils.Toolbar
 import com.example.articles.viewmodels.ArticlesListViewModel
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -32,6 +31,8 @@ fun ArticlesList(
     modifier: Modifier = Modifier,
     articlesListViewModel: ArticlesListViewModel = hiltViewModel()
 ) {
+
+    val state by articlesListViewModel.state.collectAsState()
 
     Scaffold(
         floatingActionButton = {
@@ -49,7 +50,7 @@ fun ArticlesList(
         }
     ) { innerPadding ->
         Surface(
-            modifier = modifier
+            modifier = modifier.padding(innerPadding)
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,

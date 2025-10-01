@@ -5,12 +5,14 @@ import com.example.articles.ui.models.UIArticle
 
 fun UIArticle.mapToDBEntity() = ArticleEntity(
     id = this.id,
-    title = this.title,
-    dateCreated = this.dateCreated
+    name = this.name,
+    dateCreated = this.dateCreated,
+    location = this.location
 )
 
 fun ArticleEntity.mapToUIArticle() = UIArticle(
     id = this.id,
-    title = this.title,
-    dateCreated = this.dateCreated
+    name = this.name,
+    dateCreated = this.dateCreated,
+    location = this.location
 )

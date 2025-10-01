@@ -1,17 +1,13 @@
-package com.example.articles.composables.utils
+package com.example.articles.ui.composables.utils
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import com.example.articles.R
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -32,13 +28,16 @@ fun Toolbar(
             .padding(16.dp)
     ) {
         if (onBackButtonClick != null) {
-            Icon(
-                imageVector = Icons.Default.ChevronLeft,
-                contentDescription = stringResource(id = R.string.back),
-                modifier = Modifier
-                    .clickable { onBackButtonClick() }
-                    .align(Alignment.CenterStart)
-            )
+            IconButton(
+                onClick = {
+                    onBackButtonClick()
+                }
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ChevronLeft,
+                    contentDescription = stringResource(id = R.string.back),
+                )
+            }
         }
         Text(
             text = title,

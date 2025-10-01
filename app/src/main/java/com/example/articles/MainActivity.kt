@@ -4,7 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.example.articles.composables.ArticlesNavigationFlow
+import com.example.articles.ui.composables.ArticlesNavigationFlow
 import com.example.articles.ui.theme.ArticlesTheme
 import dagger.hilt.android.AndroidEntryPoint
 

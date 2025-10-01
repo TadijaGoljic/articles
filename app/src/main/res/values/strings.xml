@@ -3,4 +3,9 @@
     <string name="add_new_article">Add new article</string>
     <string name="back">Back</string>
     <string name="articles_list">Articles list</string>
+    <string name="save">Save</string>
+    <string name="name">Name</string>
+    <string name="take_a_photo">Take a photo</string>
+    <string name="choose_location">Choose location</string>
+    <string name="remove_article">Remove article</string>
 </resources>
