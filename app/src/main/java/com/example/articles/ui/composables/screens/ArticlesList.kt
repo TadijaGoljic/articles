@@ -57,8 +57,7 @@ fun ArticlesList(
                 modifier = Modifier.fillMaxSize()
             ) {
                 Toolbar(
-                    title = stringResource(id = R.string.articles_list),
-                    onBackButtonClick = null
+                    title = stringResource(id = R.string.articles_list)
                 )
             }
         }

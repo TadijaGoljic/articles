@@ -4,14 +4,18 @@ import androidx.annotation.StringRes
 import com.example.articles.R
 import com.example.articles.viewmodels.LocationData
 
+private var counter = 0
+    get() { return field++ }
+
 data class UIArticle(
-    val id: Int = 0,
+    val id: Int = counter,
     val name: String = "",
     val dateCreated: Long = 0L,
     val location: LocationData? = null,
     val expanded: Boolean = false,
     val quantity: Double? = null,
-    val unit: ArticleUnit? = null
+    val unit: ArticleUnit? = null,
+    val photoUri: String? = null,
 )
 
 

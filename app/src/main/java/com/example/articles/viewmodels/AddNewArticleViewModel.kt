@@ -1,13 +1,17 @@
 package com.example.articles.viewmodels
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.articles.R
 import com.example.articles.repositories.ArticleRepository
 import com.example.articles.ui.models.ArticleUnit
 import com.example.articles.ui.models.UIArticle
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -24,8 +28,21 @@ class AddNewArticleViewModel @Inject constructor(
     private var state = MutableStateFlow(AddNewArticleState())
     val uiState = state
 
-    fun save() {
-
+    fun save() = viewModelScope.launch {
+        if (state.value.articles.any { it.name.isBlank() && it.photoUri.isNullOrBlank() }) {
+            state.update { currentState ->
+                currentState.copy(
+                    message = R.string.provide_name_photo
+                )
+            }
+            return@launch
+        }
+        articleRepository.insertAll(state.value.articles)
+        state.update { currentState ->
+            currentState.copy(
+                ok = true
+            )
+        }
     }
 
     fun revalidateLocations(location: LocationData, index: Int) {
@@ -38,15 +55,22 @@ class AddNewArticleViewModel @Inject constructor(
         }
     }
 
+    fun updatePhoto(photoUri: String, index: Int) {
+        state.update { currentState ->
+            currentState.copy(
+                articles = currentState.articles.mapIndexed { i, article ->
+                    if (i == index) article.copy(photoUri = photoUri) else article
+                },
+                message = null
+            )
+        }
+    }
+
     fun updateType(index: Int, type: ArticleUnit) {
         state.update { currentState ->
             currentState.copy(
                 articles = currentState.articles.mapIndexed { i, article ->
-                    if (i == index) {
-                        article.copy(unit = type)
-                    } else {
-                        article
-                    }
+                    if (i == index) article.copy(unit = type) else article
                 }
             )
         }
@@ -56,11 +80,7 @@ class AddNewArticleViewModel @Inject constructor(
         state.update { currentState ->
             currentState.copy(
                 articles = currentState.articles.mapIndexed { i, article ->
-                    if (i == index) {
-                        article.copy(quantity = quantity)
-                    } else {
-                        article
-                    }
+                    if (i == index) article.copy(quantity = quantity) else article
                 }
             )
         }
@@ -80,12 +100,9 @@ class AddNewArticleViewModel @Inject constructor(
         state.update { currentState ->
             currentState.copy(
                 articles = currentState.articles.mapIndexed { i, article ->
-                    if (i == index) {
-                        article.copy(name = name)
-                    } else {
-                        article
-                    }
-                }
+                    if (i == index) article.copy(name = name) else article
+                },
+                message = null
             )
         }
     }
@@ -104,11 +121,7 @@ class AddNewArticleViewModel @Inject constructor(
         state.update { currentState ->
             currentState.copy(
                 articles = currentState.articles.mapIndexed { i, article ->
-                    if (i == index) {
-                        article.copy(expanded = !article.expanded)
-                    } else {
-                        article
-                    }
+                    if (i == index) article.copy(expanded = !article.expanded) else article
                 }
             )
         }
@@ -117,5 +130,7 @@ class AddNewArticleViewModel @Inject constructor(
 }
 
 data class AddNewArticleState(
-    val articles: List<UIArticle> = listOf(UIArticle())
+    val articles: List<UIArticle> = listOf(UIArticle()),
+    @StringRes val message: Int? = null,
+    val ok: Boolean = false,
 )

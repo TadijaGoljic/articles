@@ -1,11 +1,13 @@
 package com.example.articles.ui.composables
 
 import android.annotation.SuppressLint
+import android.content.Context
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -17,6 +19,7 @@ import com.google.accompanist.systemuicontroller.rememberSystemUiController
 @SuppressLint("RestrictedApi")
 @Composable
 fun ArticlesNavigationFlow(
+    onSeePhotoClick: (Context, String) -> Unit,
     modifier: Modifier = Modifier
 ) {
 
@@ -24,6 +27,7 @@ fun ArticlesNavigationFlow(
     val systemUiController = rememberSystemUiController()
     val colors = MaterialTheme.colorScheme
     val useDarkIcons = !isSystemInDarkTheme()
+    val context = LocalContext.current
 
     SideEffect {
         systemUiController.setSystemBarsColor(
@@ -54,7 +58,13 @@ fun ArticlesNavigationFlow(
                 onLocationPickerClick = {
                     navController.navigate(Destinations.PICK_LOCATION)
                 },
-                navController = navController
+                navController = navController,
+                onSeePhotoClick = {
+                    onSeePhotoClick(context, it)
+                },
+                onFinish = {
+                    navController.popBackStack()
+                }
             )
         }
         composable(route = Destinations.PICK_LOCATION) {
