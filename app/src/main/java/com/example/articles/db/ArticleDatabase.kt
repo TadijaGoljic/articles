@@ -4,8 +4,9 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import kotlinx.coroutines.CoroutineScope
+import androidx.room.TypeConverters
 
+@TypeConverters(Converters::class)
 @Database(
     entities = [ArticleEntity::class],
     version = 1,

@@ -8,4 +8,17 @@
     <string name="take_a_photo">Take a photo</string>
     <string name="choose_location">Choose location</string>
     <string name="remove_article">Remove article</string>
+    <string name="expand">Expand</string>
+    <string name="collapse">Collapse</string>
+    <string name="unit_quantity">Pieces</string>
+    <string name="unit_quantity_abbreviation">pcs</string>
+    <string name="unit_kilograms">Kilograms</string>
+    <string name="unit_kilograms_abbreviation">kg</string>
+    <string name="unit_grams">Grams</string>
+    <string name="unit_grams_abbreviation">g</string>
+    <string name="selected_location">Selected location</string>
+    <string name="tap_on_the_map">Tap anywhere on the map to select a location</string>
+    <string name="cancel">Cancel</string>
+    <string name="select_location">Select location</string>
+    <string name="location">Location</string>
 </resources>

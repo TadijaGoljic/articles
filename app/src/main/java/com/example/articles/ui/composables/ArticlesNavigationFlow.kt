@@ -11,6 +11,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.articles.ui.composables.screens.AddNewArticle
 import com.example.articles.ui.composables.screens.ArticlesList
+import com.example.articles.ui.composables.screens.LocationPicker
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 @SuppressLint("RestrictedApi")
@@ -49,6 +50,21 @@ fun ArticlesNavigationFlow(
                     if (navController.currentBackStackEntry?.destination?.route != Destinations.ARTICLES_LIST) {
                         navController.popBackStack()
                     }
+                },
+                onLocationPickerClick = {
+                    navController.navigate(Destinations.PICK_LOCATION)
+                },
+                navController = navController
+            )
+        }
+        composable(route = Destinations.PICK_LOCATION) {
+            LocationPicker(
+                onLocationSelected = { location ->
+                    navController.previousBackStackEntry?.savedStateHandle["location"] = location
+                    navController.popBackStack()
+                },
+                onCancel = {
+                    navController.popBackStack()
                 }
             )
         }
@@ -59,4 +75,5 @@ fun ArticlesNavigationFlow(
 object Destinations {
     const val ARTICLES_LIST = "articles_list"
     const val ADD_NEW_ARTICLE = "add_new_article"
+    const val PICK_LOCATION = "pick_location"
 }

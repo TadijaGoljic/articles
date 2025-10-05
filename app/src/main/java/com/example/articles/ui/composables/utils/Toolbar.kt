@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import com.example.articles.R
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material3.Icon
@@ -25,17 +26,18 @@ fun Toolbar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(16.dp)
+            .padding(20.dp)
     ) {
         if (onBackButtonClick != null) {
             IconButton(
                 onClick = {
                     onBackButtonClick()
-                }
+                },
+                modifier = Modifier.size(24.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.ChevronLeft,
-                    contentDescription = stringResource(id = R.string.back),
+                    contentDescription = stringResource(id = R.string.back)
                 )
             }
         }
