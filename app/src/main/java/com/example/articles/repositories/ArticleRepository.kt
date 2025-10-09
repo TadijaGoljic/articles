@@ -17,12 +17,6 @@ class ArticleRepository @Inject constructor(
         articleDao.insertAll(articles.map { it.mapToDBEntity() })
 
     suspend fun deleteAll(articles: List<UIArticle>) =
-        articleDao.delete(articles.map { it.mapToDBEntity() })
-
-    suspend fun insert(article: UIArticle) =
-        articleDao.insertAll(listOf(article.mapToDBEntity()))
-
-    suspend fun delete(article: UIArticle) =
-        articleDao.delete(listOf(article.mapToDBEntity()))
+        articles.forEach { article -> articleDao.delete(article.mapToDBEntity().id) }
 
 }

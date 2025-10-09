@@ -10,8 +10,10 @@ import com.example.articles.ui.models.ArticleUnit
 import com.example.articles.ui.models.UIArticle
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.Date
 import javax.inject.Inject
 
 @HiltViewModel
@@ -22,20 +24,30 @@ class AddNewArticleViewModel @Inject constructor(
     companion object {
         const val KEY_INDEX = "index"
         const val KEY_LOCATION = "location"
-
     }
 
     private var state = MutableStateFlow(AddNewArticleState())
     val uiState = state
 
     fun save() = viewModelScope.launch {
-        if (state.value.articles.any { it.name.isBlank() && it.photoUri.isNullOrBlank() }) {
+        if (state.value.articles.any {
+            it.name.isNullOrBlank() && it.photoUri.isNullOrBlank()
+        }) {
             state.update { currentState ->
                 currentState.copy(
                     message = R.string.provide_name_photo
                 )
             }
             return@launch
+        }
+        state.update { currentState ->
+            currentState.copy(
+                articles = currentState.articles.map { article ->
+                    article.copy(
+                        dateCreated = Date()
+                    )
+                }
+            )
         }
         articleRepository.insertAll(state.value.articles)
         state.update { currentState ->
@@ -96,7 +108,7 @@ class AddNewArticleViewModel @Inject constructor(
         }
     }
 
-    fun updateName(index: Int, name: String) {
+    fun updateName(index: Int, name: String?) {
         state.update { currentState ->
             currentState.copy(
                 articles = currentState.articles.mapIndexed { i, article ->
@@ -127,10 +139,20 @@ class AddNewArticleViewModel @Inject constructor(
         }
     }
 
+    fun updatePhotoVisible(index: Int) {
+        state.update { currentState ->
+            currentState.copy(
+                articles = currentState.articles.mapIndexed { i, article ->
+                    if (i == index) article.copy(photoVisible = !article.photoVisible) else article
+                }
+            )
+        }
+    }
+
 }
 
 data class AddNewArticleState(
     val articles: List<UIArticle> = listOf(UIArticle()),
-    @StringRes val message: Int? = null,
     val ok: Boolean = false,
+    @StringRes val message: Int? = null,
 )

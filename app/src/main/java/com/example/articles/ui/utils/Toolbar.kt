@@ -1,4 +1,4 @@
-package com.example.articles.ui.composables.utils
+package com.example.articles.ui.utils
 
 import androidx.compose.foundation.layout.Box
 import com.example.articles.R

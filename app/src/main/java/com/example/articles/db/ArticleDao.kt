@@ -15,7 +15,7 @@ interface ArticleDao {
     @Insert
     suspend fun insertAll(articles: List<ArticleEntity>)
 
-    @Delete
-    suspend fun delete(article: List<ArticleEntity>)
+    @Query("DELETE FROM articles WHERE id = :idArticle")
+    suspend fun delete(idArticle: Int)
 
 }

@@ -4,12 +4,13 @@ import com.example.articles.db.ArticleEntity
 import com.example.articles.ui.models.ArticleUnit
 import com.example.articles.ui.models.UIArticle
 import com.example.articles.viewmodels.LocationData
+import java.util.Date
 import kotlin.Int
 
 fun UIArticle.mapToDBEntity() = ArticleEntity(
     id = this.id,
     name = this.name,
-    dateCreated = this.dateCreated,
+    dateCreated = this.dateCreated.time,
     location = this.location,
     quantity = this.quantity,
     unit = this.unit,
@@ -19,7 +20,7 @@ fun UIArticle.mapToDBEntity() = ArticleEntity(
 fun ArticleEntity.mapToUIArticle() = UIArticle(
     id = this.id,
     name = this.name,
-    dateCreated = this.dateCreated,
+    dateCreated = Date(this.dateCreated),
     location = this.location,
     quantity = this.quantity,
     unit = this.unit,

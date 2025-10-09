@@ -3,19 +3,19 @@ package com.example.articles.ui.models
 import androidx.annotation.StringRes
 import com.example.articles.R
 import com.example.articles.viewmodels.LocationData
-
-private var counter = 0
-    get() { return field++ }
+import java.util.Date
 
 data class UIArticle(
-    val id: Int = counter,
-    val name: String = "",
-    val dateCreated: Long = 0L,
+    val id: Int = 0,
+    val name: String? = "",
+    val dateCreated: Date = Date(),
     val location: LocationData? = null,
     val expanded: Boolean = false,
     val quantity: Double? = null,
-    val unit: ArticleUnit? = null,
+    val unit: ArticleUnit = ArticleUnit.default,
     val photoUri: String? = null,
+    val checked: Boolean = false,
+    val photoVisible: Boolean = false,
 )
 
 
@@ -23,7 +23,7 @@ enum class ArticleUnit(
     @StringRes val label: Int,
     @StringRes val abbreviation: Int
 ) {
-    QUANTITY(
+    PIECES(
         label = R.string.unit_quantity,
         abbreviation = R.string.unit_quantity_abbreviation
     ),
@@ -34,8 +34,12 @@ enum class ArticleUnit(
     GRAMS(
         label = R.string.unit_grams,
         abbreviation = R.string.unit_grams_abbreviation
+    ),
+    LITERS(
+        label = R.string.unit_liters,
+        abbreviation = R.string.unit_liters_abbreviation
     );
     companion object {
-        val default = QUANTITY
+        val default = PIECES
     }
 }

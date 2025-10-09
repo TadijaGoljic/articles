@@ -1,7 +1,6 @@
 package com.example.articles.ui.composables
 
 import android.annotation.SuppressLint
-import android.content.Context
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -14,12 +13,14 @@ import androidx.navigation.compose.rememberNavController
 import com.example.articles.ui.composables.screens.AddNewArticle
 import com.example.articles.ui.composables.screens.ArticlesList
 import com.example.articles.ui.composables.screens.LocationPicker
+import com.example.articles.viewmodels.LocationData
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 @SuppressLint("RestrictedApi")
 @Composable
 fun ArticlesNavigationFlow(
-    onSeePhotoClick: (Context, String) -> Unit,
+    moveTaskToBackground: () -> Unit,
+    onOpenNavigation: (LocationData) -> Unit,
     modifier: Modifier = Modifier
 ) {
 
@@ -27,11 +28,10 @@ fun ArticlesNavigationFlow(
     val systemUiController = rememberSystemUiController()
     val colors = MaterialTheme.colorScheme
     val useDarkIcons = !isSystemInDarkTheme()
-    val context = LocalContext.current
 
     SideEffect {
         systemUiController.setSystemBarsColor(
-            color = colors.surface,
+            color = colors.background,
             darkIcons = useDarkIcons
         )
     }
@@ -45,7 +45,11 @@ fun ArticlesNavigationFlow(
             ArticlesList(
                 onFloatingActionButtonClick = {
                     navController.navigate(Destinations.ADD_NEW_ARTICLE)
-                }
+                },
+                onOpenNavigation = { locationData ->
+                    onOpenNavigation(locationData)
+                },
+                onBackClick = moveTaskToBackground
             )
         }
         composable(route = Destinations.ADD_NEW_ARTICLE) {
@@ -59,9 +63,6 @@ fun ArticlesNavigationFlow(
                     navController.navigate(Destinations.PICK_LOCATION)
                 },
                 navController = navController,
-                onSeePhotoClick = {
-                    onSeePhotoClick(context, it)
-                },
                 onFinish = {
                     navController.popBackStack()
                 }

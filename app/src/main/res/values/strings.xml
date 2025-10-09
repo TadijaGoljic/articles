@@ -1,4 +1,5 @@
 <resources>
+
     <string name="app_name">Articles</string>
     <string name="add_new_article">Add new article</string>
     <string name="back">Back</string>
@@ -10,12 +11,6 @@
     <string name="remove_article">Remove article</string>
     <string name="expand">Expand</string>
     <string name="collapse">Collapse</string>
-    <string name="unit_quantity">Pieces</string>
-    <string name="unit_quantity_abbreviation">pcs</string>
-    <string name="unit_kilograms">Kilograms</string>
-    <string name="unit_kilograms_abbreviation">kg</string>
-    <string name="unit_grams">Grams</string>
-    <string name="unit_grams_abbreviation">g</string>
     <string name="selected_location">Selected location</string>
     <string name="tap_on_the_map">Tap anywhere on the map to select a location</string>
     <string name="cancel">Cancel</string>
@@ -27,4 +22,41 @@
     <string name="choose_photo">Choose photo</string>
     <string name="add">Add</string>
     <string name="provide_name_photo">Please provide a name or a photo for each article</string>
+    <string name="start_navigation">Start navigation</string>
+    <string name="ago">ago</string>
+    <string name="show_photo">Show photo</string>
+    <string name="hide_photo">Hide photo</string>
+
+    <!-- Units -->
+    <string name="unit_quantity">Pieces</string>
+    <string name="unit_quantity_abbreviation">pcs</string>
+    <string name="unit_kilograms">Kilograms</string>
+    <string name="unit_kilograms_abbreviation">kg</string>
+    <string name="unit_grams">Grams</string>
+    <string name="unit_grams_abbreviation">g</string>
+    <string name="unit_liters">Liters</string>
+    <string name="unit_liters_abbreviation">l</string>
+
+    <!-- Time -->
+    <plurals name="seconds">
+        <item quantity="zero">seconds</item>
+        <item quantity="one">second</item>
+        <item quantity="other">seconds</item>
+    </plurals>
+    <plurals name="minutes">
+        <item quantity="zero">minutes</item>
+        <item quantity="one">minute</item>
+        <item quantity="other">minutes</item>
+    </plurals>
+    <plurals name="hours">
+        <item quantity="zero">hours</item>
+        <item quantity="one">hour</item>
+        <item quantity="other">hours</item>
+    </plurals>
+    <plurals name="days">
+        <item quantity="zero">days</item>
+        <item quantity="one">day</item>
+        <item quantity="other">days</item>
+    </plurals>
+
 </resources>
