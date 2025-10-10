@@ -2,8 +2,6 @@ package com.example.articles.ui.composables.screens
 
 import android.content.Intent
 import android.net.Uri
-import android.util.Log
-import android.view.WindowInsets
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -175,6 +173,7 @@ fun AddNewArticle(
                 onLeadingIconClick = onBackButtonClicked,
                 trailingIcon = Icons.Default.PlusOne,
                 onTrailingIconClick = addNewArticleViewModel::addNewArticle,
+                color = MaterialTheme.colorScheme.onBackground,
                 modifier = if (keyboardController != null) Modifier.padding() else Modifier,
             )
             Box {

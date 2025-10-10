@@ -21,7 +21,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -108,6 +107,7 @@ fun ArticlesList(
                     else articlesListViewModel.startShopping(null)
                 },
                 leadingIcon = Icons.Default.Settings,
+                color = MaterialTheme.colorScheme.onBackground,
                 onLeadingIconClick = onOpenSettings
             )
             LazyColumn {

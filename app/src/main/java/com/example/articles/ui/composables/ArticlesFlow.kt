@@ -86,7 +86,10 @@ fun ArticlesNavigationFlow(
         }
         composable(route = ArticlesDestinations.SETTINGS) {
             SettingsScreen(
-                onSignOut = onSignOut
+                onSignOut = onSignOut,
+                onBackClick = {
+                    navController.popBackStack()
+                }
             )
         }
     }

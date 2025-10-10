@@ -5,6 +5,9 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.core.net.toUri
@@ -23,6 +26,7 @@ class ArticlesActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContent {
             ArticlesTheme {
                 Application()
@@ -44,13 +48,12 @@ class ArticlesActivity : ComponentActivity() {
         context.startActivity(intent)
     }
 
-    private fun moveTaskToBackground() {
+    private fun moveTaskToBackground() =
         moveTaskToBack(true)
-    }
 
     private fun onSignOut() {
-        startActivity(Intent(this, AuthenticationActivity::class.java))
         finish()
+        startActivity(Intent(this, AuthenticationActivity::class.java))
     }
 
     @Composable

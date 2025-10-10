@@ -1,9 +1,11 @@
 package com.example.articles.viewmodels
 
+import androidx.annotation.StringRes
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import com.example.articles.R
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.auth
@@ -75,13 +77,14 @@ class SignInViewModel @Inject constructor(
                     state.update { currentState ->
                         currentState.copy(
                             isLoading = false,
-                            user = auth.currentUser
+                            ok = true
                         )
                     }
                 } else {
                     state.update { currentState ->
                         currentState.copy(
                             isLoading = false,
+                            errorTitle = R.string.invalid_credentials,
                             errorMessage = task.exception?.message.toString(),
                             showAlert = true
                         )
@@ -91,15 +94,56 @@ class SignInViewModel @Inject constructor(
     }
 
     fun signUp() {
+        state.update { currentState ->
+            currentState.copy(
+                isLoading = true
+            )
+        }
         auth.createUserWithEmailAndPassword(state.value.email, state.value.password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    user = auth.currentUser
+                    state.update { currentState ->
+                        currentState.copy(
+                            isLoading = false,
+                            ok = true
+                        )
+                    }
                 } else {
                     state.update { currentState ->
                         currentState.copy(
                             isLoading = false,
-                            errorMessage = task.exception?.message.toString()
+                            errorTitle = R.string.something_went_wrong,
+                            errorMessage = task.exception?.message.toString(),
+                            showAlert = true
+                        )
+                    }
+                }
+            }
+    }
+
+    fun forgotPassword() {
+        state.update { currentState ->
+            currentState.copy(
+                isLoading = true
+            )
+        }
+        auth.sendPasswordResetEmail(state.value.email)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    state.update { currentState ->
+                        currentState.copy(
+                            isLoading = false,
+                            errorTitle = R.string.we_sent_email,
+                            showAlert = true
+                        )
+                    }
+                } else {
+                    state.update { currentState ->
+                        currentState.copy(
+                            isLoading = false,
+                            errorTitle = R.string.we_sent_email,
+                            errorMessage = task.exception?.message.toString(),
+                            showAlert = true
                         )
                     }
                 }
@@ -110,14 +154,15 @@ class SignInViewModel @Inject constructor(
 
 data class SignInState(
     val email: String = "tadijagoljic@gmail.com",
-    val password: String = "hello2",
+    val password: String = "televizor",
     val authenticationState: AuthenticationState = AuthenticationState.SIGN_IN,
     val errorMessage: String? = null,
+    @StringRes val errorTitle: Int? = null,
     val isLoading: Boolean = false,
-    val user: FirebaseUser? = null,
-    val showAlert: Boolean = false
+    val showAlert: Boolean = false,
+    val ok: Boolean = false
 )
 
 enum class AuthenticationState {
-    SIGN_IN, SIGN_UP
+    SIGN_IN, SIGN_UP, FORGOT_PASSWORD
 }

@@ -8,13 +8,14 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.articles.ui.composables.screens.SignIn
+import com.example.articles.ui.composables.screens.SignInScreen
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.google.firebase.auth.FirebaseUser
 
 @Composable
 fun AuthenticationNavigationFlow(
-    onAuthenticationComplete: (FirebaseUser) -> Unit,
+    onMoveToBackground: () -> Unit,
+    onAuthenticationComplete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
 
@@ -36,8 +37,9 @@ fun AuthenticationNavigationFlow(
         modifier = modifier
     ) {
         composable(route = AuthenticationDestinations.SIGN_IN) {
-            SignIn(
-                onAuthenticationComplete = onAuthenticationComplete
+            SignInScreen(
+                onAuthenticationComplete = onAuthenticationComplete,
+                onMoveToBackground = onMoveToBackground
             )
         }
     }
