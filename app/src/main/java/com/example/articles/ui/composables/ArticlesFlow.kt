@@ -6,19 +6,21 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontVariation
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.articles.ui.composables.screens.AddNewArticle
 import com.example.articles.ui.composables.screens.ArticlesList
 import com.example.articles.ui.composables.screens.LocationPicker
+import com.example.articles.ui.composables.screens.SettingsScreen
 import com.example.articles.viewmodels.LocationData
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 @SuppressLint("RestrictedApi")
 @Composable
 fun ArticlesNavigationFlow(
+    onSignOut: () -> Unit,
     moveTaskToBackground: () -> Unit,
     onOpenNavigation: (LocationData) -> Unit,
     modifier: Modifier = Modifier
@@ -38,29 +40,32 @@ fun ArticlesNavigationFlow(
 
     NavHost(
         navController = navController,
-        startDestination = Destinations.ARTICLES_LIST,
+        startDestination = ArticlesDestinations.ARTICLES_LIST,
         modifier = modifier
     ) {
-        composable(route = Destinations.ARTICLES_LIST) {
+        composable(route = ArticlesDestinations.ARTICLES_LIST) {
             ArticlesList(
                 onFloatingActionButtonClick = {
-                    navController.navigate(Destinations.ADD_NEW_ARTICLE)
+                    navController.navigate(ArticlesDestinations.ADD_NEW_ARTICLE)
                 },
                 onOpenNavigation = { locationData ->
                     onOpenNavigation(locationData)
                 },
-                onBackClick = moveTaskToBackground
+                onBackClick = moveTaskToBackground,
+                onOpenSettings = {
+                    navController.navigate(ArticlesDestinations.SETTINGS)
+                }
             )
         }
-        composable(route = Destinations.ADD_NEW_ARTICLE) {
+        composable(route = ArticlesDestinations.ADD_NEW_ARTICLE) {
             AddNewArticle(
                 onBackButtonClicked = {
-                    if (navController.currentBackStackEntry?.destination?.route != Destinations.ARTICLES_LIST) {
+                    if (navController.currentBackStackEntry?.destination?.route != ArticlesDestinations.ARTICLES_LIST) {
                         navController.popBackStack()
                     }
                 },
                 onLocationPickerClick = {
-                    navController.navigate(Destinations.PICK_LOCATION)
+                    navController.navigate(ArticlesDestinations.PICK_LOCATION)
                 },
                 navController = navController,
                 onFinish = {
@@ -68,7 +73,7 @@ fun ArticlesNavigationFlow(
                 }
             )
         }
-        composable(route = Destinations.PICK_LOCATION) {
+        composable(route = ArticlesDestinations.PICK_LOCATION) {
             LocationPicker(
                 onLocationSelected = { location ->
                     navController.previousBackStackEntry?.savedStateHandle["location"] = location
@@ -79,12 +84,18 @@ fun ArticlesNavigationFlow(
                 }
             )
         }
+        composable(route = ArticlesDestinations.SETTINGS) {
+            SettingsScreen(
+                onSignOut = onSignOut
+            )
+        }
     }
 
 }
 
-object Destinations {
+private object ArticlesDestinations {
     const val ARTICLES_LIST = "articles_list"
     const val ADD_NEW_ARTICLE = "add_new_article"
     const val PICK_LOCATION = "pick_location"
+    const val SETTINGS = "settings"
 }

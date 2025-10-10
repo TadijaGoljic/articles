@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Navigation
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FloatingActionButton
@@ -62,6 +63,7 @@ fun ArticlesList(
     onBackClick: () -> Unit,
     onFloatingActionButtonClick: () -> Unit,
     onOpenNavigation: (LocationData) -> Unit,
+    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
     articlesListViewModel: ArticlesListViewModel = hiltViewModel()
 ) {
@@ -104,7 +106,9 @@ fun ArticlesList(
                 onTrailingIconClick = {
                     if (state.shoppingModeActive) articlesListViewModel.stopShopping(true)
                     else articlesListViewModel.startShopping(null)
-                }
+                },
+                leadingIcon = Icons.Default.Settings,
+                onLeadingIconClick = onOpenSettings
             )
             LazyColumn {
                 itemsIndexed(state.articles) { index, article ->

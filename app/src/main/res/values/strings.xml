@@ -1,5 +1,18 @@
 <resources>
 
+    <!-- Authentication -->
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="username">Name</string>
+    <string name="not_a_member">Not a member?</string>
+    <string name="sign_up">Sign up</string>
+    <string name="sign_in">Sign in</string>
+    <string name="sign_out">Sign out</string>
+    <string name="forgot_password">Forgot password</string>
+    <string name="ok">OK</string>
+    <string name="invalid_credentials">Invalid credentials</string>
+
+    <!-- Articles -->
     <string name="app_name">Articles</string>
     <string name="add_new_article">Add new article</string>
     <string name="back">Back</string>

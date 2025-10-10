@@ -5,7 +5,6 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.core.net.toUri
@@ -15,7 +14,7 @@ import com.example.articles.viewmodels.LocationData
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class ArticlesActivity : ComponentActivity() {
 
     companion object {
         private const val GOOGLE_MAPS_PACKAGE_NAME = "com.google.android.apps.maps"
@@ -31,7 +30,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    fun openNavigation(context: Context, location: LocationData) {
+    private fun openNavigation(context: Context, location: LocationData) {
         val uri = (
             "${GOOGLE_MAPS_BASE_URL}/dir/?" +
             "api=1&" +
@@ -45,8 +44,13 @@ class MainActivity : ComponentActivity() {
         context.startActivity(intent)
     }
 
-    fun moveTaskToBackground() {
+    private fun moveTaskToBackground() {
         moveTaskToBack(true)
+    }
+
+    private fun onSignOut() {
+        startActivity(Intent(this, AuthenticationActivity::class.java))
+        finish()
     }
 
     @Composable
@@ -56,12 +60,17 @@ class MainActivity : ComponentActivity() {
         ArticlesNavigationFlow(
             onOpenNavigation = { location ->
                 openNavigation(
-                    context = this@MainActivity,
+                    context = this@ArticlesActivity,
                     location = location
                 )
             },
             modifier = modifier,
-            moveTaskToBackground = { moveTaskToBackground() }
+            moveTaskToBackground = {
+                moveTaskToBackground()
+            },
+            onSignOut = {
+                onSignOut()
+            }
         )
     }
 
