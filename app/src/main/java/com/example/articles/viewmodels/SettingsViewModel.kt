@@ -1,9 +1,7 @@
 package com.example.articles.viewmodels
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import com.google.firebase.Firebase
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,9 +19,17 @@ class SettingsViewModel @Inject constructor(
     fun signOut() {
         Firebase.auth.signOut()
         state.update { currentState ->
-            currentState.copy(
-                ok = true
-            )
+            currentState.copy(ok = true)
+        }
+    }
+
+    fun delete() {
+        Firebase.auth.currentUser?.delete()?.addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                state.update { currentState ->
+                    currentState.copy(ok = true)
+                }
+            }
         }
     }
 

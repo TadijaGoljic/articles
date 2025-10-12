@@ -16,7 +16,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -47,6 +50,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -72,6 +76,7 @@ import com.example.articles.viewmodels.AddNewArticleViewModel
 import com.example.articles.viewmodels.AddNewArticleViewModel.Companion.KEY_INDEX
 import com.example.articles.viewmodels.AddNewArticleViewModel.Companion.KEY_LOCATION
 import com.example.articles.viewmodels.LocationData
+import kotlinx.coroutines.launch
 import java.io.File
 
 
@@ -87,6 +92,7 @@ fun AddNewArticle(
 
     val state by addNewArticleViewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
+    val coroutineScope = rememberCoroutineScope()
 
     val savedStateHandle = navController.currentBackStackEntry?.savedStateHandle
     val pickedLocationFlow = savedStateHandle?.getStateFlow<LocationData?>(KEY_LOCATION, null)
@@ -97,10 +103,6 @@ fun AddNewArticle(
 
     LaunchedEffect(state.ok) {
         if (state.ok) onFinish()
-    }
-
-    LaunchedEffect(scrollState.maxValue) {
-        scrollState.animateScrollTo(scrollState.maxValue)
     }
 
     LaunchedEffect(pickedLocation) {
@@ -154,109 +156,108 @@ fun AddNewArticle(
         }
     }
 
-    Scaffold(
-        modifier = modifier,
-    ) { innerPadding ->
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .fillMaxSize()
-                .background(color = MaterialTheme.colorScheme.background)
-                .then(
-                    if (keyboardController != null) Modifier
-                    else Modifier.padding(innerPadding)
-                )
-        ) {
-            Toolbar(
-                title = stringResource(id = R.string.add_new_article),
-                leadingIcon = Icons.Default.ChevronLeft,
-                onLeadingIconClick = onBackButtonClicked,
-                trailingIcon = Icons.Default.PlusOne,
-                onTrailingIconClick = addNewArticleViewModel::addNewArticle,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = if (keyboardController != null) Modifier.padding() else Modifier,
-            )
-            Box {
-                Column(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .verticalScroll(scrollState)
-                        .padding(horizontal = 18.dp)
-                        .imePadding()
-                        .widthIn(max = 450.dp)
-                        .align(Alignment.TopCenter),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    state.articles.forEachIndexed { index, article ->
-                        AddNewArticleItem(
-                            article = article,
-                            onNameChange = {
-                                if (it.isEmpty()) {
-                                    addNewArticleViewModel.updateName(index, null)
-                                } else if (it.length < 30) {
-                                    addNewArticleViewModel.updateName(index, it)
-                                }
-                            },
-                            onRemoveClick = {
-                                addNewArticleViewModel.remove(index)
-                            },
-                            onExpandIconClick = {
-                                addNewArticleViewModel.toggleState(index)
-                            },
-                            onArticleTypeChange = {
-                                addNewArticleViewModel.updateType(index, it)
-                            },
-                            onQuantityChange = {
-                                addNewArticleViewModel.updateQuantity(index, it)
-                            },
-                            onLocationPickerClick = {
-                                savedStateHandle?.set("index", index)
-                                onLocationPickerClick()
-                            },
-                            onOpenCameraClick = {
-                                savedStateHandle?.set("index", index)
-                                uri = photoUri()
-                                cameraLauncher.launch(uri)
-                            },
-                            onChooseImageClick = {
-                                savedStateHandle?.set("index", index)
-                                pickImage.launch("image/*")
-                            },
-                            onSeePhotoClick = {
-                                addNewArticleViewModel.updatePhotoVisible(index)
-                            },
-                            enableRemoveOption = state.articles.size > 1,
-                            modifier = Modifier
-                                .padding(vertical = 5.dp)
-                        )
-                    }
-                    AnimatedVisibility(visible = state.message != null) {
-                        state.message?.let { error ->
-                            Text(
-                                text = stringResource(error),
-                                color = Color.Red,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.weight(1f))
-                    Button(
-                        onClick = {
-                            addNewArticleViewModel.save()
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier
+            .fillMaxSize()
+            .background(color = MaterialTheme.colorScheme.background)
+            .systemBarsPadding()
+    ) {
+        Toolbar(
+            title = stringResource(id = R.string.add_new_article),
+            leadingIcon = Icons.Default.ChevronLeft,
+            onLeadingIconClick = onBackButtonClicked,
+            trailingIcon = Icons.Default.PlusOne,
+            onTrailingIconClick = {
+                addNewArticleViewModel.addNewArticle()
+                coroutineScope.launch {
+                    scrollState.animateScrollTo(scrollState.maxValue)
+                }
+            },
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = if (keyboardController != null) Modifier.padding() else Modifier,
+        )
+        Box {
+            Column(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .verticalScroll(scrollState)
+                    .padding(horizontal = 18.dp)
+                    .imePadding()
+                    .widthIn(max = 450.dp)
+                    .align(Alignment.TopCenter),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                state.articles.forEachIndexed { index, article ->
+                    AddNewArticleItem(
+                        article = article,
+                        onNameChange = {
+                            if (it.isEmpty()) {
+                                addNewArticleViewModel.updateName(index, null)
+                            } else if (it.length < 30) {
+                                addNewArticleViewModel.updateName(index, it)
+                            }
                         },
+                        onRemoveClick = {
+                            addNewArticleViewModel.remove(index)
+                        },
+                        onExpandIconClick = {
+                            addNewArticleViewModel.toggleState(index)
+                        },
+                        onArticleTypeChange = {
+                            addNewArticleViewModel.updateType(index, it)
+                        },
+                        onQuantityChange = {
+                            addNewArticleViewModel.updateQuantity(index, it)
+                        },
+                        onLocationPickerClick = {
+                            savedStateHandle?.set("index", index)
+                            onLocationPickerClick()
+                        },
+                        onOpenCameraClick = {
+                            savedStateHandle?.set("index", index)
+                            uri = photoUri()
+                            cameraLauncher.launch(uri)
+                        },
+                        onChooseImageClick = {
+                            savedStateHandle?.set("index", index)
+                            pickImage.launch("image/*")
+                        },
+                        onSeePhotoClick = {
+                            addNewArticleViewModel.updatePhotoVisible(index)
+                        },
+                        enableRemoveOption = state.articles.size > 1,
                         modifier = Modifier
-                            .padding(bottom = 10.dp),
-                    ) {
+                            .padding(vertical = 5.dp)
+                    )
+                }
+                AnimatedVisibility(visible = state.message != null) {
+                    state.message?.let { error ->
                         Text(
-                            text = stringResource(id = R.string.save),
-                            color = Color.White
+                            text = stringResource(error),
+                            color = Color.Red,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
+                }
+                Spacer(modifier = Modifier.weight(1f))
+                Button(
+                    onClick = {
+                        addNewArticleViewModel.save()
+                    },
+                    modifier = Modifier
+                        .padding(bottom = 10.dp),
+                ) {
+                    Text(
+                        text = stringResource(id = R.string.save),
+                        color = Color.White
+                    )
                 }
             }
         }
     }
+
 }
 
 @Composable
@@ -310,6 +311,7 @@ fun AddNewArticleItem(
                     modifier = Modifier.weight(1f),
                     maxLines = 1,
                     singleLine = true,
+                    isError = article.isError
                 )
                 IconButton(
                     onClick = onRemoveClick,
@@ -398,6 +400,7 @@ fun AddNewArticleItem(
                         Icon(
                             imageVector = Icons.Filled.CameraAlt,
                             contentDescription = stringResource(id = R.string.take_a_photo),
+                            tint = if (article.isError) Color.Red else Color.Unspecified
                         )
                     }
                     IconButton(
@@ -406,6 +409,7 @@ fun AddNewArticleItem(
                         Icon(
                             imageVector = Icons.Filled.Photo,
                             contentDescription = stringResource(id = R.string.choose_photo),
+                            tint = if (article.isError) Color.Red else Color.Unspecified
                         )
                     }
                 }

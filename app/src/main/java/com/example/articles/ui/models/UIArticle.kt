@@ -1,6 +1,7 @@
 package com.example.articles.ui.models
 
 import androidx.annotation.StringRes
+import androidx.compose.ui.graphics.Color
 import com.example.articles.R
 import com.example.articles.viewmodels.LocationData
 import java.util.Date
@@ -16,6 +17,7 @@ data class UIArticle(
     val photoUri: String? = null,
     val checked: Boolean = false,
     val photoVisible: Boolean = false,
+    val isError: Boolean = false
 )
 
 

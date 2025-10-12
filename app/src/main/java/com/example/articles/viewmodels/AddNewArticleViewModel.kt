@@ -1,6 +1,7 @@
 package com.example.articles.viewmodels
 
 import androidx.annotation.StringRes
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -30,30 +31,39 @@ class AddNewArticleViewModel @Inject constructor(
     val uiState = state
 
     fun save() = viewModelScope.launch {
-        if (state.value.articles.any {
+        val badArticles = state.value.articles.map {
             it.name.isNullOrBlank() && it.photoUri.isNullOrBlank()
-        }) {
+        }
+        state.update { currentState ->
+            currentState.copy(
+                articles = currentState.articles.mapIndexed { i, article ->
+                    if (badArticles[i]) article.copy(isError = true)
+                    else article.copy(isError = false)
+                },
+            )
+        }
+        if (badArticles.any { it }) {
             state.update { currentState ->
                 currentState.copy(
                     message = R.string.provide_name_photo
                 )
             }
-            return@launch
-        }
-        state.update { currentState ->
-            currentState.copy(
-                articles = currentState.articles.map { article ->
-                    article.copy(
-                        dateCreated = Date()
-                    )
-                }
-            )
-        }
-        articleRepository.insertAll(state.value.articles)
-        state.update { currentState ->
-            currentState.copy(
-                ok = true
-            )
+        } else {
+            state.update { currentState ->
+                currentState.copy(
+                    articles = currentState.articles.map { article ->
+                        article.copy(
+                            dateCreated = Date()
+                        )
+                    }
+                )
+            }
+            articleRepository.insertAll(state.value.articles)
+            state.update { currentState ->
+                currentState.copy(
+                    ok = true
+                )
+            }
         }
     }
 

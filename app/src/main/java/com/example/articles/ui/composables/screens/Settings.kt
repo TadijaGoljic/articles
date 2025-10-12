@@ -77,7 +77,7 @@ fun SettingsScreen(
             )
             SettingsItem(
                 label = stringResource(id = R.string.delete_account),
-                onItemClick = {},
+                onItemClick = settingsViewModel::delete,
                 position = Position.MIDDLE,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
