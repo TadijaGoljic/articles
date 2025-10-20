@@ -1,10 +1,10 @@
 package com.example.articles.db
 
 import androidx.room.Dao
-import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 
 @Dao
 interface ArticleDao {
@@ -15,7 +15,7 @@ interface ArticleDao {
     @Insert
     suspend fun insertAll(articles: List<ArticleEntity>)
 
-    @Query("DELETE FROM articles WHERE id = :idArticle")
-    suspend fun delete(idArticle: Int)
+    @Query("DELETE FROM articles WHERE idArticle = :idArticle")
+    suspend fun delete(idArticle: UUID)
 
 }

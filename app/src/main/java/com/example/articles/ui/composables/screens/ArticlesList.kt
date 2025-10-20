@@ -1,6 +1,7 @@
 package com.example.articles.ui.composables.screens
 
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -35,6 +36,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -45,15 +47,19 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.work.ExistingWorkPolicy
+import androidx.work.WorkManager
 import coil.compose.AsyncImage
 import com.example.articles.R
-import com.example.articles.ui.models.UIArticle
+import com.example.articles.sync.SyncManager
+import com.example.articles.models.UIArticle
 import com.example.articles.ui.utils.DateUnit
 import com.example.articles.ui.utils.Toolbar
 import com.example.articles.ui.utils.isInteger
 import com.example.articles.ui.utils.toUIDate
 import com.example.articles.viewmodels.ArticlesListViewModel
 import com.example.articles.viewmodels.LocationData
+import kotlinx.coroutines.delay
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalLayoutApi::class)
@@ -68,10 +74,15 @@ fun ArticlesList(
 ) {
 
     val state by articlesListViewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
     BackHandler {
         if (state.shoppingModeActive) articlesListViewModel.stopShopping(false)
         else onBackClick()
+    }
+
+    LaunchedEffect(Unit) {
+        articlesListViewModel.syncData()
     }
 
     Scaffold(

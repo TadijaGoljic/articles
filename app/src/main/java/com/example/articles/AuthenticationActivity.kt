@@ -11,6 +11,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -18,18 +19,16 @@ import com.example.articles.ui.composables.AuthenticationNavigationFlow
 import com.example.articles.ui.theme.ArticlesTheme
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
+import com.google.firebase.initialize
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class AuthenticationActivity : ComponentActivity() {
 
-    companion object {
-        const val USER = "user"
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Firebase.initialize(this)
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(state = Lifecycle.State.STARTED) {
                 Firebase.auth.currentUser?.getIdToken(false)?.addOnCompleteListener { task ->
@@ -65,6 +64,7 @@ class AuthenticationActivity : ComponentActivity() {
                 modifier = modifier
                     .background(color = MaterialTheme.colorScheme.surface)
                     .padding(innerPadding)
+                    .padding(top = 15.dp)
             )
         }
     }

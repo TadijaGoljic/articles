@@ -1,11 +1,16 @@
 package com.example.articles.viewmodels
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.articles.modelMapers.mapToUIArticle
+import androidx.work.ExistingWorkPolicy
+import androidx.work.WorkManager
+import com.example.articles.models.mapToUIArticle
 import com.example.articles.repositories.ArticleRepository
-import com.example.articles.ui.models.UIArticle
+import com.example.articles.models.UIArticle
+import com.example.articles.sync.SyncManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
@@ -14,7 +19,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ArticlesListViewModel @Inject constructor(
-    private val articleRepository: ArticleRepository
+    private val articleRepository: ArticleRepository,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private var state = MutableStateFlow(ArticlesListState())
@@ -29,7 +35,16 @@ class ArticlesListViewModel @Inject constructor(
                     )
                 }
             }
+            syncData()
         }
+    }
+
+    fun syncData() {
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            SyncManager.NAME,
+            ExistingWorkPolicy.KEEP,
+            SyncManager.sync()
+        )
     }
 
     fun updateCheckStatus(index: Int, newValue: Boolean) {

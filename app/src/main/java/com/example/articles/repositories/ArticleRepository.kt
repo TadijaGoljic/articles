@@ -1,8 +1,8 @@
 package com.example.articles.repositories
 
 import com.example.articles.db.ArticleDao
-import com.example.articles.modelMapers.mapToDBEntity
-import com.example.articles.ui.models.UIArticle
+import com.example.articles.models.mapToDBEntity
+import com.example.articles.models.UIArticle
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -17,6 +17,6 @@ class ArticleRepository @Inject constructor(
         articleDao.insertAll(articles.map { it.mapToDBEntity() })
 
     suspend fun deleteAll(articles: List<UIArticle>) =
-        articles.forEach { article -> articleDao.delete(article.mapToDBEntity().id) }
+        articles.forEach { article -> articleDao.delete(article.mapToDBEntity().idArticle) }
 
 }

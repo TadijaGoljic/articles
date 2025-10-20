@@ -1,24 +1,23 @@
 package com.example.articles.modelMapers
 
 import com.example.articles.db.ArticleEntity
-import com.example.articles.ui.models.ArticleUnit
-import com.example.articles.ui.models.UIArticle
-import com.example.articles.viewmodels.LocationData
+import com.example.articles.models.UIArticle
 import java.util.Date
-import kotlin.Int
 
 fun UIArticle.mapToDBEntity() = ArticleEntity(
-    id = this.id,
+    idArticle = this.id,
     name = this.name,
     dateCreated = this.dateCreated.time,
     location = this.location,
     quantity = this.quantity,
     unit = this.unit,
-    photoUri = this.photoUri
+    photoUri = this.photoUri,
+    deleted = this.deleted,
+    updatedAt = Date().time
 )
 
 fun ArticleEntity.mapToUIArticle() = UIArticle(
-    id = this.id,
+    id = this.idArticle,
     name = this.name,
     dateCreated = Date(this.dateCreated),
     location = this.location,

@@ -48,47 +48,53 @@ dependencies {
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
     implementation(libs.androidx.compose.ui)
-    implementation(libs.androidx.espresso.core)
+    implementation(libs.androidx.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
+    implementation(libs.androidx.compose.runtime.livedata)
+    implementation(libs.androidx.hilt.work)
+
+    debugImplementation(libs.androidx.ui.tooling)
+    debugImplementation(libs.androidx.ui.test.manifest)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
 
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
-    implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.ktx)
     implementation(libs.hilt.android)
     implementation(libs.androidx.hilt.navigation.compose)
-    implementation(libs.androidx.compose.material.icons.extended)
-    implementation(libs.accompanist.systemuicontroller)
-    implementation(libs.coil.compose)
-
-    ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.hilt.common)
     ksp(libs.hilt.compiler)
 
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+
+    implementation(libs.coil.compose)
+    implementation(libs.accompanist.systemuicontroller)
     implementation(libs.osmdroid.android)
     implementation(libs.androidx.appcompat)
-    implementation(libs.androidx.compose.runtime.livedata)
 
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
     implementation(libs.androidx.camera.core)
 
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.analytics)
-    implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore.ktx)
-    implementation(libs.firebase.database.ktx)
+    implementation(libs.firebase.storage.ktx)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.google.firebase.firestore.ktx)
+    implementation(libs.firebase.auth.ktx)
+
+    implementation(libs.androidx.work.runtime.ktx)
 
 }

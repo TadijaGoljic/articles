@@ -262,6 +262,7 @@ fun SignInLandscape(
         Column(
             modifier = Modifier
                 .weight(1f)
+                .verticalScroll(rememberScrollState()),
         ) {
             AnimatedContent(
                 targetState = state.authenticationState,

@@ -1,17 +1,14 @@
 package com.example.articles.viewmodels
 
 import androidx.annotation.StringRes
-import androidx.compose.ui.graphics.Color
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.articles.R
 import com.example.articles.repositories.ArticleRepository
-import com.example.articles.ui.models.ArticleUnit
-import com.example.articles.ui.models.UIArticle
+import com.example.articles.models.ArticleUnit
+import com.example.articles.models.UIArticle
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Date
