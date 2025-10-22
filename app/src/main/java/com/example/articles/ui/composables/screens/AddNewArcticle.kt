@@ -1,6 +1,5 @@
 package com.example.articles.ui.composables.screens
 
-import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -59,7 +58,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.core.content.FileProvider
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
@@ -74,7 +72,6 @@ import com.example.articles.viewmodels.AddNewArticleViewModel.Companion.KEY_INDE
 import com.example.articles.viewmodels.AddNewArticleViewModel.Companion.KEY_LOCATION
 import com.example.articles.viewmodels.LocationData
 import kotlinx.coroutines.launch
-import java.io.File
 
 
 @Composable
@@ -111,29 +108,18 @@ fun AddNewArticle(
         }
     }
 
-    fun photoUri(): Uri {
-        val uri = FileProvider.getUriForFile(
-            context,
-            "${context.packageName}.provider",
-            File(context.cacheDir, "article${System.currentTimeMillis()}.jpg")
-        )
-        context.grantUriPermission(context.packageName, uri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-        return uri
-    }
-
-
     fun savePhoto(uri: Uri, index: Int) {
         addNewArticleViewModel.updatePhoto(uri.toString(), index)
     }
 
-    var uri by remember { mutableStateOf(photoUri()) }
+    var uri by remember { mutableStateOf(addNewArticleViewModel.photoUri()) }
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture(),
         onResult = { success ->
             if (success) {
                 val index = savedStateHandle?.get<Int>(KEY_INDEX)
                     ?: return@rememberLauncherForActivityResult
-                savePhoto(uri, index)
+                savePhoto(uri as Uri, index)
             }
         }
     )
@@ -146,7 +132,7 @@ fun AddNewArticle(
                 ?: return@rememberLauncherForActivityResult
             val photoUri = copyUriToUri(
                 sourceUri = uri,
-                destinationUri = photoUri(),
+                destinationUri = addNewArticleViewModel.photoUri(),
                 context = context
             ) ?: return@rememberLauncherForActivityResult
             savePhoto(photoUri, index)
@@ -213,7 +199,7 @@ fun AddNewArticle(
                         },
                         onOpenCameraClick = {
                             savedStateHandle?.set("index", index)
-                            uri = photoUri()
+                            uri = addNewArticleViewModel.photoUri()
                             cameraLauncher.launch(uri)
                         },
                         onChooseImageClick = {

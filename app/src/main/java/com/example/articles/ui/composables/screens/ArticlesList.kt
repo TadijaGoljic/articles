@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -44,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -227,26 +229,27 @@ fun ArticleItem(
                     )
                 }
                 Spacer(modifier = Modifier.width(8.dp))
-                article.name?.let { name ->
-                    Text(
-                        text = name,
-                        fontSize = 24.sp
-                    )
+                val text = buildString {
+                    article.name?.let { name ->
+                        append(name)
+                    }
+                    if (article.quantity != null) {
+                        append(": ")
+                        append(
+                            if (article.quantity.isInteger()) article.quantity.toInt().toString()
+                            else article.quantity.toString()
+                        )
+                        append(" ")
+                        append(stringResource(id = article.unit.abbreviation))
+                    }
                 }
-                if (article.quantity != null) {
-                    Text(
-                        text = ": " +
-                                if (article.quantity.isInteger()) article.quantity.toInt()
-                                    .toString()
-                                else article.quantity.toString(),
-                        fontSize = 24.sp
-                    )
-                    Text(
-                        text = stringResource(id = article.unit.abbreviation),
-                        fontSize = 24.sp
-                    )
-                }
-                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = text,
+                    fontSize = 24.sp,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .weight(1f)
+                )
                 IconButton(
                     onClick = {
                         onOpenNavigation(article.location ?: return@IconButton)
@@ -259,9 +262,11 @@ fun ArticleItem(
                         contentDescription = stringResource(id = R.string.start_navigation)
                     )
                 }
-                Spacer(modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = dateText
+                    text = dateText,
+                    maxLines = 1,
+                    modifier = Modifier.wrapContentWidth()
                 )
                 AnimatedVisibility(visible = shoppingModeRunning) {
                     Row {
@@ -274,6 +279,7 @@ fun ArticleItem(
                     }
                 }
             }
+
             AnimatedVisibility(
                 visible = article.photoVisible && article.photoUri != null,
             ) {

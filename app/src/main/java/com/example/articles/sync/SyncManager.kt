@@ -10,11 +10,9 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkRequest
 import androidx.work.WorkerParameters
 import com.example.articles.db.ArticleEntity
+import com.example.articles.models.ModelMapper
 import com.example.articles.models.UIArticle
 import com.example.articles.models.UserPreferences
-import com.example.articles.models.mapToFirestoreMap
-import com.example.articles.models.mapToUIArticle
-import com.example.articles.models.toArticleEntity
 import com.example.articles.repositories.ArticleRepository
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
@@ -28,7 +26,8 @@ class SyncManager(
     parameters: WorkerParameters,
     private val userPreferences: UserPreferences,
     private val articleRepository: ArticleRepository,
-    private val applicationContext: Context
+    private val applicationContext: Context,
+    private val modelMapper: ModelMapper
 ) : CoroutineWorker(context, parameters) {
 
     private val articlesCollection = Firebase.firestore.collection("articles")
@@ -58,16 +57,17 @@ class SyncManager(
                 val documentId = article.idArticle.toString().takeIf { it.isNotBlank() }
                     ?: articlesCollection.document().id
                 articlesCollection.document(documentId)
-                    .set(article.mapToFirestoreMap(applicationContext)).await()
+                    .set(modelMapper.mapToFirestoreMap(article, applicationContext)).await()
                 successCount++
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                Log.e("SyncManager2", "syncArticlesToFirestore: ${e.message}")
                 errorCount++
             }
         }
         val snapshot = articlesCollection.get().await()
         snapshot.documents.forEach { document ->
-            val entity = document.toArticleEntity(applicationContext)
-            val article = entity?.mapToUIArticle() ?: UIArticle()
+            val entity = modelMapper.toArticleEntity(document, applicationContext)
+            val article = if (entity != null) modelMapper.mapToUIArticle(entity) else UIArticle()
             articleRepository.insertAll(listOf(article))
         }
         return SyncResult(

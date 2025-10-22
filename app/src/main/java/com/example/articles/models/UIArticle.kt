@@ -18,6 +18,7 @@ data class UIArticle(
     val quantity: Double? = null,
     val unit: ArticleUnit = ArticleUnit.default,
     val photoUri: String? = null,
+    val photoTimestamp: Long? = null,
     val checked: Boolean = false,
     val photoVisible: Boolean = false,
     val isError: Boolean = false,

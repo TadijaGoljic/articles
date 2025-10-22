@@ -1,11 +1,17 @@
 package com.example.articles.ui.utils
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.ByteArrayOutputStream
 import java.util.Date
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
+import androidx.core.graphics.scale
+import androidx.core.net.toUri
+import java.io.File
 
 fun Double.isInteger(): Boolean = this % 1 == 0.0
 
@@ -52,4 +58,16 @@ fun copyUriToUri(sourceUri: Uri, destinationUri: Uri, context: Context): Uri? {
         e.printStackTrace()
         null
     }
+}
+
+fun resizeImage(context: Context, uri: Uri): ByteArray {
+    val inputStream = context.contentResolver.openInputStream(uri)
+    val originalBitmap = BitmapFactory.decodeStream(inputStream)
+    inputStream?.close()
+    val width = (originalBitmap.width * 0.9).toInt()
+    val height = (originalBitmap.height * 0.9).toInt()
+    val resizedBitmap = originalBitmap.scale(width, height)
+    val outputStream = ByteArrayOutputStream()
+    resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
+    return outputStream.toByteArray()
 }

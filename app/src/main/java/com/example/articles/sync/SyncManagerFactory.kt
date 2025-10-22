@@ -5,6 +5,7 @@ import androidx.work.DelegatingWorkerFactory
 import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
+import com.example.articles.models.ModelMapper
 import com.example.articles.models.UserPreferences
 import com.example.articles.repositories.ArticleRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -15,6 +16,7 @@ class SyncManagerFactory(
     private val userPreferences: UserPreferences,
     private val articleRepository: ArticleRepository,
     private val applicationContext: Context,
+    private val modelMapper: ModelMapper,
 ) : WorkerFactory() {
     override fun createWorker(
         appContext: Context,
@@ -23,7 +25,7 @@ class SyncManagerFactory(
     ): ListenableWorker? {
         return when(workerClassName) {
             SyncManager::class.java.name ->
-                SyncManager(appContext, workerParameters, userPreferences, articleRepository, applicationContext)
+                SyncManager(appContext, workerParameters, userPreferences, articleRepository, applicationContext, modelMapper)
             else ->
                 null
         }
@@ -34,9 +36,10 @@ class SyncManagerFactory(
 class SyncWorkerFactory @Inject constructor(
     userPreferences: UserPreferences,
     articleRepository: ArticleRepository,
+    modelMapper: ModelMapper,
     @ApplicationContext context: Context
 ) : DelegatingWorkerFactory() {
     init {
-        addFactory(SyncManagerFactory(userPreferences, articleRepository, context))
+        addFactory(SyncManagerFactory(userPreferences, articleRepository, context, modelMapper))
     }
 }

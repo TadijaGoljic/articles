@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.ExistingWorkPolicy
 import androidx.work.WorkManager
-import com.example.articles.models.mapToUIArticle
+import com.example.articles.models.ModelMapper
 import com.example.articles.repositories.ArticleRepository
 import com.example.articles.models.UIArticle
 import com.example.articles.sync.SyncManager
@@ -20,6 +20,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ArticlesListViewModel @Inject constructor(
     private val articleRepository: ArticleRepository,
+    private val modelMapper: ModelMapper,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
@@ -31,7 +32,7 @@ class ArticlesListViewModel @Inject constructor(
             articleRepository.getAllArticles().collectLatest { articles ->
                 state.update { currentState ->
                     currentState.copy(
-                        articles = articles.map { it.mapToUIArticle() }
+                        articles = articles.map { modelMapper.mapToUIArticle(it) }
                     )
                 }
             }

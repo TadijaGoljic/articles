@@ -1,5 +1,6 @@
 package com.example.articles.viewmodels
 
+import android.net.Uri
 import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -7,6 +8,7 @@ import com.example.articles.R
 import com.example.articles.repositories.ArticleRepository
 import com.example.articles.models.ArticleUnit
 import com.example.articles.models.UIArticle
+import com.example.articles.ui.utils.FileManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
@@ -16,12 +18,15 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AddNewArticleViewModel @Inject constructor(
-    private val articleRepository: ArticleRepository
+    private val articleRepository: ArticleRepository,
+    private val fileManager: FileManager
 ) : ViewModel() {
 
     companion object {
         const val KEY_INDEX = "index"
         const val KEY_LOCATION = "location"
+        const val IMAGE_PREFIX = "article"
+        const val IMAGE_SUFFIX = ".jpg"
     }
 
     private var state = MutableStateFlow(AddNewArticleState())
@@ -155,6 +160,8 @@ class AddNewArticleViewModel @Inject constructor(
             )
         }
     }
+
+    fun photoUri() = fileManager.photoUri()
 
 }
 
