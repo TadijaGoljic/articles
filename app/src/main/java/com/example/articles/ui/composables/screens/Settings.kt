@@ -33,7 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.articles.R
-import com.example.articles.ui.utils.Toolbar
+import com.example.articles.ui.composables.utils.Toolbar
 import com.example.articles.viewmodels.SettingsViewModel
 
 @Composable

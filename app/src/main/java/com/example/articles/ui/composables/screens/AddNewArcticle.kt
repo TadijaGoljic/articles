@@ -64,7 +64,7 @@ import coil.compose.AsyncImage
 import com.example.articles.R
 import com.example.articles.models.ArticleUnit
 import com.example.articles.models.UIArticle
-import com.example.articles.ui.utils.Toolbar
+import com.example.articles.ui.composables.utils.Toolbar
 import com.example.articles.ui.utils.copyUriToUri
 import com.example.articles.ui.utils.isInteger
 import com.example.articles.viewmodels.AddNewArticleViewModel
