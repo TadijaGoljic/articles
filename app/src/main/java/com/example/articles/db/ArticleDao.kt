@@ -18,4 +18,7 @@ interface ArticleDao {
     @Query("DELETE FROM articles WHERE idArticle = :idArticle")
     suspend fun delete(idArticle: UUID)
 
+    @Query("DELETE FROM articles")
+    suspend fun deleteAll()
+
 }

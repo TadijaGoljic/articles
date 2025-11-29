@@ -2,7 +2,7 @@ package com.example.articles.ui.models
 
 import androidx.annotation.StringRes
 import com.example.articles.R
-import com.example.articles.viewmodels.LocationData
+import com.example.articles.viewmodels.Location
 
 private var counter = 0
     get() { return field++ }
@@ -11,7 +11,7 @@ data class UIArticle(
     val id: Int = counter,
     val name: String = "",
     val dateCreated: Long = 0L,
-    val location: LocationData? = null,
+    val location: Location? = null,
     val expanded: Boolean = false,
     val quantity: Double? = null,
     val unit: ArticleUnit? = null,

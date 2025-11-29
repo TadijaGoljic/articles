@@ -3,7 +3,7 @@ package com.example.articles.db
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.example.articles.models.ArticleUnit
-import com.example.articles.viewmodels.LocationData
+import com.example.articles.viewmodels.Location
 import java.util.UUID
 
 @Entity(tableName = "articles")
@@ -11,7 +11,7 @@ data class ArticleEntity(
     @PrimaryKey val idArticle: UUID = UUID.randomUUID(),
     val name: String?,
     val dateCreated: Long,
-    val location: LocationData?,
+    val location: Location?,
     val quantity: Double?,
     val unit: ArticleUnit,
     val photoUri: String?,

@@ -1,22 +1,22 @@
 package com.example.articles.db
 
 import androidx.room.TypeConverter
-import com.example.articles.viewmodels.LocationData
+import com.example.articles.viewmodels.Location
 import java.util.UUID
 
 class Converters {
 
     @TypeConverter
-    fun fromString(string: String): LocationData {
-        return LocationData(
+    fun fromString(string: String): Location {
+        return Location(
             latitude = string.split(",")[0].toDouble(),
             longitude = string.split(",")[1].toDouble()
         )
     }
 
     @TypeConverter
-    fun toString(locationData: LocationData): String {
-        return locationData.latitude.toString() + "," + locationData.longitude.toString()
+    fun toString(location: Location): String {
+        return location.latitude.toString() + "," + location.longitude.toString()
     }
 
     @TypeConverter

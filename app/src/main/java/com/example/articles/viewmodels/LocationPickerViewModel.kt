@@ -1,7 +1,6 @@
 package com.example.articles.viewmodels
 
 import android.os.Parcelable
-import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,7 +35,7 @@ class LocationPickerViewModel @Inject constructor(
 }
 
 @Parcelize
-data class LocationData(
+data class Location(
     val latitude: Double,
     val longitude: Double
 ) : Parcelable {

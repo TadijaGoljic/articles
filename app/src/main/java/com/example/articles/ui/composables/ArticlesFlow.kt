@@ -13,7 +13,8 @@ import com.example.articles.ui.composables.screens.AddNewArticle
 import com.example.articles.ui.composables.screens.ArticlesList
 import com.example.articles.ui.composables.screens.LocationPicker
 import com.example.articles.ui.composables.screens.SettingsScreen
-import com.example.articles.viewmodels.LocationData
+import com.example.articles.viewmodels.Location
+import com.example.articles.viewmodels.AddNewArticleViewModel.Companion.KEY_LOCATION
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 @SuppressLint("RestrictedApi")
@@ -21,7 +22,7 @@ import com.google.accompanist.systemuicontroller.rememberSystemUiController
 fun ArticlesNavigationFlow(
     onSignOut: () -> Unit,
     moveTaskToBackground: () -> Unit,
-    onOpenNavigation: (LocationData) -> Unit,
+    onOpenNavigation: (Location) -> Unit,
     modifier: Modifier = Modifier
 ) {
 
@@ -75,7 +76,7 @@ fun ArticlesNavigationFlow(
         composable(route = ArticlesDestinations.PICK_LOCATION) {
             LocationPicker(
                 onLocationSelected = { location ->
-                    navController.previousBackStackEntry?.savedStateHandle["location"] = location
+                    navController.previousBackStackEntry?.savedStateHandle[KEY_LOCATION] = location
                     navController.popBackStack()
                 },
                 onCancel = {

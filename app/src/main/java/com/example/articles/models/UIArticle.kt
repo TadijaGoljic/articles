@@ -3,7 +3,7 @@ package com.example.articles.models
 import android.os.Parcelable
 import androidx.annotation.StringRes
 import com.example.articles.R
-import com.example.articles.viewmodels.LocationData
+import com.example.articles.viewmodels.Location
 import kotlinx.parcelize.Parcelize
 import java.util.Date
 import java.util.UUID
@@ -13,7 +13,7 @@ data class UIArticle(
     val id: UUID = UUID.randomUUID(),
     val name: String? = "",
     val dateCreated: Date = Date(),
-    val location: LocationData? = null,
+    val location: Location? = null,
     val expanded: Boolean = false,
     val quantity: Double? = null,
     val unit: ArticleUnit = ArticleUnit.default,

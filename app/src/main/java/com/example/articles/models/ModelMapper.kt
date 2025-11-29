@@ -8,13 +8,14 @@ import com.example.articles.ui.utils.FileManager
 import com.example.articles.ui.utils.resizeImage
 import com.example.articles.viewmodels.AddNewArticleViewModel.Companion.IMAGE_PREFIX
 import com.example.articles.viewmodels.AddNewArticleViewModel.Companion.IMAGE_SUFFIX
-import com.example.articles.viewmodels.LocationData
+import com.example.articles.viewmodels.Location
 import com.google.firebase.firestore.DocumentSnapshot
 import java.io.File
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.math.hypot
 
 @Singleton
 class ModelMapper @Inject constructor(
@@ -47,25 +48,24 @@ class ModelMapper @Inject constructor(
         val file = articleEntity.photoUri?.let { uri ->
             fileManager.getFileFromUri(context, uri.toUri())
         }
-        var photoBytes = file?.readBytes()
-        while (file != null && file.length() > 10240) {
-            photoBytes = resizeImage(context, file.toUri())
-            file.writeBytes(photoBytes)
+        var photoBytes : ByteArray? = null
+        if (file != null) {
+            while (file.length() > 10240) {
+                photoBytes = resizeImage(context, file.toUri())
+                file.writeBytes(photoBytes)
+            }
         }
         return mapOf(
             "name" to articleEntity.name,
             "idArticle" to articleEntity.idArticle.toString(),
             "dateCreated" to articleEntity.dateCreated,
-            "location" to articleEntity.location?.let { loc ->
-                mapOf(
-                    "latitude" to loc.latitude,
-                    "longitude" to loc.longitude
-                )
+            "location" to articleEntity.location?.let { location ->
+                location.latitude.toString() + "," + location.longitude.toString()
             },
             "quantity" to articleEntity.quantity,
             "unit" to articleEntity.unit.name,
             "deleted" to articleEntity.deleted,
-            "photo" to Base64.encode(photoBytes, Base64.DEFAULT).map { it.toInt() }.toList(),
+            "photo" to if (photoBytes != null) Base64.encode(photoBytes, Base64.DEFAULT).map { it.toInt() }.toList() else null,
             "updatedAt" to articleEntity.updatedAt,
             "syncedAt" to System.currentTimeMillis()
         )
@@ -74,24 +74,20 @@ class ModelMapper @Inject constructor(
     fun toArticleEntity(snapshot: DocumentSnapshot, context: Context): ArticleEntity? {
         val data = snapshot.data ?: return null
         val file = File(context.cacheDir, "$IMAGE_PREFIX${System.currentTimeMillis()}$IMAGE_SUFFIX")
-        val photoBytes = data["photo"] as? List<Int> ?: return null
-        file.writeBytes(Base64.decode(photoBytes.map { it.toByte() }.toByteArray(), Base64.DEFAULT) ?: return null)
+        val photoBytes = data["photo"] as? List<Int>
+        file.writeBytes(Base64.decode(photoBytes?.map { it.toByte() }?.toByteArray(), Base64.DEFAULT))
         return ArticleEntity(
             idArticle = UUID.fromString(data["idArticle"] as? String ?: return null),
             name = data["name"] as? String,
             dateCreated = (data["dateCreated"] as? Long) ?: 0L,
-            location = (data["location"] as? Map<*, *>)?.let { location ->
-                LocationData(
-                    latitude = location["latitude"] as? Double ?: 0.0,
-                    longitude = location["longitude"] as? Double ?: 0.0
+            location = (data["location"] as? String)?.let { locationString ->
+                Location(
+                    latitude = locationString.split(',')[0].toDouble(),
+                    longitude = locationString.split(',')[1].toDouble()
                 )
             },
             quantity = data["quantity"] as? Double,
-            unit = try {
-                ArticleUnit.valueOf(data["unit"] as? String ?: "PIECE")
-            } catch (e: Exception) {
-                ArticleUnit.default
-            },
+            unit = ArticleUnit.valueOf(data["unit"] as? String ?: "PIECE"),
             photoUri = file.path,
             deleted = data["deleted"] as? Boolean ?: false,
             updatedAt = (data["updatedAt"] as? Long) ?: 0L

@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.articles.R
-import com.example.articles.viewmodels.LocationData
+import com.example.articles.viewmodels.Location
 import com.example.articles.viewmodels.LocationPickerViewModel
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
@@ -40,7 +40,7 @@ import org.osmdroid.views.overlay.gestures.RotationGestureOverlay
 @Composable
 fun LocationPicker(
     locationPickerViewModel: LocationPickerViewModel = hiltViewModel(),
-    onLocationSelected: (LocationData) -> Unit,
+    onLocationSelected: (Location) -> Unit,
     onCancel: () -> Unit
 ) {
 
@@ -67,8 +67,8 @@ fun LocationPicker(
                     .fillMaxSize()
             ) {
                 AndroidView(
-                    factory = { ctx ->
-                        MapView(ctx).apply {
+                    factory = { context ->
+                        MapView(context).apply {
                             setTileSource(TileSourceFactory.MAPNIK)
                             setMultiTouchControls(true)
 
@@ -108,15 +108,13 @@ fun LocationPicker(
                     update = { mapView ->
                         mapView.controller.animateTo(state.selectedLocation)
                         mapView.controller.setZoom(state.zoomLevel)
-
                         mapView.overlays.removeAll { it is Marker }
-                        if (state.selectedLocation != GeoPoint(44.80567303794035, 20.476393389720563)) {
-                            val marker = Marker(mapView)
-                            marker.position = state.selectedLocation
-                            marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                            marker.title = context.getString(R.string.selected_location)
-                            mapView.overlays.add(marker)
-                        }
+
+                        val marker = Marker(mapView)
+                        marker.position = state.selectedLocation
+                        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                        marker.title = context.getString(R.string.selected_location)
+                        mapView.overlays.add(marker)
                     },
                     modifier = Modifier.fillMaxSize()
                 )
@@ -143,7 +141,7 @@ fun LocationPicker(
                 Button(
                     onClick = {
                         onLocationSelected(
-                            LocationData(
+                            Location(
                                 latitude = state.selectedLocation.latitude,
                                 longitude = state.selectedLocation.longitude
                             )

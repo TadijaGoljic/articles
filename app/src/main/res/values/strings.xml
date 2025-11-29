@@ -20,6 +20,8 @@
     <string name="sign_in_icon">Sign in icon</string>
     <string name="something_went_wrong">Something went wrong</string>
     <string name="we_sent_email">Email sent</string>
+    <string name="confirm_sign_out">Are you sure you want to sign out?</string>
+    <string name="confirm_delete_account">Are you sure you want to delete your account?</string>
 
     <!-- Articles -->
     <string name="app_name">Articles</string>

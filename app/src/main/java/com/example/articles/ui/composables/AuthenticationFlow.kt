@@ -10,7 +10,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.articles.ui.composables.screens.SignInScreen
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
-import com.google.firebase.auth.FirebaseUser
 
 @Composable
 fun AuthenticationNavigationFlow(

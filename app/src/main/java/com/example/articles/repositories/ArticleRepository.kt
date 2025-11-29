@@ -20,4 +20,6 @@ class ArticleRepository @Inject constructor(
     suspend fun deleteAll(articles: List<UIArticle>) =
         articles.forEach { article -> articleDao.delete(modelMapper.mapToDBEntity(article).idArticle) }
 
+    suspend fun deleteAll() = articleDao.deleteAll()
+
 }

@@ -33,7 +33,7 @@ class SyncManager(
     private val articlesCollection = Firebase.firestore.collection("articles")
 
     override suspend fun doWork(): Result {
-        Log.d("result", "start")
+        Log.d("my_result", "start")
         val articlesToSync = articleRepository.getAllArticles().map { articles ->
             articles.filter { article ->
                 article.updatedAt > userPreferences.lastSyncTimestamp
@@ -42,10 +42,10 @@ class SyncManager(
         val syncResult = syncArticlesToFirestore(articlesToSync)
         if (syncResult.isSuccess) {
             userPreferences.lastSyncTimestamp = System.currentTimeMillis()
-            Log.d("result", "success")
+            Log.d("my_result", "success")
             return Result.success()
         }
-        Log.d("result", "fail")
+        Log.d("my_result", "fail")
         return Result.retry()
     }
 
@@ -60,7 +60,7 @@ class SyncManager(
                     .set(modelMapper.mapToFirestoreMap(article, applicationContext)).await()
                 successCount++
             } catch (e: Exception) {
-                Log.e("SyncManager2", "syncArticlesToFirestore: ${e.message}")
+                Log.e("my_result", "syncArticlesToFirestore: ${e.message}")
                 errorCount++
             }
         }

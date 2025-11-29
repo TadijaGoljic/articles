@@ -1,7 +1,6 @@
 package com.example.articles.ui.composables.screens
 
 import android.annotation.SuppressLint
-import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -49,19 +48,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.work.ExistingWorkPolicy
-import androidx.work.WorkManager
 import coil.compose.AsyncImage
 import com.example.articles.R
-import com.example.articles.sync.SyncManager
 import com.example.articles.models.UIArticle
 import com.example.articles.ui.utils.DateUnit
 import com.example.articles.ui.utils.Toolbar
 import com.example.articles.ui.utils.isInteger
 import com.example.articles.ui.utils.toUIDate
 import com.example.articles.viewmodels.ArticlesListViewModel
-import com.example.articles.viewmodels.LocationData
-import kotlinx.coroutines.delay
+import com.example.articles.viewmodels.Location
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalLayoutApi::class)
@@ -69,14 +64,13 @@ import kotlinx.coroutines.delay
 fun ArticlesList(
     onBackClick: () -> Unit,
     onFloatingActionButtonClick: () -> Unit,
-    onOpenNavigation: (LocationData) -> Unit,
+    onOpenNavigation: (Location) -> Unit,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
     articlesListViewModel: ArticlesListViewModel = hiltViewModel()
 ) {
 
     val state by articlesListViewModel.uiState.collectAsState()
-    val context = LocalContext.current
 
     BackHandler {
         if (state.shoppingModeActive) articlesListViewModel.stopShopping(false)
@@ -116,8 +110,8 @@ fun ArticlesList(
                     if (state.shoppingModeActive) Icons.Default.Delete
                     else Icons.Default.ShoppingCart,
                 onTrailingIconClick = {
-                    if (state.shoppingModeActive) articlesListViewModel.stopShopping(true)
-                    else articlesListViewModel.startShopping(null)
+                    if (state.shoppingModeActive) articlesListViewModel.stopShopping(deleteArticles = true)
+                    else articlesListViewModel.startShopping(index = null)
                 },
                 leadingIcon = Icons.Default.Settings,
                 color = MaterialTheme.colorScheme.onBackground,
@@ -139,7 +133,7 @@ fun ArticlesList(
                             articlesListViewModel.buy(article)
                         },
                         onShoppingModeClick = {
-                            articlesListViewModel.startShopping(index)
+                            articlesListViewModel.startShopping(index = index)
                         },
                         onEditClick = {
 
@@ -159,7 +153,7 @@ fun ArticlesList(
 fun ArticleItem(
     article: UIArticle,
     togglePhoto: () -> Unit,
-    onOpenNavigation: (LocationData) -> Unit,
+    onOpenNavigation: (Location) -> Unit,
     onCheckChange: (Boolean) -> Unit,
     onItemBought: () -> Unit,
     shoppingModeRunning: Boolean,
@@ -170,26 +164,32 @@ fun ArticleItem(
 
     val context = LocalContext.current
     val uiDate = article.dateCreated.toUIDate()
-    val dateText =
-        uiDate.value.toString() + " " +
-        when (uiDate.unit) {
-            DateUnit.DAY -> context.resources.getQuantityString(
-                R.plurals.days,
-                uiDate.value
-            )
-            DateUnit.HOUR -> context.resources.getQuantityString(
-                R.plurals.hours,
-                uiDate.value
-            )
-            DateUnit.MINUTE -> context.resources.getQuantityString(
-                R.plurals.minutes,
-                uiDate.value
-            )
-            DateUnit.SECOND -> context.resources.getQuantityString(
-                R.plurals.seconds,
-                uiDate.value
-            )
-        } + " " + stringResource(id = R.string.ago)
+    val dateText = buildString {
+        append(uiDate.value.toString())
+        append(" ")
+        append(
+            when (uiDate.unit) {
+                DateUnit.DAY -> context.resources.getQuantityString(
+                        R.plurals.days,
+                        uiDate.value
+                    )
+                DateUnit.HOUR -> context.resources.getQuantityString(
+                        R.plurals.hours,
+                        uiDate.value
+                    )
+                DateUnit.MINUTE -> context.resources.getQuantityString(
+                        R.plurals.minutes,
+                        uiDate.value
+                    )
+                DateUnit.SECOND -> context.resources.getQuantityString(
+                        R.plurals.seconds,
+                        uiDate.value
+                    )
+            }
+        )
+        append(" ")
+        append(stringResource(id = R.string.ago))
+    }
 
     Box(
         modifier = modifier

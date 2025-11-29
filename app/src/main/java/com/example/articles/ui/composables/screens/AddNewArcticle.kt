@@ -70,7 +70,7 @@ import com.example.articles.ui.utils.isInteger
 import com.example.articles.viewmodels.AddNewArticleViewModel
 import com.example.articles.viewmodels.AddNewArticleViewModel.Companion.KEY_INDEX
 import com.example.articles.viewmodels.AddNewArticleViewModel.Companion.KEY_LOCATION
-import com.example.articles.viewmodels.LocationData
+import com.example.articles.viewmodels.Location
 import kotlinx.coroutines.launch
 
 
@@ -89,7 +89,7 @@ fun AddNewArticle(
     val coroutineScope = rememberCoroutineScope()
 
     val savedStateHandle = navController.currentBackStackEntry?.savedStateHandle
-    val pickedLocationFlow = savedStateHandle?.getStateFlow<LocationData?>(KEY_LOCATION, null)
+    val pickedLocationFlow = savedStateHandle?.getStateFlow<Location?>(KEY_LOCATION, null)
     val pickedLocation = pickedLocationFlow?.collectAsState()?.value
 
     val context = LocalContext.current
@@ -103,7 +103,7 @@ fun AddNewArticle(
         pickedLocation?.let { location ->
             val index = savedStateHandle.get<Int>(KEY_INDEX) ?: return@let
             addNewArticleViewModel.revalidateLocations(location, index)
-            savedStateHandle.remove<LocationData>(KEY_LOCATION)
+            savedStateHandle.remove<Location>(KEY_LOCATION)
             savedStateHandle.remove<Int>(KEY_INDEX)
         }
     }

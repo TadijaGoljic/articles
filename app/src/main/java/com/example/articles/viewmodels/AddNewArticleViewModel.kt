@@ -1,6 +1,5 @@
 package com.example.articles.viewmodels
 
-import android.net.Uri
 import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -69,7 +68,7 @@ class AddNewArticleViewModel @Inject constructor(
         }
     }
 
-    fun revalidateLocations(location: LocationData, index: Int) {
+    fun revalidateLocations(location: Location, index: Int) {
         state.update { currentState ->
             currentState.copy(
                 articles = currentState.articles.mapIndexed { i, article ->

@@ -13,11 +13,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -48,6 +50,70 @@ fun SettingsScreen(
         if (state.ok) onSignOut()
     }
 
+    if (state.showSignOutConfirmationDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                settingsViewModel.hideSignOutConfirmationDialog()
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        settingsViewModel.signOut()
+                    }
+                ) {
+                    Text(text = stringResource(id = R.string.ok))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        settingsViewModel.hideSignOutConfirmationDialog()
+                    }
+                ) {
+                    Text(text = stringResource(id = R.string.cancel))
+                }
+            },
+            title = {
+                Text(text = stringResource(id = R.string.sign_out))
+            },
+            text = {
+                Text(text = stringResource(id = R.string.confirm_sign_out))
+            }
+        )
+    }
+
+    if (state.showDeleteAccountConfirmationDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                settingsViewModel.hideDeleteAccountConfirmationDialog()
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        settingsViewModel.deleteAccount()
+                    }
+                ) {
+                    Text(text = stringResource(id = R.string.ok))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        settingsViewModel.hideDeleteAccountConfirmationDialog()
+                    }
+                ) {
+                    Text(text = stringResource(id = R.string.cancel))
+                }
+            },
+            title = {
+                Text(text = stringResource(id = R.string.delete_account))
+            },
+            text = {
+                Text(text = stringResource(id = R.string.confirm_delete_account))
+            }
+        )
+    }
+
     Scaffold { innerPadding ->
         Column(
             modifier = modifier
@@ -71,13 +137,13 @@ fun SettingsScreen(
             )
             SettingsItem(
                 label = stringResource(id = R.string.sign_out),
-                onItemClick = settingsViewModel::signOut,
+                onItemClick = settingsViewModel::showSignOutConfirmationDialog,
                 position = Position.TOP,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
             SettingsItem(
                 label = stringResource(id = R.string.delete_account),
-                onItemClick = settingsViewModel::delete,
+                onItemClick = settingsViewModel::showDeleteAccountConfirmationDialog,
                 position = Position.MIDDLE,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
