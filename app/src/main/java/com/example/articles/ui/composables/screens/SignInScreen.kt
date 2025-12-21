@@ -345,6 +345,8 @@ fun SignIn(
                 }
             ),
             visualTransformation = PasswordVisualTransformation(),
+            singleLine = true,
+            maxLines = 1,
             isError = state.errorMessage != null,
             modifier = Modifier
                 .fillMaxWidth()
@@ -444,6 +446,8 @@ fun SignUp(
                 }
             ),
             visualTransformation = PasswordVisualTransformation(),
+            singleLine = true,
+            maxLines = 1,
             isError = state.errorMessage != null,
             modifier = Modifier
                 .fillMaxWidth()

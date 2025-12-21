@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -54,6 +55,7 @@ import com.example.articles.viewmodels.SettingsViewModel
 @Composable
 fun SettingsScreen(
     onSignOut: () -> Unit,
+    onAccountDelete: () -> Unit,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
     settingsViewModel: SettingsViewModel = hiltViewModel()
@@ -62,8 +64,12 @@ fun SettingsScreen(
     val state by settingsViewModel.uiState.collectAsState()
     val newPasswordFocusRequester = remember { FocusRequester() }
 
-    LaunchedEffect(state.ok) {
-        if (state.ok) onSignOut()
+    LaunchedEffect(state.signOutOk) {
+        if (state.signOutOk) onSignOut()
+    }
+
+    LaunchedEffect(state.deleteOk) {
+        if (state.deleteOk) onAccountDelete()
     }
 
     if (state.showSignOutConfirmationDialog) {
@@ -130,24 +136,27 @@ fun SettingsScreen(
         )
     }
 
-    Dialog(
-        onDismissRequest = {
-
-        },
-    ) {
-        Surface(
-            modifier = Modifier.clip(shape = RoundedCornerShape(10.dp))
+    if (state.showChangePasswordDialog) {
+        Dialog(
+            onDismissRequest = {
+                settingsViewModel.hideChangePasswordDialog()
+            },
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
+            Surface(
+                modifier = Modifier.clip(shape = RoundedCornerShape(10.dp))
             ) {
-                ChangePassword(
-                    state = state,
-                    onOldPasswordChange = {},
-                    onNewPasswordChange = {},
-                    onButtonClick = {},
-                    newPasswordFocusRequester = newPasswordFocusRequester,
-                )
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    ChangePassword(
+                        state = state,
+                        onOldPasswordChange = settingsViewModel::updateOldPassword,
+                        onNewPasswordChange = settingsViewModel::updateNewPassword,
+                        onButtonClick = settingsViewModel::changePassword,
+                        newPasswordFocusRequester = newPasswordFocusRequester,
+                        onDismissRequest = settingsViewModel::hideChangePasswordDialog
+                    )
+                }
             }
         }
     }
@@ -187,7 +196,7 @@ fun SettingsScreen(
             )
             SettingsItem(
                 label = stringResource(id = R.string.change_password),
-                onItemClick = {},
+                onItemClick = settingsViewModel::showChangePasswordDialog,
                 position = Position.BOTTOM,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
@@ -266,6 +275,7 @@ fun ChangePassword(
     onOldPasswordChange: (String) -> Unit,
     onNewPasswordChange: (String) -> Unit,
     onButtonClick: () -> Unit,
+    onDismissRequest: () -> Unit,
     newPasswordFocusRequester: FocusRequester,
     modifier: Modifier = Modifier
 ) {
@@ -283,13 +293,13 @@ fun ChangePassword(
             value = state.oldPassword,
             onValueChange = onOldPasswordChange,
             placeholder = {
-                Text(text = stringResource(id = R.string.email))
+                Text(text = stringResource(id = R.string.old_password))
             },
             label = {
-                Text(text = stringResource(id = R.string.email))
+                Text(text = stringResource(id = R.string.old_password))
             },
             keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Email,
+                keyboardType = KeyboardType.Password,
                 imeAction = ImeAction.Next
             ),
             keyboardActions = KeyboardActions(
@@ -297,19 +307,20 @@ fun ChangePassword(
                     newPasswordFocusRequester.requestFocus()
                 }
             ),
+            visualTransformation = PasswordVisualTransformation(),
             singleLine = true,
             maxLines = 1,
-            isError = state.errorMessage != null,
+            isError = state.errorMessage != null || state.stringResErrorMessage != null,
             modifier = Modifier.fillMaxWidth()
         )
         OutlinedTextField(
             value = state.newPassword,
             onValueChange = onNewPasswordChange,
             placeholder = {
-                Text(text = stringResource(id = R.string.password))
+                Text(text = stringResource(id = R.string.new_password))
             },
             label = {
-                Text(text = stringResource(id = R.string.password))
+                Text(text = stringResource(id = R.string.new_password))
             },
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Password,
@@ -321,31 +332,59 @@ fun ChangePassword(
                 }
             ),
             visualTransformation = PasswordVisualTransformation(),
-            isError = state.errorMessage != null,
+            singleLine = true,
+            maxLines = 1,
+            isError = state.errorMessage != null || state.stringResErrorMessage != null,
             modifier = Modifier
                 .fillMaxWidth()
                 .focusRequester(newPasswordFocusRequester)
         )
-        Spacer(modifier = Modifier.height(135.dp))
-        Button(
-            onClick = onButtonClick,
-            modifier = Modifier
-                .padding(bottom = 8.dp)
-                .fillMaxWidth()
-                .size(48.dp),
-            shape = RoundedCornerShape(10.dp)
+        Spacer(modifier = Modifier.height(8.dp))
+        if (state.stringResErrorMessage != null) {
+            Text(
+                text = stringResource(id = state.stringResErrorMessage),
+                color = Color.Red,
+                fontSize = 14.sp,
+            )
+        } else if (state.errorMessage != null) {
+            Text(
+                text = state.errorMessage,
+                color = Color.Red,
+                fontSize = 14.sp,
+            )
+        }
+        Row(
+            modifier = Modifier.padding(top = 8.dp),
         ) {
-            if (state.isLoading) {
-                CircularProgressIndicator(
-                    color = Color.White,
-                    modifier = Modifier.size(32.dp)
+            Button(
+                onClick = onDismissRequest,
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Transparent,
+                    contentColor = MaterialTheme.colorScheme.primary
                 )
-            } else {
+            ) {
                 Text(
-                    text = stringResource(id = R.string.change_password),
-                    fontSize = 20.sp,
-                    color = MaterialTheme.colorScheme.onPrimary
+                    text = stringResource(id = R.string.cancel),
+                    fontSize = 16.sp
                 )
+            }
+            Button(
+                onClick = onButtonClick,
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                if (state.isLoading) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(32.dp)
+                    )
+                } else {
+                    Text(
+                        text = stringResource(id = R.string.change_password),
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
             }
         }
     }

@@ -54,6 +54,8 @@ class ArticlesActivity : ComponentActivity() {
         startActivity(Intent(this, AuthenticationActivity::class.java))
     }
 
+    private fun onAccountDelete() = onSignOut()
+
     @Composable
     fun Application(
         modifier: Modifier = Modifier
@@ -71,6 +73,9 @@ class ArticlesActivity : ComponentActivity() {
             },
             onSignOut = {
                 onSignOut()
+            },
+            onAccountDelete = {
+                onAccountDelete()
             }
         )
     }

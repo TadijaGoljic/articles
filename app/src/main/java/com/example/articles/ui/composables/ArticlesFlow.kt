@@ -17,6 +17,7 @@ import com.example.articles.viewmodels.AddNewArticleViewModel.Companion.KEY_LOCA
 @Composable
 fun ArticlesNavigationFlow(
     onSignOut: () -> Unit,
+    onAccountDelete: () -> Unit,
     moveTaskToBackground: () -> Unit,
     onOpenNavigation: (Location) -> Unit,
     modifier: Modifier = Modifier
@@ -75,7 +76,8 @@ fun ArticlesNavigationFlow(
                 onSignOut = onSignOut,
                 onBackClick = {
                     navController.popBackStack()
-                }
+                },
+                onAccountDelete = onAccountDelete
             )
         }
     }
