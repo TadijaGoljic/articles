@@ -48,6 +48,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.articles.R
+import com.example.articles.ui.composables.utils.Position
+import com.example.articles.ui.composables.utils.SettingsItem
+import com.example.articles.ui.composables.utils.SettingsSwitchItem
 import com.example.articles.ui.composables.utils.Toolbar
 import com.example.articles.viewmodels.SettingsState
 import com.example.articles.viewmodels.SettingsViewModel
@@ -209,64 +212,16 @@ fun SettingsScreen(
                     .padding(horizontal = 14.dp)
                     .padding(bottom = 2.dp)
             )
-            SettingsItem(
+            SettingsSwitchItem(
                 label = stringResource(id = R.string.enable_notifications),
-                onItemClick = {},
+                onItemClick = settingsViewModel::onNotificationsSwitchClick,
+                checked = state.notificationsEnabled,
                 position = Position.SINGLE,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
         }
     }
 
-}
-
-@Composable
-fun SettingsItem(
-    label: String,
-    onItemClick: () -> Unit,
-    position: Position,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .clip(
-                when (position) {
-                    Position.SINGLE -> RoundedCornerShape(size = 10.dp)
-                    Position.TOP -> RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp)
-                    Position.MIDDLE -> RoundedCornerShape(size = 0.dp)
-                    Position.BOTTOM -> RoundedCornerShape(bottomStart = 10.dp, bottomEnd = 10.dp)
-                }
-            )
-            .background(color = MaterialTheme.colorScheme.surface)
-            .clickable {
-                onItemClick()
-            }
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = modifier
-                .height(height = 48.dp)
-        ) {
-            Text(
-                text = label,
-                fontSize = 20.sp,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = label,
-                tint = MaterialTheme.colorScheme.onBackground
-            )
-        }
-        if (position != Position.SINGLE && position != Position.BOTTOM) {
-            HorizontalDivider(modifier = Modifier.fillMaxWidth())
-        }
-    }
-}
-
-enum class Position {
-    TOP, MIDDLE, BOTTOM, SINGLE
 }
 
 @Composable
