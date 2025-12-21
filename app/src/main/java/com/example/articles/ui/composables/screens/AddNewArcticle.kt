@@ -119,7 +119,7 @@ fun AddNewArticle(
             if (success) {
                 val index = savedStateHandle?.get<Int>(KEY_INDEX)
                     ?: return@rememberLauncherForActivityResult
-                savePhoto(uri as Uri, index)
+                savePhoto(uri, index)
             }
         }
     )

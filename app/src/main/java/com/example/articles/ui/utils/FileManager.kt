@@ -29,11 +29,11 @@ class FileManager @Inject constructor(
         context.grantUriPermission(context.packageName, uri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
         return uri
     }
+
     fun getFileFromUri(context: Context, uri: Uri): File? {
         val inputStream = context.contentResolver.openInputStream(uri) ?: return null
         val tempFile = File.createTempFile("temp", null, context.cacheDir)
         tempFile.outputStream().use { output -> inputStream.copyTo(output) }
         return tempFile
     }
-
 }

@@ -9,6 +9,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -46,6 +47,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -57,6 +59,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.articles.R
+import com.example.articles.ui.composables.utils.Logos
+import com.example.articles.ui.composables.utils.ProgressButton
 import com.example.articles.viewmodels.AuthenticationState
 import com.example.articles.viewmodels.SignInState
 import com.example.articles.viewmodels.SignInViewModel
@@ -155,62 +159,20 @@ fun SignInPortrait(
             .imePadding(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.app_icon),
-                contentDescription = stringResource(id = R.string.app_name),
-                modifier = Modifier.size(30.dp)
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = stringResource(id = R.string.app_name),
-                fontWeight = FontWeight.Bold,
-                fontSize = 32.sp,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-        }
-        Image(
-            painter = painterResource(id = R.drawable.icon_sign_in),
-            contentDescription = stringResource(id = R.string.sign_in),
-            modifier = Modifier.padding(vertical = 20.dp)
+        Logos(
+            showBlue = true,
+            showGreen = true
         )
-        AnimatedContent(
-            targetState = state.authenticationState,
-            transitionSpec = {
-                val direction = if (targetState.ordinal > initialState.ordinal) 1 else -1
-                slideInHorizontally(
-                    animationSpec = tween(300)
-                ) { fullWidth -> fullWidth * direction } togetherWith
-                        slideOutHorizontally(
-                            animationSpec = tween(300)
-                        ) { fullWidth -> -fullWidth * direction }
-            },
-        ) { target ->
-            when (target) {
-                AuthenticationState.SIGN_IN -> SignIn(
-                    state = state,
-                    onEmailChange = onEmailChange,
-                    onPasswordChange = onPasswordChange,
-                    onButtonClick = onSignInClick,
-                    passwordFocusRequester = passwordFocusRequester,
-                    updateAuthenticationState = updateAuthenticationState,
-                )
-                AuthenticationState.SIGN_UP -> SignUp(
-                    state = state,
-                    onEmailChange = onEmailChange,
-                    onPasswordChange = onPasswordChange,
-                    onButtonClick = onSignUpClick,
-                    passwordFocusRequester = passwordFocusRequester,
-                )
-                AuthenticationState.FORGOT_PASSWORD -> ForgotPassword(
-                    state = state,
-                    onEmailChange = onEmailChange,
-                    onButtonClick = onForgotPasswordClick,
-                )
-            }
-        }
+        SignInScreenAction(
+            state = state,
+            onEmailChange = onEmailChange,
+            onPasswordChange = onPasswordChange,
+            onSignInClick = onSignInClick,
+            onSignUpClick = onSignUpClick,
+            onForgotPasswordClick = onForgotPasswordClick,
+            updateAuthenticationState = updateAuthenticationState,
+            passwordFocusRequester = passwordFocusRequester,
+        )
     }
 }
 
@@ -236,26 +198,9 @@ fun SignInLandscape(
                 .weight(1f),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.app_icon),
-                    contentDescription = stringResource(id = R.string.app_name),
-                    modifier = Modifier.size(30.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = stringResource(id = R.string.app_name),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 32.sp,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-            }
-            Image(
-                painter = painterResource(id = R.drawable.icon_sign_in),
-                contentDescription = stringResource(id = R.string.sign_in),
-                modifier = Modifier.padding(vertical = 20.dp)
+            Logos(
+                showBlue = true,
+                showGreen = true
             )
         }
         Column(
@@ -263,41 +208,66 @@ fun SignInLandscape(
                 .weight(1f)
                 .verticalScroll(rememberScrollState()),
         ) {
-            AnimatedContent(
-                targetState = state.authenticationState,
-                transitionSpec = {
-                    val direction = if (targetState.ordinal > initialState.ordinal) 1 else -1
-                    slideInHorizontally(
+            SignInScreenAction(
+                state = state,
+                onEmailChange = onEmailChange,
+                onPasswordChange = onPasswordChange,
+                onSignInClick = onSignInClick,
+                onSignUpClick = onSignUpClick,
+                onForgotPasswordClick = onForgotPasswordClick,
+                updateAuthenticationState = updateAuthenticationState,
+                passwordFocusRequester = passwordFocusRequester,
+            )
+        }
+    }
+}
+
+@Composable
+fun SignInScreenAction(
+    state: SignInState,
+    onEmailChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit,
+    onSignInClick: () -> Unit,
+    onSignUpClick: () -> Unit,
+    onForgotPasswordClick: () -> Unit,
+    updateAuthenticationState: (AuthenticationState) -> Unit,
+    passwordFocusRequester: FocusRequester,
+    modifier: Modifier = Modifier
+) {
+    AnimatedContent(
+        modifier = modifier,
+        targetState = state.authenticationState,
+        transitionSpec = {
+            val direction = if (targetState.ordinal > initialState.ordinal) 1 else -1
+            slideInHorizontally(
+                animationSpec = tween(300)
+            ) { fullWidth -> fullWidth * direction } togetherWith
+                    slideOutHorizontally(
                         animationSpec = tween(300)
-                    ) { fullWidth -> fullWidth * direction } togetherWith
-                            slideOutHorizontally(
-                                animationSpec = tween(300)
-                            ) { fullWidth -> -fullWidth * direction }
-                },
-            ) { target ->
-                when (target) {
-                    AuthenticationState.SIGN_IN -> SignIn(
-                        state = state,
-                        onEmailChange = onEmailChange,
-                        onPasswordChange = onPasswordChange,
-                        onButtonClick = onSignInClick,
-                        passwordFocusRequester = passwordFocusRequester,
-                        updateAuthenticationState = updateAuthenticationState,
-                    )
-                    AuthenticationState.SIGN_UP -> SignUp(
-                        state = state,
-                        onEmailChange = onEmailChange,
-                        onPasswordChange = onPasswordChange,
-                        onButtonClick = onSignUpClick,
-                        passwordFocusRequester = passwordFocusRequester,
-                    )
-                    AuthenticationState.FORGOT_PASSWORD -> ForgotPassword(
-                        state = state,
-                        onEmailChange = onEmailChange,
-                        onButtonClick = onForgotPasswordClick,
-                    )
-                }
-            }
+                    ) { fullWidth -> -fullWidth * direction }
+        },
+    ) { target ->
+        when (target) {
+            AuthenticationState.SIGN_IN -> SignIn(
+                state = state,
+                onEmailChange = onEmailChange,
+                onPasswordChange = onPasswordChange,
+                onButtonClick = onSignInClick,
+                passwordFocusRequester = passwordFocusRequester,
+                updateAuthenticationState = updateAuthenticationState,
+            )
+            AuthenticationState.SIGN_UP -> SignUp(
+                state = state,
+                onEmailChange = onEmailChange,
+                onPasswordChange = onPasswordChange,
+                onButtonClick = onSignUpClick,
+                passwordFocusRequester = passwordFocusRequester,
+            )
+            AuthenticationState.FORGOT_PASSWORD -> ForgotPassword(
+                state = state,
+                onEmailChange = onEmailChange,
+                onButtonClick = onForgotPasswordClick,
+            )
         }
     }
 }
@@ -381,18 +351,15 @@ fun SignIn(
                 .focusRequester(passwordFocusRequester)
         )
         Spacer(modifier = Modifier.height(30.dp))
-        ClickableText(
+        Text(
             text = annotatedString,
-            onClick = { offset ->
-                annotatedString.getStringAnnotations(
-                    tag = SIGN_UP_TAG,
-                    start = offset,
-                    end = offset
-                ).firstOrNull()?.let { _ ->
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier
+                .clickable(
+                    role = Role.Button
+                ) {
                     updateAuthenticationState(AuthenticationState.SIGN_UP)
                 }
-            },
-            style = MaterialTheme.typography.bodyMedium
         )
         Spacer(modifier = Modifier.height(20.dp))
         TextButton(
@@ -406,28 +373,12 @@ fun SignIn(
                 fontSize = 16.sp
             )
         }
-        Spacer(modifier = Modifier.height(20.dp))
-        Button(
-            onClick = onButtonClick,
-            modifier = Modifier
-                .padding(bottom = 8.dp)
-                .fillMaxWidth()
-                .size(48.dp),
-            shape = RoundedCornerShape(10.dp)
-        ) {
-            if (state.isLoading) {
-                CircularProgressIndicator(
-                    color = Color.White,
-                    modifier = Modifier.size(32.dp)
-                )
-            } else {
-                Text(
-                    text = stringResource(id = R.string.sign_in),
-                    fontSize = 20.sp,
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-            }
-        }
+        Spacer(modifier = Modifier.height(height = 60.dp))
+        ProgressButton(
+            onButtonClick = onButtonClick,
+            isLoading = state.isLoading,
+            text = stringResource(id = R.string.sign_in)
+        )
     }
 
 }
@@ -498,28 +449,12 @@ fun SignUp(
                 .fillMaxWidth()
                 .focusRequester(passwordFocusRequester)
         )
-        Spacer(modifier = Modifier.height(135.dp))
-        Button(
-            onClick = onButtonClick,
-            modifier = Modifier
-                .padding(bottom = 8.dp)
-                .fillMaxWidth()
-                .size(48.dp),
-            shape = RoundedCornerShape(10.dp)
-        ) {
-            if (state.isLoading) {
-                CircularProgressIndicator(
-                    color = Color.White,
-                    modifier = Modifier.size(32.dp)
-                )
-            } else {
-                Text(
-                    text = stringResource(id = R.string.sign_up),
-                    fontSize = 20.sp,
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-            }
-        }
+        Spacer(modifier = Modifier.height(height = 179.dp))
+        ProgressButton(
+            onButtonClick = onButtonClick,
+            isLoading = state.isLoading,
+            text = stringResource(id = R.string.sign_up)
+        )
     }
 }
 
@@ -536,7 +471,7 @@ fun ForgotPassword(
     ) {
         Text(
             text = stringResource(id = R.string.forgot_password),
-            fontSize = 50.sp,
+            fontSize = 46.sp,
             color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(bottom = 8.dp)
         )
@@ -563,27 +498,11 @@ fun ForgotPassword(
             isError = state.errorMessage != null,
             modifier = Modifier.fillMaxWidth()
         )
-        Spacer(modifier = Modifier.height(196.dp))
-        Button(
-            onClick = onButtonClick,
-            modifier = Modifier
-                .padding(bottom = 8.dp)
-                .fillMaxWidth()
-                .size(48.dp),
-            shape = RoundedCornerShape(10.dp)
-        ) {
-            if (state.isLoading) {
-                CircularProgressIndicator(
-                    color = Color.White,
-                    modifier = Modifier.size(32.dp)
-                )
-            } else {
-                Text(
-                    text = stringResource(id = R.string.forgot_password),
-                    fontSize = 20.sp,
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-            }
-        }
+        Spacer(modifier = Modifier.height(height = 247.dp))
+        ProgressButton(
+            onButtonClick = onButtonClick,
+            isLoading = state.isLoading,
+            text = stringResource(id = R.string.forgot_password)
+        )
     }
 }

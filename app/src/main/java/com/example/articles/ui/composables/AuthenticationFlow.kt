@@ -1,15 +1,11 @@
 package com.example.articles.ui.composables
 
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.articles.ui.composables.screens.SignInScreen
-import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 @Composable
 fun AuthenticationNavigationFlow(
@@ -19,16 +15,6 @@ fun AuthenticationNavigationFlow(
 ) {
 
     val navController = rememberNavController()
-    val systemUiController = rememberSystemUiController()
-    val colors = MaterialTheme.colorScheme
-    val useDarkIcons = !isSystemInDarkTheme()
-
-    SideEffect {
-        systemUiController.setSystemBarsColor(
-            color = colors.surface,
-            darkIcons = useDarkIcons
-        )
-    }
 
     NavHost(
         navController = navController,

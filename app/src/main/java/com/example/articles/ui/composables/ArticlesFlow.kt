@@ -1,10 +1,7 @@
 package com.example.articles.ui.composables
 
 import android.annotation.SuppressLint
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -15,7 +12,6 @@ import com.example.articles.ui.composables.screens.LocationPicker
 import com.example.articles.ui.composables.screens.SettingsScreen
 import com.example.articles.viewmodels.Location
 import com.example.articles.viewmodels.AddNewArticleViewModel.Companion.KEY_LOCATION
-import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 @SuppressLint("RestrictedApi")
 @Composable
@@ -27,16 +23,6 @@ fun ArticlesNavigationFlow(
 ) {
 
     val navController = rememberNavController()
-    val systemUiController = rememberSystemUiController()
-    val colors = MaterialTheme.colorScheme
-    val useDarkIcons = !isSystemInDarkTheme()
-
-    SideEffect {
-        systemUiController.setSystemBarsColor(
-            color = colors.background,
-            darkIcons = useDarkIcons
-        )
-    }
 
     NavHost(
         navController = navController,

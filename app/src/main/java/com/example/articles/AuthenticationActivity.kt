@@ -7,7 +7,6 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -56,16 +55,13 @@ class AuthenticationActivity : ComponentActivity() {
     private fun Authentication(
         modifier: Modifier = Modifier
     ) {
-        Scaffold { innerPadding ->
-            AuthenticationNavigationFlow(
-                onAuthenticationComplete = { onAuthenticationComplete() },
-                onMoveToBackground = { onMoveToBackground() },
-                modifier = modifier
-                    .background(color = MaterialTheme.colorScheme.surface)
-                    .padding(innerPadding)
-                    .padding(top = 15.dp)
-            )
-        }
+        AuthenticationNavigationFlow(
+            onAuthenticationComplete = { onAuthenticationComplete() },
+            onMoveToBackground = { onMoveToBackground() },
+            modifier = modifier
+                .background(color = MaterialTheme.colorScheme.surface)
+                .padding(top = 15.dp)
+        )
     }
 
 }

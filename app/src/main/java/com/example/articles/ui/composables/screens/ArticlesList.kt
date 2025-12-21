@@ -113,9 +113,10 @@ fun ArticlesList(
                     if (state.shoppingModeActive) articlesListViewModel.stopShopping(deleteArticles = true)
                     else articlesListViewModel.startShopping(index = null)
                 },
+                trailingIconEnabled = state.articles.isNotEmpty(),
                 leadingIcon = Icons.Default.Settings,
-                color = MaterialTheme.colorScheme.onBackground,
-                onLeadingIconClick = onOpenSettings
+                onLeadingIconClick = onOpenSettings,
+                color = MaterialTheme.colorScheme.onBackground
             )
             LazyColumn {
                 itemsIndexed(state.articles) { index, article ->

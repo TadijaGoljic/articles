@@ -67,5 +67,9 @@ class SettingsViewModel @Inject constructor(
 data class SettingsState(
     val ok: Boolean = false,
     val showSignOutConfirmationDialog: Boolean = false,
-    val showDeleteAccountConfirmationDialog: Boolean = false
+    val showDeleteAccountConfirmationDialog: Boolean = false,
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null,
+    val oldPassword: String = "",
+    val newPassword: String = ""
 )

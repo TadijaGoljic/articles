@@ -26,7 +26,8 @@ fun Toolbar(
     leadingIcon: ImageVector? = null,
     onLeadingIconClick: (() -> Unit)? = null,
     trailingIcon: ImageVector? = null,
-    onTrailingIconClick: (() -> Unit)? = null
+    onTrailingIconClick: (() -> Unit)? = null,
+    trailingIconEnabled: Boolean = true
 ) {
     Box(
         modifier = modifier
@@ -67,7 +68,8 @@ fun Toolbar(
                     .align(Alignment.CenterEnd),
                 colors = IconButtonDefaults.iconButtonColors(
                     contentColor = color
-                )
+                ),
+                enabled = trailingIconEnabled
             ) {
                 Icon(
                     imageVector = trailingIcon,
