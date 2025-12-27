@@ -4,13 +4,15 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -18,10 +20,11 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.ChevronLeft
@@ -51,12 +54,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavHostController
@@ -67,6 +71,7 @@ import com.example.articles.models.UIArticle
 import com.example.articles.ui.composables.utils.Toolbar
 import com.example.articles.ui.utils.copyUriToUri
 import com.example.articles.ui.utils.isInteger
+import com.example.articles.ui.utils.pressClickEffect
 import com.example.articles.viewmodels.AddNewArticleViewModel
 import com.example.articles.viewmodels.AddNewArticleViewModel.Companion.KEY_INDEX
 import com.example.articles.viewmodels.AddNewArticleViewModel.Companion.KEY_LOCATION
@@ -85,7 +90,7 @@ fun AddNewArticle(
 ) {
 
     val state by addNewArticleViewModel.uiState.collectAsState()
-    val scrollState = rememberScrollState()
+    val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
 
     val savedStateHandle = navController.currentBackStackEntry?.savedStateHandle
@@ -154,24 +159,31 @@ fun AddNewArticle(
             onTrailingIconClick = {
                 addNewArticleViewModel.addNewArticle()
                 coroutineScope.launch {
-                    scrollState.animateScrollTo(scrollState.maxValue)
+                    listState.animateScrollToItem(state.articles.size)
                 }
             },
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = if (keyboardController != null) Modifier.padding() else Modifier,
+            modifier = (if (keyboardController != null) Modifier.padding() else Modifier)
+                .pressClickEffect(),
         )
-        Box {
-            Column(
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+        ) {
+            LazyColumn(
+                state = listState,
+                contentPadding = PaddingValues(start = 18.dp, end = 18.dp, bottom = 80.dp),
                 modifier = Modifier
-                    .fillMaxHeight()
-                    .verticalScroll(scrollState)
-                    .padding(horizontal = 18.dp)
+                    .fillMaxSize()
                     .imePadding()
                     .widthIn(max = 450.dp)
                     .align(Alignment.TopCenter),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                state.articles.forEachIndexed { index, article ->
+                itemsIndexed(
+                    items = state.articles,
+                    key = { _, article -> article.id }
+                ) { index, article ->
                     AddNewArticleItem(
                         article = article,
                         onNameChange = {
@@ -194,16 +206,16 @@ fun AddNewArticle(
                             addNewArticleViewModel.updateQuantity(index, it)
                         },
                         onLocationPickerClick = {
-                            savedStateHandle?.set("index", index)
+                            savedStateHandle?.set(KEY_INDEX, index)
                             onLocationPickerClick()
                         },
                         onOpenCameraClick = {
-                            savedStateHandle?.set("index", index)
+                            savedStateHandle?.set(KEY_INDEX, index)
                             uri = addNewArticleViewModel.photoUri()
                             cameraLauncher.launch(uri)
                         },
                         onChooseImageClick = {
-                            savedStateHandle?.set("index", index)
+                            savedStateHandle?.set(KEY_INDEX, index)
                             pickImage.launch("image/*")
                         },
                         onSeePhotoClick = {
@@ -211,34 +223,25 @@ fun AddNewArticle(
                         },
                         enableRemoveOption = state.articles.size > 1,
                         modifier = Modifier
+                            .animateItem()
                             .padding(vertical = 5.dp)
                     )
                 }
-                AnimatedVisibility(visible = state.message != null) {
-                    state.message?.let { error ->
-                        Text(
-                            text = stringResource(error),
-                            color = Color.Red,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.weight(1f))
-                Button(
-                    onClick = {
-                        addNewArticleViewModel.save()
-                    },
-                    modifier = Modifier
-                        .padding(bottom = 10.dp),
-                ) {
-                    Text(
-                        text = stringResource(id = R.string.save),
-                        color = Color.White
-                    )
-                }
+            }
+            Button(
+                onClick = { addNewArticleViewModel.save() },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 10.dp)
+                    .pressClickEffect()
+            ) {
+                Text(
+                    text = stringResource(id = R.string.save),
+                    color = Color.White
+                )
             }
         }
+
     }
 
 }
@@ -299,6 +302,7 @@ fun AddNewArticleItem(
                 IconButton(
                     onClick = onRemoveClick,
                     enabled = enableRemoveOption,
+                    modifier = Modifier.pressClickEffect()
                 ) {
                     Icon(
                         imageVector = Icons.Default.Remove,
