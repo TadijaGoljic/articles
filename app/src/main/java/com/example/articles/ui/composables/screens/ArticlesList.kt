@@ -54,6 +54,7 @@ import com.example.articles.models.UIArticle
 import com.example.articles.ui.utils.DateUnit
 import com.example.articles.ui.composables.utils.Toolbar
 import com.example.articles.ui.utils.isInteger
+import com.example.articles.ui.utils.pressClickEffect
 import com.example.articles.ui.utils.toUIDate
 import com.example.articles.viewmodels.ArticlesListViewModel
 import com.example.articles.viewmodels.Location
@@ -136,9 +137,6 @@ fun ArticlesList(
                         onShoppingModeClick = {
                             articlesListViewModel.startShopping(index = index)
                         },
-                        onEditClick = {
-
-                        },
                         modifier = Modifier
                             .padding(horizontal = 16.dp, vertical = 8.dp)
                     )
@@ -159,7 +157,6 @@ fun ArticleItem(
     onItemBought: () -> Unit,
     shoppingModeRunning: Boolean,
     onShoppingModeClick: (Boolean) -> Unit,
-    onEditClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
 
@@ -198,13 +195,14 @@ fun ArticleItem(
             .clip(shape = RoundedCornerShape(10.dp))
             .background(color = MaterialTheme.colorScheme.surface)
             .combinedClickable(
-                onDoubleClick = onItemBought,
+                onDoubleClick = {
+                    if (shoppingModeRunning) onItemBought()
+                },
                 onLongClick = {
                     onShoppingModeClick(true)
                 },
                 onClick = {
                     if (shoppingModeRunning) onCheckChange(!article.checked)
-                    else onEditClick()
                 }
             )
             .padding(8.dp)

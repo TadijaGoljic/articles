@@ -1,5 +1,7 @@
 package com.example.articles.ui.composables
 
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
@@ -16,16 +18,18 @@ fun AuthenticationNavigationFlow(
 
     val navController = rememberNavController()
 
-    NavHost(
-        navController = navController,
-        startDestination = AuthenticationDestinations.SIGN_IN,
-        modifier = modifier
-    ) {
-        composable(route = AuthenticationDestinations.SIGN_IN) {
-            SignInScreen(
-                onAuthenticationComplete = onAuthenticationComplete,
-                onMoveToBackground = onMoveToBackground
-            )
+    Scaffold { innerPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = AuthenticationDestinations.SIGN_IN,
+            modifier = modifier.padding(innerPadding)
+        ) {
+            composable(route = AuthenticationDestinations.SIGN_IN) {
+                SignInScreen(
+                    onAuthenticationComplete = onAuthenticationComplete,
+                    onMoveToBackground = onMoveToBackground
+                )
+            }
         }
     }
 

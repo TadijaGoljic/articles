@@ -7,29 +7,23 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -45,12 +39,10 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -120,6 +112,7 @@ fun SignInScreen(
             onForgotPasswordClick = signInViewModel::forgotPassword,
             updateAuthenticationState = signInViewModel::updateAuthenticationState,
             passwordFocusRequester = passwordFocusRequester,
+            authenticationState = state.authenticationState,
             modifier = modifier
         )
     } else {
@@ -132,6 +125,7 @@ fun SignInScreen(
             onForgotPasswordClick = signInViewModel::forgotPassword,
             updateAuthenticationState = signInViewModel::updateAuthenticationState,
             passwordFocusRequester = passwordFocusRequester,
+            authenticationState = state.authenticationState,
             modifier = modifier
         )
     }
@@ -148,12 +142,12 @@ fun SignInPortrait(
     onForgotPasswordClick: () -> Unit,
     updateAuthenticationState: (AuthenticationState) -> Unit,
     passwordFocusRequester: FocusRequester,
+    authenticationState: AuthenticationState,
     modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
             .background(color = MaterialTheme.colorScheme.surface)
             .padding(horizontal = 20.dp)
             .imePadding(),
@@ -161,9 +155,12 @@ fun SignInPortrait(
     ) {
         Logos(
             showBlue = true,
-            showGreen = true
+            showGreen = true,
+            showLeadingIcon = authenticationState != AuthenticationState.SIGN_IN,
+            onBackClick = { updateAuthenticationState(AuthenticationState.SIGN_IN) }
         )
         SignInScreenAction(
+            modifier = Modifier.weight(1f),
             state = state,
             onEmailChange = onEmailChange,
             onPasswordChange = onPasswordChange,
@@ -172,6 +169,7 @@ fun SignInPortrait(
             onForgotPasswordClick = onForgotPasswordClick,
             updateAuthenticationState = updateAuthenticationState,
             passwordFocusRequester = passwordFocusRequester,
+            isPortrait = true
         )
     }
 }
@@ -186,6 +184,7 @@ fun SignInLandscape(
     onForgotPasswordClick: () -> Unit,
     updateAuthenticationState: (AuthenticationState) -> Unit,
     passwordFocusRequester: FocusRequester,
+    authenticationState: AuthenticationState,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -200,15 +199,16 @@ fun SignInLandscape(
         ) {
             Logos(
                 showBlue = true,
-                showGreen = true
+                showGreen = true,
+                showLeadingIcon = authenticationState != AuthenticationState.SIGN_IN,
+                onBackClick = { updateAuthenticationState(AuthenticationState.SIGN_IN) }
             )
         }
         Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState()),
+            modifier = Modifier.weight(1f)
         ) {
             SignInScreenAction(
+                modifier = Modifier.fillMaxSize(),
                 state = state,
                 onEmailChange = onEmailChange,
                 onPasswordChange = onPasswordChange,
@@ -217,6 +217,7 @@ fun SignInLandscape(
                 onForgotPasswordClick = onForgotPasswordClick,
                 updateAuthenticationState = updateAuthenticationState,
                 passwordFocusRequester = passwordFocusRequester,
+                isPortrait = false
             )
         }
     }
@@ -232,6 +233,7 @@ fun SignInScreenAction(
     onForgotPasswordClick: () -> Unit,
     updateAuthenticationState: (AuthenticationState) -> Unit,
     passwordFocusRequester: FocusRequester,
+    isPortrait: Boolean,
     modifier: Modifier = Modifier
 ) {
     AnimatedContent(
@@ -255,6 +257,7 @@ fun SignInScreenAction(
                 onButtonClick = onSignInClick,
                 passwordFocusRequester = passwordFocusRequester,
                 updateAuthenticationState = updateAuthenticationState,
+                isPortrait = isPortrait
             )
             AuthenticationState.SIGN_UP -> SignUp(
                 state = state,
@@ -280,6 +283,7 @@ fun SignIn(
     onButtonClick: () -> Unit,
     updateAuthenticationState: (AuthenticationState) -> Unit,
     passwordFocusRequester: FocusRequester,
+    isPortrait: Boolean,
     modifier: Modifier = Modifier
 ) {
 
@@ -294,96 +298,134 @@ fun SignIn(
     }
 
     Column(
-        modifier = modifier.fillMaxHeight(),
+        modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = stringResource(id = R.string.sign_in),
-            fontSize = 50.sp,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-        OutlinedTextField(
-            value = state.email,
-            onValueChange = onEmailChange,
-            placeholder = {
-                Text(text = stringResource(id = R.string.email))
-            },
-            label = {
-                Text(text = stringResource(id = R.string.email))
-            },
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Email,
-                imeAction = ImeAction.Next
-            ),
-            keyboardActions = KeyboardActions(
-                onNext = {
-                    passwordFocusRequester.requestFocus()
-                }
-            ),
-            singleLine = true,
-            maxLines = 1,
-            isError = state.errorMessage != null,
-            modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = state.password,
-            onValueChange = onPasswordChange,
-            placeholder = {
-                Text(text = stringResource(id = R.string.password))
-            },
-            label = {
-                Text(text = stringResource(id = R.string.password))
-            },
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Password,
-                imeAction = ImeAction.Done
-            ),
-            keyboardActions = KeyboardActions(
-                onDone = {
-                    onButtonClick()
-                }
-            ),
-            visualTransformation = PasswordVisualTransformation(),
-            singleLine = true,
-            maxLines = 1,
-            isError = state.errorMessage != null,
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .focusRequester(passwordFocusRequester)
-        )
-        Spacer(modifier = Modifier.height(30.dp))
-        Text(
-            text = annotatedString,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier
-                .clickable(
-                    role = Role.Button
-                ) {
-                    updateAuthenticationState(AuthenticationState.SIGN_UP)
-                }
-        )
-        Spacer(modifier = Modifier.height(20.dp))
-        TextButton(
-            onClick = {
-                updateAuthenticationState(AuthenticationState.FORGOT_PASSWORD)
-            }
+                .weight(1f)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = stringResource(id = R.string.forgot_password),
-                color = Color.Gray,
-                fontSize = 16.sp
+                text = stringResource(id = R.string.sign_in),
+                fontSize = 50.sp,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.padding(bottom = 8.dp)
             )
+            OutlinedTextField(
+                value = state.email,
+                onValueChange = onEmailChange,
+                placeholder = {
+                    Text(text = stringResource(id = R.string.email))
+                },
+                label = {
+                    Text(text = stringResource(id = R.string.email))
+                },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email,
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = {
+                        passwordFocusRequester.requestFocus()
+                    }
+                ),
+                singleLine = true,
+                maxLines = 1,
+                isError = state.errorMessage != null,
+                modifier = Modifier.fillMaxWidth()
+            )
+            OutlinedTextField(
+                value = state.password,
+                onValueChange = onPasswordChange,
+                placeholder = {
+                    Text(text = stringResource(id = R.string.password))
+                },
+                label = {
+                    Text(text = stringResource(id = R.string.password))
+                },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        onButtonClick()
+                    }
+                ),
+                visualTransformation = PasswordVisualTransformation(),
+                singleLine = true,
+                maxLines = 1,
+                isError = state.errorMessage != null,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(passwordFocusRequester)
+            )
+            if (isPortrait) {
+                Spacer(modifier = Modifier.height(30.dp))
+                Text(
+                    text = annotatedString,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = modifier
+                        .clickable(
+                            role = Role.Button
+                        ) {
+                            updateAuthenticationState(AuthenticationState.SIGN_UP)
+                        }
+                )
+                Spacer(modifier = Modifier.height(15.dp))
+                TextButton(
+                    onClick = {
+                        updateAuthenticationState(AuthenticationState.FORGOT_PASSWORD)
+                    }
+                ) {
+                    Text(
+                        text = stringResource(id = R.string.forgot_password),
+                        color = Color.Gray,
+                        fontSize = 16.sp
+                    )
+                }
+            } else {
+                Spacer(modifier = Modifier.height(15.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = annotatedString,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = modifier
+                            .clickable(
+                                role = Role.Button
+                            ) {
+                                updateAuthenticationState(AuthenticationState.SIGN_UP)
+                            }
+                    )
+                    Spacer(modifier = Modifier.width(20.dp))
+                    TextButton(
+                        onClick = {
+                            updateAuthenticationState(AuthenticationState.FORGOT_PASSWORD)
+                        }
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.forgot_password),
+                            color = Color.Gray,
+                            fontSize = 16.sp
+                        )
+                    }
+                }
+            }
         }
-        Spacer(modifier = Modifier.height(height = 60.dp))
         ProgressButton(
             onButtonClick = onButtonClick,
             isLoading = state.isLoading,
-            text = stringResource(id = R.string.sign_in)
+            text = stringResource(id = R.string.sign_in),
+            modifier = Modifier.padding(bottom = 10.dp)
         )
     }
-
 }
+
 
 @Composable
 fun SignUp(
@@ -395,69 +437,76 @@ fun SignUp(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier,
+        modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = stringResource(id = R.string.sign_up),
-            fontSize = 50.sp,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-        OutlinedTextField(
-            value = state.email,
-            onValueChange = onEmailChange,
-            placeholder = {
-                Text(text = stringResource(id = R.string.email))
-            },
-            label = {
-                Text(text = stringResource(id = R.string.email))
-            },
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Email,
-                imeAction = ImeAction.Next
-            ),
-            keyboardActions = KeyboardActions(
-                onNext = {
-                    passwordFocusRequester.requestFocus()
-                }
-            ),
-            singleLine = true,
-            maxLines = 1,
-            isError = state.errorMessage != null,
-            modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = state.password,
-            onValueChange = onPasswordChange,
-            placeholder = {
-                Text(text = stringResource(id = R.string.password))
-            },
-            label = {
-                Text(text = stringResource(id = R.string.password))
-            },
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Password,
-                imeAction = ImeAction.Done
-            ),
-            keyboardActions = KeyboardActions(
-                onDone = {
-                    onButtonClick()
-                }
-            ),
-            visualTransformation = PasswordVisualTransformation(),
-            singleLine = true,
-            maxLines = 1,
-            isError = state.errorMessage != null,
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .focusRequester(passwordFocusRequester)
-        )
-        Spacer(modifier = Modifier.height(height = 179.dp))
+                .weight(1f)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = stringResource(id = R.string.sign_up),
+                fontSize = 50.sp,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            OutlinedTextField(
+                value = state.email,
+                onValueChange = onEmailChange,
+                placeholder = {
+                    Text(text = stringResource(id = R.string.email))
+                },
+                label = {
+                    Text(text = stringResource(id = R.string.email))
+                },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email,
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = {
+                        passwordFocusRequester.requestFocus()
+                    }
+                ),
+                singleLine = true,
+                maxLines = 1,
+                isError = state.errorMessage != null,
+                modifier = Modifier.fillMaxWidth()
+            )
+            OutlinedTextField(
+                value = state.password,
+                onValueChange = onPasswordChange,
+                placeholder = {
+                    Text(text = stringResource(id = R.string.password))
+                },
+                label = {
+                    Text(text = stringResource(id = R.string.password))
+                },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        onButtonClick()
+                    }
+                ),
+                visualTransformation = PasswordVisualTransformation(),
+                singleLine = true,
+                maxLines = 1,
+                isError = state.errorMessage != null,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(passwordFocusRequester)
+            )
+        }
         ProgressButton(
             onButtonClick = onButtonClick,
             isLoading = state.isLoading,
-            text = stringResource(id = R.string.sign_up)
+            text = stringResource(id = R.string.sign_up),
+            modifier = Modifier.padding(bottom = 10.dp)
         )
     }
 }
@@ -470,43 +519,50 @@ fun ForgotPassword(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier,
+        modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = stringResource(id = R.string.forgot_password),
-            fontSize = 46.sp,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-        OutlinedTextField(
-            value = state.email,
-            onValueChange = onEmailChange,
-            placeholder = {
-                Text(text = stringResource(id = R.string.email))
-            },
-            label = {
-                Text(text = stringResource(id = R.string.email))
-            },
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Email,
-                imeAction = ImeAction.Done
-            ),
-            keyboardActions = KeyboardActions(
-                onDone = {
-                    onButtonClick()
-                }
-            ),
-            singleLine = true,
-            maxLines = 1,
-            isError = state.errorMessage != null,
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(height = 247.dp))
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = stringResource(id = R.string.forgot_password),
+                fontSize = 46.sp,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            OutlinedTextField(
+                value = state.email,
+                onValueChange = onEmailChange,
+                placeholder = {
+                    Text(text = stringResource(id = R.string.email))
+                },
+                label = {
+                    Text(text = stringResource(id = R.string.email))
+                },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        onButtonClick()
+                    }
+                ),
+                singleLine = true,
+                maxLines = 1,
+                isError = state.errorMessage != null,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
         ProgressButton(
             onButtonClick = onButtonClick,
             isLoading = state.isLoading,
-            text = stringResource(id = R.string.forgot_password)
+            text = stringResource(id = R.string.forgot_password),
+            modifier = Modifier.padding(bottom = 10.dp)
         )
     }
 }

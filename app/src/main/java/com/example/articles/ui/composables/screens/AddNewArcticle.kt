@@ -223,7 +223,7 @@ fun AddNewArticle(
                         },
                         enableRemoveOption = state.articles.size > 1,
                         modifier = Modifier
-                            .animateItem()
+                            .pressClickEffect()
                             .padding(vertical = 5.dp)
                     )
                 }

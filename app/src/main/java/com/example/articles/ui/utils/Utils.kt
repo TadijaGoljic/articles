@@ -14,14 +14,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.input.pointer.pointerInput
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.ByteArrayOutputStream
 import java.util.Date
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 import androidx.core.graphics.scale
-import androidx.core.net.toUri
-import java.io.File
 
 fun Double.isInteger(): Boolean = this % 1 == 0.0
 

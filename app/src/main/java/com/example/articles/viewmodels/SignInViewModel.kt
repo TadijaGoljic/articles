@@ -19,7 +19,6 @@ class SignInViewModel @Inject constructor(
 
 ) : ViewModel() {
 
-
     companion object {
         const val SIGN_UP_TAG = "SIGN_UP"
     }
@@ -154,7 +153,7 @@ class SignInViewModel @Inject constructor(
 
 data class SignInState(
     val email: String = "tadijagoljic@gmail.com",
-    val password: String = "televizor",
+    val password: String = "oooooo",
     val authenticationState: AuthenticationState = AuthenticationState.SIGN_IN,
     val errorMessage: String? = null,
     @StringRes val errorTitle: Int? = null,
