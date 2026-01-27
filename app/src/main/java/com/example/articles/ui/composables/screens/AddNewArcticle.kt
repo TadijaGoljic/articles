@@ -71,7 +71,6 @@ import com.example.articles.models.UIArticle
 import com.example.articles.ui.composables.utils.Toolbar
 import com.example.articles.ui.utils.copyUriToUri
 import com.example.articles.ui.utils.isInteger
-import com.example.articles.ui.utils.pressClickEffect
 import com.example.articles.viewmodels.AddNewArticleViewModel
 import com.example.articles.viewmodels.AddNewArticleViewModel.Companion.KEY_INDEX
 import com.example.articles.viewmodels.AddNewArticleViewModel.Companion.KEY_LOCATION
@@ -163,8 +162,7 @@ fun AddNewArticle(
                 }
             },
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = (if (keyboardController != null) Modifier.padding() else Modifier)
-                .pressClickEffect(),
+            modifier = if (keyboardController != null) Modifier.padding() else Modifier
         )
         Box(
             modifier = Modifier
@@ -172,11 +170,10 @@ fun AddNewArticle(
         ) {
             LazyColumn(
                 state = listState,
-                contentPadding = PaddingValues(start = 18.dp, end = 18.dp, bottom = 80.dp),
+                contentPadding = PaddingValues(horizontal = 18.dp),
                 modifier = Modifier
                     .fillMaxSize()
-                    .imePadding()
-                    .widthIn(max = 450.dp)
+                    .padding(bottom = 80.dp)
                     .align(Alignment.TopCenter),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
@@ -223,7 +220,7 @@ fun AddNewArticle(
                         },
                         enableRemoveOption = state.articles.size > 1,
                         modifier = Modifier
-                            .pressClickEffect()
+                            .animateItem()
                             .padding(vertical = 5.dp)
                     )
                 }
@@ -233,7 +230,6 @@ fun AddNewArticle(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = 10.dp)
-                    .pressClickEffect()
             ) {
                 Text(
                     text = stringResource(id = R.string.save),
@@ -285,7 +281,8 @@ fun AddNewArticleItem(
                             else Icons.Filled.ChevronRight,
                         contentDescription =
                             if (article.expanded) stringResource(id = R.string.collapse)
-                            else stringResource(id = R.string.expand)
+                            else stringResource(id = R.string.expand),
+                        tint = if (isSystemInDarkTheme()) Color.White else Color.Black
                     )
                 }
                 OutlinedTextField(
@@ -302,11 +299,11 @@ fun AddNewArticleItem(
                 IconButton(
                     onClick = onRemoveClick,
                     enabled = enableRemoveOption,
-                    modifier = Modifier.pressClickEffect()
                 ) {
                     Icon(
                         imageVector = Icons.Default.Remove,
-                        contentDescription = stringResource(id = R.string.remove_article)
+                        contentDescription = stringResource(id = R.string.remove_article),
+                        tint = if (isSystemInDarkTheme()) Color.White else Color.Black
                     )
                 }
             }
@@ -387,7 +384,7 @@ fun AddNewArticleItem(
                         Icon(
                             imageVector = Icons.Filled.CameraAlt,
                             contentDescription = stringResource(id = R.string.take_a_photo),
-                            tint = if (article.isError) Color.Red else Color.Unspecified
+                            tint = if (article.isError) Color.Red else if (isSystemInDarkTheme()) Color.White else Color.Black
                         )
                     }
                     IconButton(
@@ -396,7 +393,7 @@ fun AddNewArticleItem(
                         Icon(
                             imageVector = Icons.Filled.Photo,
                             contentDescription = stringResource(id = R.string.choose_photo),
-                            tint = if (article.isError) Color.Red else Color.Unspecified
+                            tint = if (article.isError) Color.Red else if (isSystemInDarkTheme()) Color.White else Color.Black
                         )
                     }
                 }

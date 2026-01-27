@@ -5,6 +5,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -34,6 +36,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -42,6 +45,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -54,7 +58,6 @@ import com.example.articles.models.UIArticle
 import com.example.articles.ui.utils.DateUnit
 import com.example.articles.ui.composables.utils.Toolbar
 import com.example.articles.ui.utils.isInteger
-import com.example.articles.ui.utils.pressClickEffect
 import com.example.articles.ui.utils.toUIDate
 import com.example.articles.viewmodels.ArticlesListViewModel
 import com.example.articles.viewmodels.Location
@@ -119,27 +122,35 @@ fun ArticlesList(
                 onLeadingIconClick = onOpenSettings,
                 color = MaterialTheme.colorScheme.onBackground
             )
-            LazyColumn {
-                itemsIndexed(state.articles) { index, article ->
-                    ArticleItem(
-                        article = article,
-                        onOpenNavigation = onOpenNavigation,
-                        shoppingModeRunning = state.shoppingModeActive,
-                        onCheckChange = {
-                            articlesListViewModel.updateCheckStatus(index, it)
-                        },
-                        togglePhoto = {
-                            articlesListViewModel.togglePhoto(index)
-                        },
-                        onItemBought = {
-                            articlesListViewModel.buy(article)
-                        },
-                        onShoppingModeClick = {
-                            articlesListViewModel.startShopping(index = index)
-                        },
-                        modifier = Modifier
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
+            if (state.articles.isEmpty()) {
+                NoArticles()
+            } else {
+                LazyColumn {
+                    itemsIndexed(
+                        items = state.articles,
+                        key = { _, article -> article.id }
+                    ) { index, article ->
+                        ArticleItem(
+                            article = article,
+                            onOpenNavigation = onOpenNavigation,
+                            shoppingModeRunning = state.shoppingModeActive,
+                            onCheckChange = {
+                                articlesListViewModel.updateCheckStatus(index, it)
+                            },
+                            togglePhoto = {
+                                articlesListViewModel.togglePhoto(index)
+                            },
+                            onItemBought = {
+                                articlesListViewModel.buy(article)
+                            },
+                            onShoppingModeClick = {
+                                articlesListViewModel.startShopping(index = index)
+                            },
+                            modifier = Modifier
+                                .animateItem()
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
                 }
             }
         }
@@ -196,7 +207,7 @@ fun ArticleItem(
             .background(color = MaterialTheme.colorScheme.surface)
             .combinedClickable(
                 onDoubleClick = {
-                    if (shoppingModeRunning) onItemBought()
+                    if (!shoppingModeRunning) onItemBought()
                 },
                 onLongClick = {
                     onShoppingModeClick(true)
@@ -247,7 +258,8 @@ fun ArticleItem(
                     fontSize = 24.sp,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier
-                        .weight(1f)
+                        .weight(1f),
+                    maxLines = 1
                 )
                 IconButton(
                     onClick = {
@@ -294,4 +306,34 @@ fun ArticleItem(
         }
     }
 
+}
+
+@Composable
+fun NoArticles(
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(15.dp)
+            .height(78.dp)
+            .clip(shape = RoundedCornerShape(16.dp))
+    ) {
+        Column(
+            modifier = Modifier.padding(10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = stringResource(id = R.string.no_articles_title),
+                color = Color.Gray,
+                style = MaterialTheme.typography.titleMedium
+            )
+            Text(
+                text = stringResource(id = R.string.no_articles_message),
+                color = Color.Gray,
+                style = MaterialTheme.typography.labelMedium
+            )
+        }
+    }
 }

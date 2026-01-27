@@ -1,7 +1,6 @@
 package com.example.articles.ui.composables.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,13 +14,10 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -77,23 +73,17 @@ fun SettingsScreen(
 
     if (state.showSignOutConfirmationDialog) {
         AlertDialog(
-            onDismissRequest = {
-                settingsViewModel.hideSignOutConfirmationDialog()
-            },
+            onDismissRequest = settingsViewModel::hideSignOutConfirmationDialog,
             confirmButton = {
                 TextButton(
-                    onClick = {
-                        settingsViewModel.signOut()
-                    }
+                    onClick = settingsViewModel::signOut
                 ) {
                     Text(text = stringResource(id = R.string.ok))
                 }
             },
             dismissButton = {
                 TextButton(
-                    onClick = {
-                        settingsViewModel.hideSignOutConfirmationDialog()
-                    }
+                    onClick = settingsViewModel::hideSignOutConfirmationDialog
                 ) {
                     Text(text = stringResource(id = R.string.cancel))
                 }
@@ -103,29 +93,24 @@ fun SettingsScreen(
             },
             text = {
                 Text(text = stringResource(id = R.string.confirm_sign_out))
-            }
+            },
+            containerColor = MaterialTheme.colorScheme.surface
         )
     }
 
     if (state.showDeleteAccountConfirmationDialog) {
         AlertDialog(
-            onDismissRequest = {
-                settingsViewModel.hideDeleteAccountConfirmationDialog()
-            },
+            onDismissRequest = settingsViewModel::hideDeleteAccountConfirmationDialog,
             confirmButton = {
                 TextButton(
-                    onClick = {
-                        settingsViewModel.deleteAccount()
-                    }
+                    onClick = settingsViewModel::deleteAccount
                 ) {
                     Text(text = stringResource(id = R.string.ok))
                 }
             },
             dismissButton = {
                 TextButton(
-                    onClick = {
-                        settingsViewModel.hideDeleteAccountConfirmationDialog()
-                    }
+                    onClick = settingsViewModel::hideDeleteAccountConfirmationDialog
                 ) {
                     Text(text = stringResource(id = R.string.cancel))
                 }
@@ -135,15 +120,14 @@ fun SettingsScreen(
             },
             text = {
                 Text(text = stringResource(id = R.string.confirm_delete_account))
-            }
+            },
+            containerColor = MaterialTheme.colorScheme.surface
         )
     }
 
     if (state.showChangePasswordDialog) {
         Dialog(
-            onDismissRequest = {
-                settingsViewModel.hideChangePasswordDialog()
-            },
+            onDismissRequest = settingsViewModel::hideChangePasswordDialog,
         ) {
             Surface(
                 modifier = Modifier.clip(shape = RoundedCornerShape(10.dp))

@@ -78,28 +78,3 @@ fun resizeImage(context: Context, uri: Uri): ByteArray {
     resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
     return outputStream.toByteArray()
 }
-
-enum class ButtonState { Pressed, Idle }
-
-@Composable
-fun Modifier.pressClickEffect(): Modifier {
-
-    var buttonState by remember { mutableStateOf(ButtonState.Idle) }
-    val scale by animateFloatAsState(
-        targetValue = if (buttonState == ButtonState.Pressed) 0.95f else 1f,
-        label = "scale"
-    )
-
-    return this
-        .scale(scale)
-        .pointerInput(buttonState) {
-            detectTapGestures(
-                onPress = {
-                    buttonState = ButtonState.Pressed
-                    tryAwaitRelease()
-                    buttonState = ButtonState.Idle
-                }
-            )
-        }
-
-}
