@@ -15,7 +15,6 @@ import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.math.hypot
 
 @Singleton
 class ModelMapper @Inject constructor(
@@ -65,7 +64,7 @@ class ModelMapper @Inject constructor(
             "quantity" to articleEntity.quantity,
             "unit" to articleEntity.unit.name,
             "deleted" to articleEntity.deleted,
-            "photo" to if (photoBytes != null) Base64.encode(photoBytes, Base64.DEFAULT).map { it.toInt() }.toList() else null,
+            "photo" to if (photoBytes != null) Base64.encodeToString(photoBytes, Base64.DEFAULT) else null,
             "updatedAt" to articleEntity.updatedAt,
             "syncedAt" to System.currentTimeMillis()
         )
@@ -74,8 +73,8 @@ class ModelMapper @Inject constructor(
     fun toArticleEntity(snapshot: DocumentSnapshot, context: Context): ArticleEntity? {
         val data = snapshot.data ?: return null
         val file = File(context.cacheDir, "$IMAGE_PREFIX${System.currentTimeMillis()}$IMAGE_SUFFIX")
-        val photoBytes = data["photo"] as? List<Int>
-        file.writeBytes(Base64.decode(photoBytes?.map { it.toByte() }?.toByteArray(), Base64.DEFAULT))
+        val photo = data["photo"] as? String
+        if (photo != null) file.writeBytes(Base64.decode(photo, Base64.DEFAULT))
         return ArticleEntity(
             idArticle = UUID.fromString(data["idArticle"] as? String ?: return null),
             name = data["name"] as? String,
@@ -88,7 +87,7 @@ class ModelMapper @Inject constructor(
             },
             quantity = data["quantity"] as? Double,
             unit = ArticleUnit.valueOf(data["unit"] as? String ?: "PIECE"),
-            photoUri = file.path,
+            photoUri = if (photo == null) null else file.path,
             deleted = data["deleted"] as? Boolean ?: false,
             updatedAt = (data["updatedAt"] as? Long) ?: 0L
         )

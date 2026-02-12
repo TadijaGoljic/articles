@@ -55,8 +55,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.articles.R
 import com.example.articles.models.UIArticle
-import com.example.articles.ui.utils.DateUnit
 import com.example.articles.ui.composables.utils.Toolbar
+import com.example.articles.ui.utils.DateUnit
 import com.example.articles.ui.utils.isInteger
 import com.example.articles.ui.utils.toUIDate
 import com.example.articles.viewmodels.ArticlesListViewModel

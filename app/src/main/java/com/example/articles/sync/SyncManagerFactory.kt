@@ -25,7 +25,14 @@ class SyncManagerFactory(
     ): ListenableWorker? {
         return when(workerClassName) {
             SyncManager::class.java.name ->
-                SyncManager(appContext, workerParameters, userPreferences, articleRepository, applicationContext, modelMapper)
+                SyncManager(
+                    appContext,
+                    workerParameters,
+                    userPreferences,
+                    articleRepository,
+                    applicationContext,
+                    modelMapper
+                )
             else ->
                 null
         }

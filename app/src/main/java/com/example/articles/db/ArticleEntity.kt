@@ -18,17 +18,6 @@ data class ArticleEntity(
     val deleted: Boolean,
     val updatedAt: Long
 ) {
-    constructor() : this(
-        idArticle = UUID.randomUUID(),
-        name = null,
-        dateCreated = 0L,
-        location = null,
-        quantity = null,
-        unit = ArticleUnit.default,
-        photoUri = null,
-        deleted = false,
-        updatedAt = 0L
-    )
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false

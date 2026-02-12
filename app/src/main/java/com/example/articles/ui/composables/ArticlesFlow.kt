@@ -10,8 +10,8 @@ import com.example.articles.ui.composables.screens.AddNewArticle
 import com.example.articles.ui.composables.screens.ArticlesList
 import com.example.articles.ui.composables.screens.LocationPicker
 import com.example.articles.ui.composables.screens.SettingsScreen
-import com.example.articles.viewmodels.Location
 import com.example.articles.viewmodels.AddNewArticleViewModel.Companion.KEY_LOCATION
+import com.example.articles.viewmodels.Location
 
 @SuppressLint("RestrictedApi")
 @Composable

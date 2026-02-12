@@ -1,7 +1,6 @@
 package com.example.articles.viewmodels
 
 import androidx.annotation.StringRes
-import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.articles.R

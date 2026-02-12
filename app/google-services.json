@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "629618717715",
-    "project_id": "articles-5c511",
-    "storage_bucket": "articles-5c511.firebasestorage.app"
+    "project_number": "871033854703",
+    "project_id": "articles-56e6d",
+    "storage_bucket": "articles-56e6d.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:629618717715:android:cf3c1c102c016091d63be6",
+        "mobilesdk_app_id": "1:871033854703:android:edaf0f4343ba76bbc3591a",
         "android_client_info": {
           "package_name": "com.example.articles"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyASrd4sDQrh-yUCXU4j6TOJ-nPk4tWVry8"
+          "current_key": "AIzaSyBnyibAex0Td08oDI9Rz8o1pdXtCB4szYo"
         }
       ],
       "services": {

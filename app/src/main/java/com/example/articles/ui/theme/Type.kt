@@ -1,12 +1,12 @@
 package com.example.articles.ui.theme
 
-import com.example.articles.R
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.text.font.Font
+import com.example.articles.R
 
 val fontFamily = FontFamily(
     Font(resId = R.font.alan_sans_bold, weight = FontWeight.Bold),

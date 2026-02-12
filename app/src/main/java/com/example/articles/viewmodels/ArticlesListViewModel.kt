@@ -1,20 +1,24 @@
 package com.example.articles.viewmodels
 
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.ExistingWorkPolicy
 import androidx.work.WorkManager
 import com.example.articles.models.ModelMapper
-import com.example.articles.repositories.ArticleRepository
 import com.example.articles.models.UIArticle
+import com.example.articles.repositories.ArticleRepository
 import com.example.articles.sync.SyncManager
+import com.google.firebase.Firebase
+import com.google.firebase.firestore.firestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 @HiltViewModel
@@ -26,6 +30,8 @@ class ArticlesListViewModel @Inject constructor(
 
     private var state = MutableStateFlow(ArticlesListState())
     val uiState = state
+
+    private val articlesCollection = Firebase.firestore.collection("articles")
 
     init {
         viewModelScope.launch {
@@ -88,9 +94,10 @@ class ArticlesListViewModel @Inject constructor(
     fun stopShopping(deleteArticles: Boolean) {
         viewModelScope.launch {
             if (deleteArticles) {
-                articleRepository.deleteAll(
-                    uiState.value.articles.filter { it.checked }
-                )
+                uiState.value.articles.filter { it.checked }.forEach { article ->
+                    articleRepository.delete(article.id)
+                    deleteArticleFromFirestore(article.id.toString())
+                }
             }
             uiState.update { currentState ->
                 currentState.copy(
@@ -105,10 +112,15 @@ class ArticlesListViewModel @Inject constructor(
 
     fun buy(article: UIArticle) {
         viewModelScope.launch {
-            articleRepository.deleteAll(
-                listOf(article)
-            )
+            articleRepository.delete(article.id)
+            deleteArticleFromFirestore(article.id.toString())
         }
+    }
+
+    private suspend fun deleteArticleFromFirestore(articleId: String) = try {
+        articlesCollection.document(articleId).delete().await()
+    } catch (e: Exception) {
+        Log.e("my_result", "deleteArticleFromFirestore: ${e.message}")
     }
 
 }

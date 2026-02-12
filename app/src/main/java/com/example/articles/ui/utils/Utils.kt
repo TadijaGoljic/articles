@@ -4,21 +4,11 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.core.graphics.scale
 import java.io.ByteArrayOutputStream
 import java.util.Date
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
-import androidx.core.graphics.scale
 
 fun Double.isInteger(): Boolean = this % 1 == 0.0
 
