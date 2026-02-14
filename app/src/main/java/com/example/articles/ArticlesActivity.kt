@@ -46,8 +46,8 @@ class ArticlesActivity : ComponentActivity() {
         }
     }
 
-    override fun onStop() {
-        super.onStop()
+    override fun onDestroy() {
+        super.onDestroy()
         lifecycleScope.launch {
             articleRepository.deleteAll()
         }
