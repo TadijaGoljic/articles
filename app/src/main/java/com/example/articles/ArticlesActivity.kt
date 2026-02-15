@@ -46,13 +46,6 @@ class ArticlesActivity : ComponentActivity() {
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        lifecycleScope.launch {
-            articleRepository.deleteAll()
-        }
-    }
-
     private fun openNavigation(location: Location) {
         val uri = buildString {
             append("${GOOGLE_MAPS_BASE_URL}/dir/?")

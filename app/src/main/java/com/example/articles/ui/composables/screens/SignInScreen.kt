@@ -53,6 +53,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.articles.R
 import com.example.articles.ui.composables.utils.Logos
 import com.example.articles.ui.composables.utils.ProgressButton
+import com.example.articles.ui.utils.ScreenSize
 import com.example.articles.viewmodels.AuthenticationState
 import com.example.articles.viewmodels.SignInState
 import com.example.articles.viewmodels.SignInViewModel
@@ -145,12 +146,21 @@ fun SignInPortrait(
     authenticationState: AuthenticationState,
     modifier: Modifier = Modifier
 ) {
+    val screenSize = ScreenSize.getScreenSize()
+
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(color = MaterialTheme.colorScheme.surface)
             .padding(horizontal = 20.dp)
-            .imePadding(),
+            .imePadding()
+            .then(
+                when (screenSize) {
+                    ScreenSize.NORMAL -> Modifier
+                    ScreenSize.LARGE -> Modifier.padding(horizontal = 40.dp)
+                    ScreenSize.VERY_LARGE -> Modifier.padding(horizontal = 160.dp)
+                }
+            ),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Logos(

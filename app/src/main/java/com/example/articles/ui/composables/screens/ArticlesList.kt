@@ -57,6 +57,7 @@ import com.example.articles.R
 import com.example.articles.models.UIArticle
 import com.example.articles.ui.composables.utils.Toolbar
 import com.example.articles.ui.utils.DateUnit
+import com.example.articles.ui.utils.ScreenSize
 import com.example.articles.ui.utils.isInteger
 import com.example.articles.ui.utils.toUIDate
 import com.example.articles.viewmodels.ArticlesListViewModel
@@ -75,6 +76,7 @@ fun ArticlesList(
 ) {
 
     val state by articlesListViewModel.uiState.collectAsState()
+    val screenSize = ScreenSize.getScreenSize()
 
     BackHandler {
         if (state.shoppingModeActive) articlesListViewModel.stopShopping(false)
@@ -88,9 +90,7 @@ fun ArticlesList(
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
-                onClick = {
-                    onFloatingActionButtonClick()
-                },
+                onClick = onFloatingActionButtonClick,
                 containerColor = MaterialTheme.colorScheme.primary,
             ) {
                 Icon(
@@ -123,9 +123,21 @@ fun ArticlesList(
                 color = MaterialTheme.colorScheme.onBackground
             )
             if (state.articles.isEmpty()) {
-                NoArticles()
+                NoArticles(
+                    modifier = when (screenSize) {
+                        ScreenSize.NORMAL -> Modifier
+                        ScreenSize.LARGE -> Modifier.padding(horizontal = 40.dp)
+                        ScreenSize.VERY_LARGE -> Modifier.padding(horizontal = 160.dp)
+                    }
+                )
             } else {
-                LazyColumn {
+                LazyColumn(
+                    modifier = when (screenSize) {
+                        ScreenSize.NORMAL -> Modifier
+                        ScreenSize.LARGE -> Modifier.padding(horizontal = 40.dp)
+                        ScreenSize.VERY_LARGE -> Modifier.padding(horizontal = 160.dp)
+                    }
+                ) {
                     itemsIndexed(
                         items = state.articles,
                         key = { _, article -> article.id }

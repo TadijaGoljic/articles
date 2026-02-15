@@ -48,6 +48,7 @@ import com.example.articles.ui.composables.utils.Position
 import com.example.articles.ui.composables.utils.SettingsItem
 import com.example.articles.ui.composables.utils.SettingsSwitchItem
 import com.example.articles.ui.composables.utils.Toolbar
+import com.example.articles.ui.utils.ScreenSize
 import com.example.articles.viewmodels.SettingsState
 import com.example.articles.viewmodels.SettingsViewModel
 
@@ -62,6 +63,7 @@ fun SettingsScreen(
 
     val state by settingsViewModel.uiState.collectAsState()
     val newPasswordFocusRequester = remember { FocusRequester() }
+    val screenSize = ScreenSize.getScreenSize()
 
     LaunchedEffect(state.signOutOk) {
         if (state.signOutOk) onSignOut()
@@ -161,51 +163,77 @@ fun SettingsScreen(
                 onLeadingIconClick = onBackClick,
                 color = MaterialTheme.colorScheme.onBackground
             )
-            Text(
-                text = stringResource(id = R.string.account),
-                color = Color.Gray,
-                fontSize = 18.sp,
-                modifier = Modifier
-                    .padding(horizontal = 14.dp)
-                    .padding(bottom = 2.dp)
-            )
-            SettingsItem(
-                label = stringResource(id = R.string.sign_out),
-                onItemClick = settingsViewModel::showSignOutConfirmationDialog,
-                position = Position.TOP,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-            SettingsItem(
-                label = stringResource(id = R.string.delete_account),
-                onItemClick = settingsViewModel::showDeleteAccountConfirmationDialog,
-                position = Position.MIDDLE,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-            SettingsItem(
-                label = stringResource(id = R.string.change_password),
-                onItemClick = settingsViewModel::showChangePasswordDialog,
-                position = Position.BOTTOM,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = stringResource(id = R.string.notifications),
-                color = Color.Gray,
-                fontSize = 18.sp,
-                modifier = Modifier
-                    .padding(horizontal = 14.dp)
-                    .padding(bottom = 2.dp)
-            )
-            SettingsSwitchItem(
-                label = stringResource(id = R.string.enable_notifications),
-                onItemClick = settingsViewModel::onNotificationsSwitchClick,
-                checked = state.notificationsEnabled,
-                position = Position.SINGLE,
-                modifier = Modifier.padding(horizontal = 16.dp)
+            SettingsItems(
+                showSignOutConfirmationDialog = settingsViewModel::showSignOutConfirmationDialog,
+                showDeleteAccountConfirmationDialog = settingsViewModel::showDeleteAccountConfirmationDialog,
+                showChangePasswordDialog = settingsViewModel::showChangePasswordDialog,
+                onNotificationsSwitchClick = settingsViewModel::onNotificationsSwitchClick,
+                notificationsEnabled = state.notificationsEnabled,
+                modifier = when (screenSize) {
+                    ScreenSize.NORMAL -> Modifier
+                    ScreenSize.LARGE -> Modifier.padding(horizontal = 40.dp)
+                    ScreenSize.VERY_LARGE -> Modifier.padding(horizontal = 160.dp)
+                }
             )
         }
     }
+}
 
+@Composable
+fun SettingsItems(
+    showSignOutConfirmationDialog: () -> Unit,
+    showDeleteAccountConfirmationDialog: () -> Unit,
+    showChangePasswordDialog: () -> Unit,
+    onNotificationsSwitchClick: (Boolean) -> Unit,
+    notificationsEnabled: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+    ) {
+        Text(
+            text = stringResource(id = R.string.account),
+            color = Color.Gray,
+            fontSize = 18.sp,
+            modifier = Modifier
+                .padding(horizontal = 14.dp)
+                .padding(bottom = 2.dp)
+        )
+        SettingsItem(
+            label = stringResource(id = R.string.sign_out),
+            onItemClick = showSignOutConfirmationDialog,
+            position = Position.TOP,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+        SettingsItem(
+            label = stringResource(id = R.string.delete_account),
+            onItemClick = showDeleteAccountConfirmationDialog,
+            position = Position.MIDDLE,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+        SettingsItem(
+            label = stringResource(id = R.string.change_password),
+            onItemClick = showChangePasswordDialog,
+            position = Position.BOTTOM,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = stringResource(id = R.string.notifications),
+            color = Color.Gray,
+            fontSize = 18.sp,
+            modifier = Modifier
+                .padding(horizontal = 14.dp)
+                .padding(bottom = 2.dp)
+        )
+        SettingsSwitchItem(
+            label = stringResource(id = R.string.enable_notifications),
+            onItemClick = onNotificationsSwitchClick,
+            checked = notificationsEnabled,
+            position = Position.SINGLE,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+    }
 }
 
 @Composable

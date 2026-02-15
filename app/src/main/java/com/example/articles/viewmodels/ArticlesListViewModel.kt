@@ -28,10 +28,14 @@ class ArticlesListViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
+    companion object {
+        private const val COLLECTION_NAME = "articles"
+    }
+
     private var state = MutableStateFlow(ArticlesListState())
     val uiState = state
 
-    private val articlesCollection = Firebase.firestore.collection("articles")
+    private val articlesCollection = Firebase.firestore.collection(COLLECTION_NAME)
 
     init {
         viewModelScope.launch {

@@ -39,6 +39,7 @@ class SyncManager(
                 article.updatedAt > userPreferences.lastSyncTimestamp
             }
         }.first()
+        articleRepository.deleteAll()
         val syncResult = syncArticlesToFirestore(articlesToSync)
         if (syncResult.isSuccess) {
             userPreferences.lastSyncTimestamp = System.currentTimeMillis()

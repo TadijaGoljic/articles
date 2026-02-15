@@ -64,6 +64,7 @@ import com.example.articles.R
 import com.example.articles.models.ArticleUnit
 import com.example.articles.models.UIArticle
 import com.example.articles.ui.composables.utils.Toolbar
+import com.example.articles.ui.utils.ScreenSize
 import com.example.articles.ui.utils.copyUriToUri
 import com.example.articles.ui.utils.isInteger
 import com.example.articles.viewmodels.AddNewArticleViewModel
@@ -86,6 +87,7 @@ fun AddNewArticle(
     val state by addNewArticleViewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
+    val screenSize = ScreenSize.getScreenSize()
 
     val savedStateHandle = navController.currentBackStackEntry?.savedStateHandle
     val pickedLocationFlow = savedStateHandle?.getStateFlow<Location?>(KEY_LOCATION, null)
@@ -162,6 +164,13 @@ fun AddNewArticle(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .then(
+                    when (screenSize) {
+                        ScreenSize.NORMAL -> Modifier
+                        ScreenSize.LARGE -> Modifier.padding(horizontal = 40.dp)
+                        ScreenSize.VERY_LARGE -> Modifier.padding(horizontal = 160.dp)
+                    }
+                )
         ) {
             LazyColumn(
                 state = listState,
