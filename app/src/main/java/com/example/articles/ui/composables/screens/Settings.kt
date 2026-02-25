@@ -217,22 +217,6 @@ fun SettingsItems(
             position = Position.BOTTOM,
             modifier = Modifier.padding(horizontal = 16.dp)
         )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = stringResource(id = R.string.notifications),
-            color = Color.Gray,
-            fontSize = 18.sp,
-            modifier = Modifier
-                .padding(horizontal = 14.dp)
-                .padding(bottom = 2.dp)
-        )
-        SettingsSwitchItem(
-            label = stringResource(id = R.string.enable_notifications),
-            onItemClick = onNotificationsSwitchClick,
-            checked = notificationsEnabled,
-            position = Position.SINGLE,
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
     }
 }
 

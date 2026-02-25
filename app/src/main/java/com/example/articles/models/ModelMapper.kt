@@ -40,7 +40,8 @@ class ModelMapper @Inject constructor(
         location = articleEntity.location,
         quantity = articleEntity.quantity,
         unit = articleEntity.unit,
-        photoUri = articleEntity.photoUri
+        photoUri = articleEntity.photoUri,
+        deleted = articleEntity.deleted
     )
 
     fun mapToFirestoreMap(articleEntity: ArticleEntity, context: Context): Map<String, Any?> {

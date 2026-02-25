@@ -11,6 +11,10 @@ import com.example.articles.models.UIArticle
 import com.example.articles.repositories.ArticleRepository
 import com.example.articles.sync.SyncManager
 import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthException
+import com.google.firebase.firestore.CollectionReference
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.firestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -29,20 +33,23 @@ class ArticlesListViewModel @Inject constructor(
 ) : ViewModel() {
 
     companion object {
-        private const val COLLECTION_NAME = "articles"
+        const val ARTICLES_COLLECTION_NAME = "articles"
+        const val USERS_COLLECTION_NAME = "users"
     }
 
     private var state = MutableStateFlow(ArticlesListState())
     val uiState = state
 
-    private val articlesCollection = Firebase.firestore.collection(COLLECTION_NAME)
+    private val articlesCollection = Firebase.firestore.collection(ARTICLES_COLLECTION_NAME)
 
     init {
         viewModelScope.launch {
             articleRepository.getAllArticles().collectLatest { articles ->
                 state.update { currentState ->
                     currentState.copy(
-                        articles = articles.map { modelMapper.mapToUIArticle(it) }
+                        articles = articles
+                            .map { modelMapper.mapToUIArticle(it) }
+                            .filter { !it.deleted }
                     )
                 }
             }
@@ -100,7 +107,7 @@ class ArticlesListViewModel @Inject constructor(
             if (deleteArticles) {
                 uiState.value.articles.filter { it.checked }.forEach { article ->
                     articleRepository.delete(article.id)
-                    deleteArticleFromFirestore(article.id.toString())
+                    deleteArticle(article.id.toString())
                 }
             }
             uiState.update { currentState ->
@@ -117,12 +124,20 @@ class ArticlesListViewModel @Inject constructor(
     fun buy(article: UIArticle) {
         viewModelScope.launch {
             articleRepository.delete(article.id)
-            deleteArticleFromFirestore(article.id.toString())
+            deleteArticle(article.id.toString())
         }
     }
 
-    private suspend fun deleteArticleFromFirestore(articleId: String) = try {
-        articlesCollection.document(articleId).delete().await()
+    private suspend fun deleteArticle(articleId: String) = try {
+        val uid = FirebaseAuth.getInstance().uid ?: throw Exception("No user logged in")
+        articlesCollection
+            .firestore
+            .collection(USERS_COLLECTION_NAME)
+            .document(uid)
+            .collection(ARTICLES_COLLECTION_NAME)
+            .document(articleId)
+            .delete()
+            .await()
     } catch (e: Exception) {
         Log.e("my_result", "deleteArticleFromFirestore: ${e.message}")
     }

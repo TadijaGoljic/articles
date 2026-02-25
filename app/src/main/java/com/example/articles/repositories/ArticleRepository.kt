@@ -22,4 +22,7 @@ class ArticleRepository @Inject constructor(
 
     suspend fun deleteAll() = articleDao.deleteAll()
 
+    suspend fun markDeleted(articleId: String, timestamp: Long) =
+        articleDao.markDeleted(articleId, timestamp)
+
 }

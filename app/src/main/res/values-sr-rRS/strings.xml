@@ -1,0 +1,94 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Authentication -->
+    <string name="email">Мејл</string>
+    <string name="password">Лозинка</string>
+    <string name="username">Корисничко име</string>
+    <string name="not_a_member">Немате налог?</string>
+    <string name="sign_up">Креирај налог</string>
+    <string name="sign_in">Пријави се</string>
+    <string name="sign_out">Одјави се</string>
+    <string name="delete_account">Обриши налог</string>
+    <string name="change_password">Промени лозинку</string>
+    <string name="forgot_password">Заборављена лозинка</string>
+    <string name="ok">У реду</string>
+    <string name="invalid_credentials">Погрешни креденцијали</string>
+    <string name="settings">Подешавања</string>
+    <string name="account">Налог</string>
+    <string name="sign_in_icon">Иконица за пријављивање</string>
+    <string name="something_went_wrong">Нешто не ваља</string>
+    <string name="we_sent_email">Мејл је послат</string>
+    <string name="confirm_sign_out">Да ли сте сигурни да желите да се одјавите?</string>
+    <string name="confirm_delete_account">Да ли сте сигурни да желите да обришете свој налог?</string>
+    <string name="new_password">Нова лозинка</string>
+    <string name="old_password">Стара лозинка</string>
+    <string name="fields_empty_error">Сва поља морају бити попуњена</string>
+    <string name="send">Попаљи</string>
+
+    <!-- Articles -->
+    <string name="app_name">Артикли</string>
+    <string name="add_new_article">Додај нови артикал</string>
+    <string name="back">Назад</string>
+    <string name="articles_list">Листа артикала</string>
+    <string name="save">Сачувај</string>
+    <string name="name">Назив</string>
+    <string name="take_a_photo">Отвори камеру</string>
+    <string name="choose_location">Изабери локацију</string>
+    <string name="remove_article">Обриши артикал</string>
+    <string name="expand">Рашири</string>
+    <string name="collapse">Скупи</string>
+    <string name="selected_location">Изабрана локација</string>
+    <string name="tap_on_the_map">Додирните било где на мапи како бисме изабрали локацију</string>
+    <string name="cancel">Поништи</string>
+    <string name="select_location">Изаберите локацију</string>
+    <string name="location">Локација</string>
+    <string name="photo">Фотографија</string>
+    <string name="tap_to_see_photo">Додирнита да видите фотографију</string>
+    <string name="articles_photo">Фотографија артикла</string>
+    <string name="choose_photo">Одаберите фотографију</string>
+    <string name="add">Додај</string>
+    <string name="provide_name_photo">Молимо вас унесите назив или фотографију за сваки артикал</string>
+    <string name="start_navigation">Покрени навигацију</string>
+    <string name="ago">пре</string>
+    <string name="show_photo">Прикажи фотографију</string>
+    <string name="hide_photo">Сакриј фотографију</string>
+    <string name="no_articles_title">Нема артикала за приказивање</string>
+    <string name="no_articles_message">To Add new Article click on \"+\" icon</string>
+
+    <!-- Units -->
+    <string name="unit_quantity">Комада</string>
+    <string name="unit_quantity_abbreviation">ком</string>
+    <string name="unit_kilograms">Килограма</string>
+    <string name="unit_kilograms_abbreviation">кг</string>
+    <string name="unit_grams">Грама</string>
+    <string name="unit_grams_abbreviation">г</string>
+    <string name="unit_liters">Литара</string>
+    <string name="unit_liters_abbreviation">л</string>
+
+    <!-- Time -->
+    <plurals name="seconds" tools:ignore="UnusedQuantity">
+        <item quantity="zero">секунди</item>
+        <item quantity="one" tools:ignore="ImpliedQuantity">секундe</item>
+        <item quantity="few">секунде</item>
+        <item quantity="other">секунди</item>
+    </plurals>
+    <plurals name="minutes" tools:ignore="UnusedQuantity">
+        <item quantity="zero">минута</item>
+        <item quantity="one" tools:ignore="ImpliedQuantity">минут</item>
+        <item quantity="few">минута</item>
+        <item quantity="other">минута</item>
+    </plurals>
+    <plurals name="hours" tools:ignore="UnusedQuantity">
+        <item quantity="zero">сати</item>
+        <item quantity="one" tools:ignore="ImpliedQuantity">сат</item>
+        <item quantity="few">сата</item>
+        <item quantity="other">сати</item>
+    </plurals>
+    <plurals name="days" tools:ignore="UnusedQuantity">
+        <item quantity="zero">дана</item>
+        <item quantity="one" tools:ignore="ImpliedQuantity">дан</item>
+        <item quantity="few">дана</item>
+        <item quantity="other">дана</item>
+    </plurals>
+
+</resources>
