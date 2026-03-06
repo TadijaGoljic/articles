@@ -1,9 +1,6 @@
 package com.example.articles.viewmodels
 
 import androidx.annotation.StringRes
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.example.articles.R
 import com.google.firebase.Firebase
@@ -60,8 +57,6 @@ class SignInViewModel @Inject constructor(
     }
 
     private val auth = Firebase.auth
-    var user by mutableStateOf(auth.currentUser)
-        private set
 
     fun signIn() {
         state.update { currentState ->
