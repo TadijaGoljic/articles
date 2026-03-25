@@ -1,5 +1,6 @@
 package com.example.articles.ui.composables.screens
 
+import android.annotation.SuppressLint
 import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,6 +38,7 @@ import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.gestures.RotationGestureOverlay
 
 
+@SuppressLint("LocalContextGetResourceValueCall")
 @Composable
 fun LocationPicker(
     locationPickerViewModel: LocationPickerViewModel = hiltViewModel(),

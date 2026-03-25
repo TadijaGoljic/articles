@@ -23,13 +23,13 @@ abstract class ArticleDatabase : RoomDatabase() {
 
         fun getDatabase(context: Context): ArticleDatabase {
             return instance ?: synchronized(this) {
-                val dbInstance = Room.databaseBuilder(
+                instance ?: Room.databaseBuilder(
                     context = context.applicationContext,
                     klass = ArticleDatabase::class.java,
                     name = DATABASE_NAME
-                ).build()
-                instance = dbInstance
-                return@synchronized dbInstance
+                ).build().also {
+                    instance = it
+                }
             }
         }
 

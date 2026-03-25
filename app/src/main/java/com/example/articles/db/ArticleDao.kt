@@ -23,6 +23,6 @@ interface ArticleDao {
     suspend fun deleteAll()
 
     @Query("UPDATE articles SET deleted = 1, updatedAt = :timestamp WHERE idArticle = :id")
-    suspend fun markDeleted(id: String, timestamp: Long)
+    suspend fun markDeleted(id: UUID, timestamp: Long)
 
 }

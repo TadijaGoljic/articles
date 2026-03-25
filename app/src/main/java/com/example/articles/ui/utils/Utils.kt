@@ -4,11 +4,9 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
-import androidx.compose.material3.ButtonElevation
 import androidx.core.graphics.scale
-import okhttp3.ResponseBody.Companion.toResponseBody
-import okio.internal.commonToUtf8String
 import java.io.ByteArrayOutputStream
+import java.io.FileInputStream
 import java.util.Date
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
@@ -61,7 +59,11 @@ fun copyUriToUri(sourceUri: Uri, destinationUri: Uri, context: Context): Uri? {
 }
 
 fun resizeImage(context: Context, uri: Uri): ByteArray {
-    val inputStream = context.contentResolver.openInputStream(uri)
+    val inputStream = if (uri.scheme == "file" || uri.scheme == null) {
+        uri.path?.let { FileInputStream(it) }
+    } else {
+        context.contentResolver.openInputStream(uri)
+    }
     val originalBitmap = BitmapFactory.decodeStream(inputStream)
     inputStream?.close()
     val width = (originalBitmap.width * 0.9).toInt()

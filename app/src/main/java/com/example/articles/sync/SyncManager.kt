@@ -59,7 +59,7 @@ class SyncManager(
             .getAllArticles()
             .map { list ->
                 list.forEach { Log.d("my_result", "${it.updatedAt}") }
-                list.filter { it.updatedAt > 0 }
+                list.filter { it.updatedAt > userPreferences.lastSyncTimestamp }
             }
             .first()
         uploadLocalChanges(localChanges, articlesCollection)
@@ -85,9 +85,14 @@ class SyncManager(
     ) {
         for (article in articles) {
             val documentId = article.idArticle.toString()
-            collection.document(documentId)
-                .set(modelMapper.mapToFirestoreMap(article, applicationContext))
-                .await()
+            if (article.deleted) {
+                collection.document(documentId).delete().await()
+                articleRepository.delete(article.idArticle)
+            } else {
+                collection.document(documentId)
+                    .set(modelMapper.mapToFirestoreMap(article, applicationContext))
+                    .await()
+            }
         }
     }
 

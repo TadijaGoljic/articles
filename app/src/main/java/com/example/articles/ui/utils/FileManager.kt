@@ -31,9 +31,17 @@ class FileManager @Inject constructor(
     }
 
     fun getFileFromUri(context: Context, uri: Uri): File? {
-        val inputStream = context.contentResolver.openInputStream(uri) ?: return null
-        val tempFile = File.createTempFile("temp", null, context.cacheDir)
-        tempFile.outputStream().use { output -> inputStream.copyTo(output) }
-        return tempFile
+        if (uri.scheme == "file" || uri.scheme == null) {
+            return uri.path?.let { File(it) }
+        }
+        return try {
+            val inputStream = context.contentResolver.openInputStream(uri) ?: return null
+            val tempFile = File.createTempFile("temp", null, context.cacheDir)
+            tempFile.outputStream().use { output -> inputStream.copyTo(output) }
+            tempFile
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
     }
 }

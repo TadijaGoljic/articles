@@ -60,7 +60,7 @@ class ArticlesListViewModel @Inject constructor(
     fun syncData() {
         WorkManager.getInstance(context).enqueueUniqueWork(
             SyncManager.NAME,
-            ExistingWorkPolicy.KEEP,
+            ExistingWorkPolicy.REPLACE,
             SyncManager.sync()
         )
     }
@@ -106,9 +106,9 @@ class ArticlesListViewModel @Inject constructor(
         viewModelScope.launch {
             if (deleteArticles) {
                 uiState.value.articles.filter { it.checked }.forEach { article ->
-                    articleRepository.delete(article.id)
-                    deleteArticle(article.id.toString())
+                    articleRepository.markDeleted(article.id, System.currentTimeMillis())
                 }
+                syncData()
             }
             uiState.update { currentState ->
                 currentState.copy(
@@ -123,23 +123,9 @@ class ArticlesListViewModel @Inject constructor(
 
     fun buy(article: UIArticle) {
         viewModelScope.launch {
-            articleRepository.delete(article.id)
-            deleteArticle(article.id.toString())
+            articleRepository.markDeleted(article.id, System.currentTimeMillis())
+            syncData()
         }
-    }
-
-    private suspend fun deleteArticle(articleId: String) = try {
-        val uid = FirebaseAuth.getInstance().uid ?: throw Exception("No user logged in")
-        articlesCollection
-            .firestore
-            .collection(USERS_COLLECTION_NAME)
-            .document(uid)
-            .collection(ARTICLES_COLLECTION_NAME)
-            .document(articleId)
-            .delete()
-            .await()
-    } catch (e: Exception) {
-        Log.e("my_result", "deleteArticleFromFirestore: ${e.message}")
     }
 
 }

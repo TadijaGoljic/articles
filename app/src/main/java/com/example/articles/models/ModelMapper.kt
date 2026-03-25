@@ -54,6 +54,9 @@ class ModelMapper @Inject constructor(
                 photoBytes = resizeImage(context, file.toUri())
                 file.writeBytes(photoBytes)
             }
+            if (photoBytes == null && file.exists()) {
+                photoBytes = file.readBytes()
+            }
         }
         return mapOf(
             "name" to articleEntity.name,
@@ -88,7 +91,7 @@ class ModelMapper @Inject constructor(
             },
             quantity = data["quantity"] as? Double,
             unit = ArticleUnit.valueOf(data["unit"] as? String ?: "PIECE"),
-            photoUri = if (photo == null) null else file.path,
+            photoUri = if (photo == null) null else file.toUri().toString(),
             deleted = data["deleted"] as? Boolean ?: false,
             updatedAt = (data["updatedAt"] as? Long) ?: 0L
         )
