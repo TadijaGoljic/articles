@@ -32,18 +32,18 @@ class AddNewArticleViewModel @Inject constructor(
     val uiState = state
 
     fun save() = viewModelScope.launch {
-        val badArticles = state.value.articles.map {
-            it.name.isNullOrBlank() && it.photoUri.isNullOrBlank()
+        val isBadArticle = state.value.article.let { article ->
+            article.name.isNullOrBlank() && article.photoUri.isNullOrBlank()
         }
         state.update { currentState ->
             currentState.copy(
-                articles = currentState.articles.mapIndexed { i, article ->
-                    if (badArticles[i]) article.copy(isError = true)
+                article = currentState.article.let { article ->
+                    if (isBadArticle) article.copy(isError = true)
                     else article.copy(isError = false)
                 },
             )
         }
-        if (badArticles.any { it }) {
+        if (isBadArticle) {
             state.update { currentState ->
                 currentState.copy(
                     message = R.string.provide_name_photo
@@ -52,14 +52,12 @@ class AddNewArticleViewModel @Inject constructor(
         } else {
             state.update { currentState ->
                 currentState.copy(
-                    articles = currentState.articles.map { article ->
-                        article.copy(
-                            dateCreated = Date()
-                        )
-                    }
+                    article = currentState.article.copy(
+                        dateCreated = Date()
+                    )
                 )
             }
-            articleRepository.insertAll(state.value.articles)
+            articleRepository.insert(state.value.article)
             state.update { currentState ->
                 currentState.copy(
                     ok = true
@@ -68,94 +66,59 @@ class AddNewArticleViewModel @Inject constructor(
         }
     }
 
-    fun revalidateLocations(location: Location, index: Int) {
+    fun revalidateLocations(location: Location) {
         state.update { currentState ->
             currentState.copy(
-                articles = currentState.articles.mapIndexed { i, article ->
-                    if (i == index) article.copy(location = location) else article
-                }
+                article = currentState.article.copy(location = location)
             )
         }
     }
 
-    fun updatePhoto(photoUri: String, index: Int) {
+    fun updatePhoto(photoUri: String) {
         state.update { currentState ->
             currentState.copy(
-                articles = currentState.articles.mapIndexed { i, article ->
-                    if (i == index) article.copy(photoUri = photoUri) else article
-                },
+                article = currentState.article.copy(photoUri = photoUri)
+            )
+        }
+    }
+
+    fun updateType(type: ArticleUnit) {
+        state.update { currentState ->
+            currentState.copy(
+                article = currentState.article.copy(unit = type)
+            )
+        }
+    }
+
+    fun updateQuantity(quantity: Double?) {
+        state.update { currentState ->
+            currentState.copy(
+                article = currentState.article.copy(quantity = quantity)
+            )
+        }
+    }
+
+    fun updateName(name: String?) {
+        state.update { currentState ->
+            currentState.copy(
+                article = currentState.article.copy(name = name),
                 message = null
             )
         }
     }
 
-    fun updateType(index: Int, type: ArticleUnit) {
+    fun toggleExpanded() {
         state.update { currentState ->
             currentState.copy(
-                articles = currentState.articles.mapIndexed { i, article ->
-                    if (i == index) article.copy(unit = type) else article
-                }
+                article = currentState.article.copy(expanded = !currentState.article.expanded)
             )
         }
     }
 
-    fun updateQuantity(index: Int, quantity: Double?) {
+    fun togglePhotoVisibility() {
         state.update { currentState ->
             currentState.copy(
-                articles = currentState.articles.mapIndexed { i, article ->
-                    if (i == index) article.copy(quantity = quantity) else article
-                }
-            )
-        }
-    }
-
-    fun remove(index: Int) {
-        state.update { currentState ->
-            currentState.copy(
-                articles = currentState.articles.toMutableList().apply {
-                    removeAt(index)
-                }
-            )
-        }
-    }
-
-    fun updateName(index: Int, name: String?) {
-        state.update { currentState ->
-            currentState.copy(
-                articles = currentState.articles.mapIndexed { i, article ->
-                    if (i == index) article.copy(name = name) else article
-                },
-                message = null
-            )
-        }
-    }
-
-    fun addNewArticle() {
-        state.update { currentState ->
-            currentState.copy(
-                articles = currentState.articles.toMutableList().apply {
-                    add(UIArticle())
-                }
-            )
-        }
-    }
-
-    fun toggleState(index: Int) {
-        state.update { currentState ->
-            currentState.copy(
-                articles = currentState.articles.mapIndexed { i, article ->
-                    if (i == index) article.copy(expanded = !article.expanded) else article
-                }
-            )
-        }
-    }
-
-    fun updatePhotoVisible(index: Int) {
-        state.update { currentState ->
-            currentState.copy(
-                articles = currentState.articles.mapIndexed { i, article ->
-                    if (i == index) article.copy(photoVisible = !article.photoVisible) else article
-                }
+                article = currentState.article.copy(photoVisible = !currentState.article.photoVisible)
             )
         }
     }
@@ -165,7 +128,7 @@ class AddNewArticleViewModel @Inject constructor(
 }
 
 data class AddNewArticleState(
-    val articles: List<UIArticle> = listOf(UIArticle()),
+    val article: UIArticle = UIArticle(),
     val ok: Boolean = false,
     @StringRes val message: Int? = null,
 )

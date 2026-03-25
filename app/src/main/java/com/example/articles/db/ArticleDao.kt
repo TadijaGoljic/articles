@@ -14,6 +14,9 @@ interface ArticleDao {
     fun getAll(): Flow<List<ArticleEntity>>
 
     @Upsert
+    suspend fun insert(article: ArticleEntity)
+
+    @Upsert
     suspend fun insertAll(articles: List<ArticleEntity>)
 
     @Query("DELETE FROM articles WHERE idArticle = :idArticle")

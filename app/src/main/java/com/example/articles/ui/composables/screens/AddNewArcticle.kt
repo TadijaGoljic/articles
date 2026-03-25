@@ -8,7 +8,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,9 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -28,8 +24,6 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Photo
-import androidx.compose.material.icons.filled.PlusOne
-import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -45,7 +39,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -71,7 +64,6 @@ import com.example.articles.viewmodels.AddNewArticleViewModel
 import com.example.articles.viewmodels.AddNewArticleViewModel.Companion.KEY_INDEX
 import com.example.articles.viewmodels.AddNewArticleViewModel.Companion.KEY_LOCATION
 import com.example.articles.viewmodels.Location
-import kotlinx.coroutines.launch
 
 
 @Composable
@@ -85,8 +77,6 @@ fun AddNewArticle(
 ) {
 
     val state by addNewArticleViewModel.uiState.collectAsState()
-    val listState = rememberLazyListState()
-    val coroutineScope = rememberCoroutineScope()
     val screenSize = ScreenSize.getScreenSize()
 
     val savedStateHandle = navController.currentBackStackEntry?.savedStateHandle
@@ -102,15 +92,14 @@ fun AddNewArticle(
 
     LaunchedEffect(pickedLocation) {
         pickedLocation?.let { location ->
-            val index = savedStateHandle.get<Int>(KEY_INDEX) ?: return@let
-            addNewArticleViewModel.revalidateLocations(location, index)
+            addNewArticleViewModel.revalidateLocations(location)
             savedStateHandle.remove<Location>(KEY_LOCATION)
             savedStateHandle.remove<Int>(KEY_INDEX)
         }
     }
 
-    fun savePhoto(uri: Uri, index: Int) {
-        addNewArticleViewModel.updatePhoto(uri.toString(), index)
+    fun savePhoto(uri: Uri) {
+        addNewArticleViewModel.updatePhoto(uri.toString())
     }
 
     var uri by remember { mutableStateOf(addNewArticleViewModel.photoUri()) }
@@ -118,9 +107,7 @@ fun AddNewArticle(
         contract = ActivityResultContracts.TakePicture(),
         onResult = { success ->
             if (success) {
-                val index = savedStateHandle?.get<Int>(KEY_INDEX)
-                    ?: return@rememberLauncherForActivityResult
-                savePhoto(uri, index)
+                savePhoto(uri)
             }
         }
     )
@@ -129,14 +116,12 @@ fun AddNewArticle(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         if (uri != null) {
-            val index = savedStateHandle?.get<Int>(KEY_INDEX)
-                ?: return@rememberLauncherForActivityResult
             val photoUri = copyUriToUri(
                 sourceUri = uri,
                 destinationUri = addNewArticleViewModel.photoUri(),
                 context = context
             ) ?: return@rememberLauncherForActivityResult
-            savePhoto(photoUri, index)
+            savePhoto(photoUri)
         }
     }
 
@@ -151,13 +136,6 @@ fun AddNewArticle(
             title = stringResource(id = R.string.add_new_article),
             leadingIcon = Icons.Default.ChevronLeft,
             onLeadingIconClick = onBackButtonClicked,
-            trailingIcon = Icons.Default.PlusOne,
-            onTrailingIconClick = {
-                addNewArticleViewModel.addNewArticle()
-                coroutineScope.launch {
-                    listState.animateScrollToItem(state.articles.size)
-                }
-            },
             color = MaterialTheme.colorScheme.onBackground,
             modifier = if (keyboardController != null) Modifier.padding() else Modifier
         )
@@ -172,62 +150,47 @@ fun AddNewArticle(
                     }
                 )
         ) {
-            LazyColumn(
-                state = listState,
-                contentPadding = PaddingValues(horizontal = 18.dp),
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(bottom = 80.dp)
+                    .padding(bottom = 80.dp, start = 16.dp, end = 16.dp)
                     .align(Alignment.TopCenter),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                itemsIndexed(
-                    items = state.articles,
-                    key = { _, article -> article.id }
-                ) { index, article ->
-                    AddNewArticleItem(
-                        article = article,
-                        onNameChange = {
-                            if (it.isEmpty()) {
-                                addNewArticleViewModel.updateName(index, null)
-                            } else if (it.length < 30) {
-                                addNewArticleViewModel.updateName(index, it)
-                            }
-                        },
-                        onRemoveClick = {
-                            addNewArticleViewModel.remove(index)
-                        },
-                        onExpandIconClick = {
-                            addNewArticleViewModel.toggleState(index)
-                        },
-                        onArticleTypeChange = {
-                            addNewArticleViewModel.updateType(index, it)
-                        },
-                        onQuantityChange = {
-                            addNewArticleViewModel.updateQuantity(index, it)
-                        },
-                        onLocationPickerClick = {
-                            savedStateHandle?.set(KEY_INDEX, index)
-                            onLocationPickerClick()
-                        },
-                        onOpenCameraClick = {
-                            savedStateHandle?.set(KEY_INDEX, index)
-                            uri = addNewArticleViewModel.photoUri()
-                            cameraLauncher.launch(uri)
-                        },
-                        onChooseImageClick = {
-                            savedStateHandle?.set(KEY_INDEX, index)
-                            pickImage.launch("image/*")
-                        },
-                        onSeePhotoClick = {
-                            addNewArticleViewModel.updatePhotoVisible(index)
-                        },
-                        enableRemoveOption = state.articles.size > 1,
-                        modifier = Modifier
-                            .animateItem()
-                            .padding(vertical = 5.dp)
-                    )
-                }
+                AddNewArticleItem(
+                    article = state.article,
+                    onNameChange = {
+                        if (it.isEmpty()) {
+                            addNewArticleViewModel.updateName(null)
+                        } else if (it.length < 30) {
+                            addNewArticleViewModel.updateName(it)
+                        }
+                    },
+                    onExpandIconClick = {
+                        addNewArticleViewModel.toggleExpanded()
+                    },
+                    onArticleTypeChange = {
+                        addNewArticleViewModel.updateType(it)
+                    },
+                    onQuantityChange = {
+                        addNewArticleViewModel.updateQuantity(it)
+                    },
+                    onLocationPickerClick = {
+                        onLocationPickerClick()
+                    },
+                    onOpenCameraClick = {
+                        uri = addNewArticleViewModel.photoUri()
+                        cameraLauncher.launch(uri)
+                    },
+                    onChooseImageClick = {
+                        pickImage.launch("image/*")
+                    },
+                    onSeePhotoClick = {
+                        addNewArticleViewModel.togglePhotoVisibility()
+                    },
+                    modifier = Modifier
+                        .padding(vertical = 5.dp)
+                )
             }
             Button(
                 onClick = { addNewArticleViewModel.save() },
@@ -250,7 +213,6 @@ fun AddNewArticle(
 fun AddNewArticleItem(
     article: UIArticle,
     onNameChange: (String) -> Unit,
-    onRemoveClick: () -> Unit,
     onExpandIconClick: () -> Unit,
     onArticleTypeChange: (ArticleUnit) -> Unit,
     onQuantityChange: (Double?) -> Unit,
@@ -258,7 +220,6 @@ fun AddNewArticleItem(
     onOpenCameraClick: () -> Unit,
     onSeePhotoClick: () -> Unit,
     onChooseImageClick: () -> Unit,
-    enableRemoveOption: Boolean,
     modifier: Modifier = Modifier
 ) {
 
@@ -295,21 +256,13 @@ fun AddNewArticleItem(
                     label = {
                         Text(text = stringResource(id = R.string.name))
                     },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 12.dp),
                     maxLines = 1,
                     singleLine = true,
                     isError = article.isError
                 )
-                IconButton(
-                    onClick = onRemoveClick,
-                    enabled = enableRemoveOption,
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Remove,
-                        contentDescription = stringResource(id = R.string.remove_article),
-                        tint = if (isSystemInDarkTheme()) Color.White else Color.Black
-                    )
-                }
             }
             AnimatedVisibility(
                 visible = article.expanded,

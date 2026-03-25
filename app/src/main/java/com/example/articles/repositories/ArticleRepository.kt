@@ -15,6 +15,9 @@ class ArticleRepository @Inject constructor(
 
     fun getAllArticles() = articleDao.getAll()
 
+    suspend fun insert(article: UIArticle) =
+        articleDao.insert(modelMapper.mapToDBEntity(article))
+
     suspend fun insertAll(articles: List<UIArticle>) =
         articleDao.insertAll(articles.map { modelMapper.mapToDBEntity(it) })
 
