@@ -1,6 +1,6 @@
 package com.example.articles.repositories
 
-import com.example.articles.db.ArticleDao
+import com.example.articles.db.dao.ArticleDao
 import com.example.articles.models.ModelMapper
 import com.example.articles.models.UIArticle
 import java.util.UUID

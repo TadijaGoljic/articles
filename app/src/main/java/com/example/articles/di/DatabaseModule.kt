@@ -16,9 +16,15 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun providesDatabase(@ApplicationContext context: Context) =
-        Room.databaseBuilder(context, ArticleDatabase::class.java, ArticleDatabase.DATABASE_NAME).build()
+        Room.databaseBuilder(context, ArticleDatabase::class.java, ArticleDatabase.DATABASE_NAME)
+            .fallbackToDestructiveMigration(true)
+            .build()
 
     @Provides
     @Singleton
-    fun providesDao(database: ArticleDatabase) = database.articleDao()
+    fun providesArticleDao(database: ArticleDatabase) = database.articleDao()
+
+    @Provides
+    @Singleton
+    fun providesGroupDao(database: ArticleDatabase) = database.groupDao()
 }

@@ -1,8 +1,9 @@
-package com.example.articles.db
+package com.example.articles.db.dao
 
 import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.Upsert
+import com.example.articles.db.entities.ArticleEntity
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 
@@ -12,11 +13,9 @@ interface ArticleDao {
     @Query("SELECT * FROM articles")
     fun getAll(): Flow<List<ArticleEntity>>
 
-    @Upsert
-    suspend fun insert(article: ArticleEntity)
+    @Upsert suspend fun insert(article: ArticleEntity)
 
-    @Upsert
-    suspend fun insertAll(articles: List<ArticleEntity>)
+    @Upsert suspend fun insertAll(articles: List<ArticleEntity>)
 
     @Query("DELETE FROM articles WHERE idArticle = :idArticle")
     suspend fun delete(idArticle: UUID)

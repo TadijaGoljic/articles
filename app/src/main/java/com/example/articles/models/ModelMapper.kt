@@ -3,7 +3,7 @@ package com.example.articles.models
 import android.content.Context
 import android.util.Base64
 import androidx.core.net.toUri
-import com.example.articles.db.ArticleEntity
+import com.example.articles.db.entities.ArticleEntity
 import com.example.articles.ui.utils.FileManager
 import com.example.articles.ui.utils.resizeImage
 import com.example.articles.ui.utils.FileManager.Companion.IMAGE_PREFIX
