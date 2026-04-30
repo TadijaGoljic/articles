@@ -143,11 +143,6 @@ class SettingsViewModel @Inject constructor(
 
     }
 
-    fun onNotificationsSwitchClick(newValue: Boolean) {
-        state.update { currentState ->
-            currentState.copy(notificationsEnabled = newValue)
-        }
-    }
 }
 
 data class SettingsState(
@@ -160,6 +155,5 @@ data class SettingsState(
     @StringRes val stringResErrorMessage: Int? = null,
     val errorMessage: String? = null,
     val oldPassword: String = "",
-    val newPassword: String = "",
-    val notificationsEnabled: Boolean = true
+    val newPassword: String = ""
 )

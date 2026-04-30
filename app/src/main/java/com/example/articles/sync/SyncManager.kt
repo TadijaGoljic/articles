@@ -13,8 +13,6 @@ import com.example.articles.db.ArticleEntity
 import com.example.articles.models.ModelMapper
 import com.example.articles.models.UserPreferences
 import com.example.articles.repositories.ArticleRepository
-import com.example.articles.viewmodels.ArticlesListViewModel.Companion.USERS_COLLECTION_NAME
-import com.example.articles.viewmodels.ArticlesListViewModel.Companion.ARTICLES_COLLECTION_NAME
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.CollectionReference
@@ -57,10 +55,7 @@ class SyncManager(
     ) {
         val localChanges = articleRepository
             .getAllArticles()
-            .map { list ->
-                list.forEach { Log.d("my_result", "${it.updatedAt}") }
-                list.filter { it.updatedAt > userPreferences.lastSyncTimestamp }
-            }
+            .map { list -> list.filter { it.updatedAt > userPreferences.lastSyncTimestamp } }
             .first()
         uploadLocalChanges(localChanges, articlesCollection)
         val remoteSnapshot = articlesCollection
@@ -98,6 +93,8 @@ class SyncManager(
 
     companion object {
         const val NAME = "SyncManager"
+        const val USERS_COLLECTION_NAME = "users"
+        const val ARTICLES_COLLECTION_NAME = "articles"
         fun sync() = OneTimeWorkRequestBuilder<SyncManager>()
             .setConstraints(Constraints
                 .Builder()

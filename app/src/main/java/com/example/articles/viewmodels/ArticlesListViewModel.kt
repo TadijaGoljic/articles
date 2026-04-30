@@ -1,7 +1,6 @@
 package com.example.articles.viewmodels
 
 import android.content.Context
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.ExistingWorkPolicy
@@ -10,19 +9,12 @@ import com.example.articles.models.ModelMapper
 import com.example.articles.models.UIArticle
 import com.example.articles.repositories.ArticleRepository
 import com.example.articles.sync.SyncManager
-import com.google.firebase.Firebase
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseAuthException
-import com.google.firebase.firestore.CollectionReference
-import com.google.firebase.firestore.SetOptions
-import com.google.firebase.firestore.firestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 @HiltViewModel
@@ -32,15 +24,8 @@ class ArticlesListViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
-    companion object {
-        const val ARTICLES_COLLECTION_NAME = "articles"
-        const val USERS_COLLECTION_NAME = "users"
-    }
-
     private var state = MutableStateFlow(ArticlesListState())
     val uiState = state
-
-    private val articlesCollection = Firebase.firestore.collection(ARTICLES_COLLECTION_NAME)
 
     init {
         viewModelScope.launch {

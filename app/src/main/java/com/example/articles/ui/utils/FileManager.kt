@@ -4,8 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.core.content.FileProvider
-import com.example.articles.viewmodels.AddNewArticleViewModel.Companion.IMAGE_PREFIX
-import com.example.articles.viewmodels.AddNewArticleViewModel.Companion.IMAGE_SUFFIX
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
@@ -28,6 +26,11 @@ class FileManager @Inject constructor(
         )
         context.grantUriPermission(context.packageName, uri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
         return uri
+    }
+
+    companion object {
+        const val IMAGE_PREFIX = "article"
+        const val IMAGE_SUFFIX = ".jpg"
     }
 
     fun getFileFromUri(context: Context, uri: Uri): File? {

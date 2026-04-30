@@ -1,11 +1,10 @@
 package com.example.articles.viewmodels
 
-import android.os.Parcelable
 import androidx.lifecycle.ViewModel
+import com.example.articles.models.Location
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.parcelize.Parcelize
 import org.osmdroid.util.GeoPoint
 import javax.inject.Inject
 
@@ -31,16 +30,6 @@ class LocationPickerViewModel @Inject constructor(
                 zoomLevel = zoom
             )
         }
-    }
-}
-
-@Parcelize
-data class Location(
-    val latitude: Double,
-    val longitude: Double
-) : Parcelable {
-    override fun toString(): String {
-        return "${"%.6f".format(latitude)},${"%.6f".format(longitude)}"
     }
 }
 

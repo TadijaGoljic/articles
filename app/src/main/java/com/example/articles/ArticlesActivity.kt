@@ -12,14 +12,12 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.work.WorkManager
-import com.example.articles.repositories.ArticleRepository
 import com.example.articles.sync.SyncManager
 import com.example.articles.ui.composables.ArticlesNavigationFlow
 import com.example.articles.ui.theme.ArticlesTheme
-import com.example.articles.viewmodels.Location
+import com.example.articles.models.Location
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class ArticlesActivity : ComponentActivity() {
@@ -28,8 +26,6 @@ class ArticlesActivity : ComponentActivity() {
         private const val GOOGLE_MAPS_PACKAGE_NAME = "com.google.android.apps.maps"
         private const val GOOGLE_MAPS_BASE_URL = "https://www.google.com/maps"
     }
-
-    @Inject lateinit var articleRepository: ArticleRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

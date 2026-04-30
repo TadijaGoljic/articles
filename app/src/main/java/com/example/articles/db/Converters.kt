@@ -1,7 +1,7 @@
 package com.example.articles.db
 
 import androidx.room.TypeConverter
-import com.example.articles.viewmodels.Location
+import com.example.articles.models.Location
 import java.util.UUID
 
 class Converters {

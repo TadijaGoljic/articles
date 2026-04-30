@@ -3,7 +3,7 @@ package com.example.articles.db
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.example.articles.models.ArticleUnit
-import com.example.articles.viewmodels.Location
+import com.example.articles.models.Location
 import java.util.UUID
 
 @Entity(tableName = "articles")

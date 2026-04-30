@@ -46,7 +46,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.articles.R
 import com.example.articles.ui.composables.utils.Position
 import com.example.articles.ui.composables.utils.SettingsItem
-import com.example.articles.ui.composables.utils.SettingsSwitchItem
 import com.example.articles.ui.composables.utils.Toolbar
 import com.example.articles.ui.utils.ScreenSize
 import com.example.articles.viewmodels.SettingsState
@@ -167,8 +166,6 @@ fun SettingsScreen(
                 showSignOutConfirmationDialog = settingsViewModel::showSignOutConfirmationDialog,
                 showDeleteAccountConfirmationDialog = settingsViewModel::showDeleteAccountConfirmationDialog,
                 showChangePasswordDialog = settingsViewModel::showChangePasswordDialog,
-                onNotificationsSwitchClick = settingsViewModel::onNotificationsSwitchClick,
-                notificationsEnabled = state.notificationsEnabled,
                 modifier = when (screenSize) {
                     ScreenSize.NORMAL -> Modifier
                     ScreenSize.LARGE -> Modifier.padding(horizontal = 40.dp)
@@ -184,8 +181,6 @@ fun SettingsItems(
     showSignOutConfirmationDialog: () -> Unit,
     showDeleteAccountConfirmationDialog: () -> Unit,
     showChangePasswordDialog: () -> Unit,
-    onNotificationsSwitchClick: (Boolean) -> Unit,
-    notificationsEnabled: Boolean,
     modifier: Modifier = Modifier
 ) {
     Column(

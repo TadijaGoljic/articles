@@ -1,6 +1,7 @@
-package com.example.articles.hilt
+package com.example.articles.di
 
 import android.content.Context
+import androidx.room.Room
 import com.example.articles.db.ArticleDatabase
 import dagger.Module
 import dagger.Provides
@@ -15,9 +16,9 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun providesDatabase(@ApplicationContext context: Context) =
-        ArticleDatabase.getDatabase(context)
+        Room.databaseBuilder(context, ArticleDatabase::class.java, ArticleDatabase.DATABASE_NAME).build()
 
     @Provides
     @Singleton
-    fun providesWordDao(database: ArticleDatabase) = database.articleDao()
+    fun providesDao(database: ArticleDatabase) = database.articleDao()
 }

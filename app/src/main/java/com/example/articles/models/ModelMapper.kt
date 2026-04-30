@@ -6,9 +6,8 @@ import androidx.core.net.toUri
 import com.example.articles.db.ArticleEntity
 import com.example.articles.ui.utils.FileManager
 import com.example.articles.ui.utils.resizeImage
-import com.example.articles.viewmodels.AddNewArticleViewModel.Companion.IMAGE_PREFIX
-import com.example.articles.viewmodels.AddNewArticleViewModel.Companion.IMAGE_SUFFIX
-import com.example.articles.viewmodels.Location
+import com.example.articles.ui.utils.FileManager.Companion.IMAGE_PREFIX
+import com.example.articles.ui.utils.FileManager.Companion.IMAGE_SUFFIX
 import com.google.firebase.firestore.DocumentSnapshot
 import java.io.File
 import java.util.Date

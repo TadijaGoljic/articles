@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.articles.R
 import com.example.articles.models.ArticleUnit
+import com.example.articles.models.Location
 import com.example.articles.models.UIArticle
 import com.example.articles.repositories.ArticleRepository
 import com.example.articles.ui.utils.FileManager
@@ -24,8 +25,6 @@ class AddNewArticleViewModel @Inject constructor(
     companion object {
         const val KEY_INDEX = "index"
         const val KEY_LOCATION = "location"
-        const val IMAGE_PREFIX = "article"
-        const val IMAGE_SUFFIX = ".jpg"
     }
 
     private var state = MutableStateFlow(AddNewArticleState())

@@ -10,6 +10,7 @@ plugins {
 android {
     namespace = "com.example.articles"
     compileSdk = 36
+    ndkVersion = "30.0.14904198"
 
     defaultConfig {
         applicationId = "com.example.articles"
@@ -38,9 +39,7 @@ android {
     kotlin {
         compilerOptions {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
-            freeCompilerArgs.add(
-                "-XXLanguage:+PropertyParamAnnotationDefaultTargetMode"
-            )
+            freeCompilerArgs.add("-Xannotation-default-target=param-property")
         }
     }
 

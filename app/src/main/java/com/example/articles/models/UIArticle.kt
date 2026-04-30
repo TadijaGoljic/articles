@@ -3,7 +3,7 @@ package com.example.articles.models
 import android.os.Parcelable
 import androidx.annotation.StringRes
 import com.example.articles.R
-import com.example.articles.viewmodels.Location
+import com.example.articles.models.Location
 import kotlinx.parcelize.Parcelize
 import java.util.Date
 import java.util.UUID

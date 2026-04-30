@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.articles.R
-import com.example.articles.viewmodels.Location
+import com.example.articles.models.Location
 import com.example.articles.viewmodels.LocationPickerViewModel
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
