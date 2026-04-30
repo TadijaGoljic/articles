@@ -22,60 +22,29 @@ class SignInViewModel @Inject constructor(
     private var state = MutableStateFlow(SignInState())
     val uiState = state
 
-    fun updateEmail(email: String) {
-        state.update { currentState ->
-            currentState.copy(
-                email = email,
-                errorMessage = null
-            )
-        }
-    }
-
-    fun updatePassword(password: String) {
-        state.update { currentState ->
-            currentState.copy(
-                password = password,
-                errorMessage = null
-            )
-        }
-    }
-
-    fun updateAuthenticationState(newState: AuthenticationState) {
-        state.update { currentState ->
-            currentState.copy(
-                authenticationState = newState
-            )
-        }
-    }
-
-    fun hideAlert() {
-        state.update { currentState ->
-            currentState.copy(
-                showAlert = false
-            )
-        }
-    }
-
     private val auth = Firebase.auth
 
-    fun signIn() {
-        state.update { currentState ->
-            currentState.copy(
-                isLoading = true
-            )
+    fun handleAction(action: SignInAction) {
+        when (action) {
+            is SignInAction.UpdateEmail -> state.update { it.copy(email = action.email, errorMessage = null) }
+            is SignInAction.UpdatePassword -> state.update { it.copy(password = action.password, errorMessage = null) }
+            is SignInAction.UpdateAuthenticationState -> state.update { it.copy(authenticationState = action.authState) }
+            is SignInAction.HideAlert -> state.update { it.copy(showAlert = false) }
+            is SignInAction.SignIn -> signIn()
+            is SignInAction.SignUp -> signUp()
+            is SignInAction.ForgotPassword -> forgotPassword()
         }
+    }
+
+    private fun signIn() {
+        state.update { it.copy(isLoading = true) }
         auth.signInWithEmailAndPassword(state.value.email, state.value.password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    state.update { currentState ->
-                        currentState.copy(
-                            isLoading = false,
-                            ok = true
-                        )
-                    }
+                    state.update { it.copy(isLoading = false, ok = true) }
                 } else {
-                    state.update { currentState ->
-                        currentState.copy(
+                    state.update {
+                        it.copy(
                             isLoading = false,
                             errorTitle = R.string.invalid_credentials,
                             errorMessage = task.exception?.message.toString(),
@@ -86,24 +55,15 @@ class SignInViewModel @Inject constructor(
             }
     }
 
-    fun signUp() {
-        state.update { currentState ->
-            currentState.copy(
-                isLoading = true
-            )
-        }
+    private fun signUp() {
+        state.update { it.copy(isLoading = true) }
         auth.createUserWithEmailAndPassword(state.value.email, state.value.password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    state.update { currentState ->
-                        currentState.copy(
-                            isLoading = false,
-                            ok = true
-                        )
-                    }
+                    state.update { it.copy(isLoading = false, ok = true) }
                 } else {
-                    state.update { currentState ->
-                        currentState.copy(
+                    state.update {
+                        it.copy(
                             isLoading = false,
                             errorTitle = R.string.something_went_wrong,
                             errorMessage = task.exception?.message.toString(),
@@ -114,25 +74,15 @@ class SignInViewModel @Inject constructor(
             }
     }
 
-    fun forgotPassword() {
-        state.update { currentState ->
-            currentState.copy(
-                isLoading = true
-            )
-        }
+    private fun forgotPassword() {
+        state.update { it.copy(isLoading = true) }
         auth.sendPasswordResetEmail(state.value.email)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    state.update { currentState ->
-                        currentState.copy(
-                            isLoading = false,
-                            errorTitle = R.string.we_sent_email,
-                            showAlert = true
-                        )
-                    }
+                    state.update { it.copy(isLoading = false, errorTitle = R.string.we_sent_email, showAlert = true) }
                 } else {
-                    state.update { currentState ->
-                        currentState.copy(
+                    state.update {
+                        it.copy(
                             isLoading = false,
                             errorTitle = R.string.we_sent_email,
                             errorMessage = task.exception?.message.toString(),
@@ -158,4 +108,14 @@ data class SignInState(
 
 enum class AuthenticationState {
     SIGN_IN, SIGN_UP, FORGOT_PASSWORD
+}
+
+sealed interface SignInAction {
+    data class UpdateEmail(val email: String) : SignInAction
+    data class UpdatePassword(val password: String) : SignInAction
+    data class UpdateAuthenticationState(val authState: AuthenticationState) : SignInAction
+    data object HideAlert : SignInAction
+    data object SignIn : SignInAction
+    data object SignUp : SignInAction
+    data object ForgotPassword : SignInAction
 }

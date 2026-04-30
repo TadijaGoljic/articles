@@ -1,8 +1,8 @@
 package com.example.articles.repositories
 
 import com.example.articles.db.dao.ArticleDao
-import com.example.articles.models.ModelMapper
 import com.example.articles.models.UIArticle
+import com.example.articles.models.toArticleEntity
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -10,16 +10,15 @@ import javax.inject.Singleton
 @Singleton
 class ArticleRepository @Inject constructor(
     private val articleDao: ArticleDao,
-    private val modelMapper: ModelMapper,
 ) {
 
     fun getAllArticles() = articleDao.getAll()
 
     suspend fun insert(article: UIArticle) =
-        articleDao.insert(modelMapper.mapToDBEntity(article))
+        articleDao.insert(article.toArticleEntity())
 
     suspend fun insertAll(articles: List<UIArticle>) =
-        articleDao.insertAll(articles.map { modelMapper.mapToDBEntity(it) })
+        articleDao.insertAll(articles.map { it.toArticleEntity() })
 
     suspend fun delete(idArticle: UUID) = articleDao.delete(idArticle)
 

@@ -21,8 +21,8 @@ import com.example.articles.R
 @Composable
 fun Toolbar(
     title: String,
-    color: Color,
     modifier: Modifier = Modifier,
+    color: Color = Color.Black,
     leadingIcon: ImageVector? = null,
     onLeadingIconClick: (() -> Unit)? = null,
     trailingIcon: ImageVector? = null,

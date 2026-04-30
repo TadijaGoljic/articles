@@ -10,8 +10,9 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkRequest
 import androidx.work.WorkerParameters
 import com.example.articles.db.entities.ArticleEntity
-import com.example.articles.models.ModelMapper
+import com.example.articles.models.FirestoreModelMapper
 import com.example.articles.models.UserPreferences
+import com.example.articles.models.toUIArticle
 import com.example.articles.repositories.ArticleRepository
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
@@ -29,7 +30,7 @@ class SyncManager(
     private val userPreferences: UserPreferences,
     private val articleRepository: ArticleRepository,
     private val applicationContext: Context,
-    private val modelMapper: ModelMapper
+    private val firestoreModelMapper: FirestoreModelMapper
 ) : CoroutineWorker(context, parameters) {
 
     private val firestore = Firebase.firestore
@@ -63,12 +64,12 @@ class SyncManager(
             .get()
             .await()
         val remoteEntities = remoteSnapshot.documents.mapNotNull {
-            modelMapper.toArticleEntity(it, applicationContext)
+            firestoreModelMapper.toArticleEntity(it, applicationContext)
         }
         if (remoteEntities.isNotEmpty()) {
             articleRepository.deleteAll()
             articleRepository.insertAll(
-                remoteEntities.map { modelMapper.mapToUIArticle(it) }
+                remoteEntities.map { it.toUIArticle() }
             )
         }
         userPreferences.lastSyncTimestamp = System.currentTimeMillis()
@@ -85,7 +86,7 @@ class SyncManager(
                 articleRepository.delete(article.idArticle)
             } else {
                 collection.document(documentId)
-                    .set(modelMapper.mapToFirestoreMap(article, applicationContext))
+                    .set(firestoreModelMapper.mapToFirestoreMap(article, applicationContext))
                     .await()
             }
         }

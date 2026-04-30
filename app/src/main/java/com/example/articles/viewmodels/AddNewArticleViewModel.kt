@@ -30,7 +30,22 @@ class AddNewArticleViewModel @Inject constructor(
     private var state = MutableStateFlow(AddNewArticleState())
     val uiState = state
 
-    fun save() = viewModelScope.launch {
+    fun handleAction(action: AddNewArticleAction) {
+        when (action) {
+            is AddNewArticleAction.Save -> save()
+            is AddNewArticleAction.UpdateName -> updateName(action.name)
+            is AddNewArticleAction.UpdatePhoto -> updatePhoto(action.uri)
+            is AddNewArticleAction.UpdateType -> updateType(action.type)
+            is AddNewArticleAction.UpdateQuantity -> updateQuantity(action.quantity)
+            is AddNewArticleAction.RevalidateLocation -> revalidateLocation(action.location)
+            is AddNewArticleAction.ToggleExpanded -> toggleExpanded()
+            is AddNewArticleAction.TogglePhotoVisibility -> togglePhotoVisibility()
+        }
+    }
+
+    fun photoUri() = fileManager.photoUri()
+
+    private fun save() = viewModelScope.launch {
         val isBadArticle = state.value.article.let { article ->
             article.name.isNullOrBlank() && article.photoUri.isNullOrBlank()
         }
@@ -44,28 +59,22 @@ class AddNewArticleViewModel @Inject constructor(
         }
         if (isBadArticle) {
             state.update { currentState ->
-                currentState.copy(
-                    message = R.string.provide_name_photo
-                )
+                currentState.copy(message = R.string.provide_name_photo)
             }
         } else {
             state.update { currentState ->
                 currentState.copy(
-                    article = currentState.article.copy(
-                        dateCreated = Date()
-                    )
+                    article = currentState.article.copy(dateCreated = Date())
                 )
             }
             articleRepository.insert(state.value.article)
             state.update { currentState ->
-                currentState.copy(
-                    ok = true
-                )
+                currentState.copy(ok = true)
             }
         }
     }
 
-    fun revalidateLocations(location: Location) {
+    private fun revalidateLocation(location: Location) {
         state.update { currentState ->
             currentState.copy(
                 article = currentState.article.copy(location = location)
@@ -73,7 +82,7 @@ class AddNewArticleViewModel @Inject constructor(
         }
     }
 
-    fun updatePhoto(photoUri: String) {
+    private fun updatePhoto(photoUri: String) {
         state.update { currentState ->
             currentState.copy(
                 article = currentState.article.copy(photoUri = photoUri)
@@ -81,7 +90,7 @@ class AddNewArticleViewModel @Inject constructor(
         }
     }
 
-    fun updateType(type: ArticleUnit) {
+    private fun updateType(type: ArticleUnit) {
         state.update { currentState ->
             currentState.copy(
                 article = currentState.article.copy(unit = type)
@@ -89,7 +98,7 @@ class AddNewArticleViewModel @Inject constructor(
         }
     }
 
-    fun updateQuantity(quantity: Double?) {
+    private fun updateQuantity(quantity: Double?) {
         state.update { currentState ->
             currentState.copy(
                 article = currentState.article.copy(quantity = quantity)
@@ -97,7 +106,7 @@ class AddNewArticleViewModel @Inject constructor(
         }
     }
 
-    fun updateName(name: String?) {
+    private fun updateName(name: String?) {
         state.update { currentState ->
             currentState.copy(
                 article = currentState.article.copy(name = name),
@@ -106,7 +115,7 @@ class AddNewArticleViewModel @Inject constructor(
         }
     }
 
-    fun toggleExpanded() {
+    private fun toggleExpanded() {
         state.update { currentState ->
             currentState.copy(
                 article = currentState.article.copy(expanded = !currentState.article.expanded)
@@ -114,15 +123,13 @@ class AddNewArticleViewModel @Inject constructor(
         }
     }
 
-    fun togglePhotoVisibility() {
+    private fun togglePhotoVisibility() {
         state.update { currentState ->
             currentState.copy(
                 article = currentState.article.copy(photoVisible = !currentState.article.photoVisible)
             )
         }
     }
-
-    fun photoUri() = fileManager.photoUri()
 
 }
 
@@ -131,3 +138,14 @@ data class AddNewArticleState(
     val ok: Boolean = false,
     @StringRes val message: Int? = null,
 )
+
+sealed interface AddNewArticleAction {
+    data object Save : AddNewArticleAction
+    data class UpdateName(val name: String?) : AddNewArticleAction
+    data class UpdatePhoto(val uri: String) : AddNewArticleAction
+    data class UpdateType(val type: ArticleUnit) : AddNewArticleAction
+    data class UpdateQuantity(val quantity: Double?) : AddNewArticleAction
+    data class RevalidateLocation(val location: Location) : AddNewArticleAction
+    data object ToggleExpanded : AddNewArticleAction
+    data object TogglePhotoVisibility : AddNewArticleAction
+}

@@ -5,8 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.ExistingWorkPolicy
 import androidx.work.WorkManager
-import com.example.articles.models.ModelMapper
 import com.example.articles.models.UIArticle
+import com.example.articles.models.toUIArticle
 import com.example.articles.repositories.ArticleRepository
 import com.example.articles.sync.SyncManager
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,7 +20,6 @@ import javax.inject.Inject
 @HiltViewModel
 class ArticlesListViewModel @Inject constructor(
     private val articleRepository: ArticleRepository,
-    private val modelMapper: ModelMapper,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
@@ -33,7 +32,7 @@ class ArticlesListViewModel @Inject constructor(
                 state.update { currentState ->
                     currentState.copy(
                         articles = articles
-                            .map { modelMapper.mapToUIArticle(it) }
+                            .map { it.toUIArticle() }
                             .filter { !it.deleted }
                     )
                 }
@@ -42,7 +41,28 @@ class ArticlesListViewModel @Inject constructor(
         }
     }
 
-    fun syncData() {
+    fun handleAction(action: ArticlesListAction) {
+        when (action) {
+            is ArticlesListAction.SyncData ->
+                syncData()
+            is ArticlesListAction.ToggleCheckStatus ->
+                toggleCheckStatus(action.index, action.newValue)
+            is ArticlesListAction.TogglePhoto ->
+                togglePhoto(action.index)
+            is ArticlesListAction.StartShopping ->
+                startShopping(action.index)
+            is ArticlesListAction.StopShopping ->
+                stopShopping(action.deleteArticles)
+            is ArticlesListAction.BuyArticle ->
+                buy(action.article)
+            is ArticlesListAction.ShowCreateGroupDialog ->
+                showCreateGroupDialog()
+            is ArticlesListAction.HideCreateGroupDialog ->
+                hideCreateGroupDialog()
+        }
+    }
+
+    private fun syncData() {
         WorkManager.getInstance(context).enqueueUniqueWork(
             SyncManager.NAME,
             ExistingWorkPolicy.REPLACE,
@@ -50,7 +70,7 @@ class ArticlesListViewModel @Inject constructor(
         )
     }
 
-    fun updateCheckStatus(index: Int, newValue: Boolean) {
+    private fun toggleCheckStatus(index: Int, newValue: Boolean) {
         uiState.update { currentState ->
             currentState.copy(
                 articles = currentState.articles.mapIndexed { i, article ->
@@ -60,7 +80,7 @@ class ArticlesListViewModel @Inject constructor(
         }
     }
 
-    fun togglePhoto(index: Int) {
+    private fun togglePhoto(index: Int) {
         uiState.update { currentState ->
             currentState.copy(
                 articles = currentState.articles.mapIndexed { i, article ->
@@ -70,7 +90,7 @@ class ArticlesListViewModel @Inject constructor(
         }
     }
 
-    fun startShopping(index: Int?) {
+    private fun startShopping(index: Int?) {
         uiState.update { currentState ->
             currentState.copy(
                 shoppingModeActive = true,
@@ -87,7 +107,7 @@ class ArticlesListViewModel @Inject constructor(
         }
     }
 
-    fun stopShopping(deleteArticles: Boolean) {
+    private fun stopShopping(deleteArticles: Boolean) {
         viewModelScope.launch {
             if (deleteArticles) {
                 uiState.value.articles.filter { it.checked }.forEach { article ->
@@ -106,10 +126,26 @@ class ArticlesListViewModel @Inject constructor(
         }
     }
 
-    fun buy(article: UIArticle) {
+    private fun buy(article: UIArticle) {
         viewModelScope.launch {
             articleRepository.markDeleted(article.id, System.currentTimeMillis())
             syncData()
+        }
+    }
+
+    private fun showCreateGroupDialog() {
+        uiState.update { currentState ->
+            currentState.copy(
+                showCreateGroupDialog = true,
+            )
+        }
+    }
+
+    private fun hideCreateGroupDialog() {
+        uiState.update { currentState ->
+            currentState.copy(
+                showCreateGroupDialog = false,
+            )
         }
     }
 
@@ -118,4 +154,16 @@ class ArticlesListViewModel @Inject constructor(
 data class ArticlesListState(
     val articles: List<UIArticle> = emptyList(),
     val shoppingModeActive: Boolean = false,
+    val showCreateGroupDialog: Boolean = false,
 )
+
+sealed interface ArticlesListAction {
+    data object SyncData : ArticlesListAction
+    data class ToggleCheckStatus(val index: Int, val newValue: Boolean) : ArticlesListAction
+    data class TogglePhoto(val index: Int) : ArticlesListAction
+    data class StartShopping(val index: Int?) : ArticlesListAction
+    data class StopShopping(val deleteArticles: Boolean) : ArticlesListAction
+    data class BuyArticle(val article: UIArticle) : ArticlesListAction
+    data object ShowCreateGroupDialog : ArticlesListAction
+    data object HideCreateGroupDialog : ArticlesListAction
+}

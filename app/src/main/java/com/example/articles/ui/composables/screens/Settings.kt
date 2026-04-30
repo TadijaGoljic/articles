@@ -26,7 +26,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -43,11 +42,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.articles.R
 import com.example.articles.ui.composables.utils.Position
 import com.example.articles.ui.composables.utils.SettingsItem
 import com.example.articles.ui.composables.utils.Toolbar
 import com.example.articles.ui.utils.ScreenSize
+import com.example.articles.viewmodels.SettingsAction
 import com.example.articles.viewmodels.SettingsState
 import com.example.articles.viewmodels.SettingsViewModel
 
@@ -60,7 +61,7 @@ fun SettingsScreen(
     settingsViewModel: SettingsViewModel = hiltViewModel()
 ) {
 
-    val state by settingsViewModel.uiState.collectAsState()
+    val state by settingsViewModel.uiState.collectAsStateWithLifecycle()
     val newPasswordFocusRequester = remember { FocusRequester() }
     val screenSize = ScreenSize.getScreenSize()
 
@@ -74,17 +75,17 @@ fun SettingsScreen(
 
     if (state.showSignOutConfirmationDialog) {
         AlertDialog(
-            onDismissRequest = settingsViewModel::hideSignOutConfirmationDialog,
+            onDismissRequest = { settingsViewModel.handleAction(SettingsAction.HideSignOutConfirmationDialog) },
             confirmButton = {
                 TextButton(
-                    onClick = settingsViewModel::signOut
+                    onClick = { settingsViewModel.handleAction(SettingsAction.SignOut) }
                 ) {
                     Text(text = stringResource(id = R.string.ok))
                 }
             },
             dismissButton = {
                 TextButton(
-                    onClick = settingsViewModel::hideSignOutConfirmationDialog
+                    onClick = { settingsViewModel.handleAction(SettingsAction.HideSignOutConfirmationDialog) }
                 ) {
                     Text(text = stringResource(id = R.string.cancel))
                 }
@@ -101,17 +102,17 @@ fun SettingsScreen(
 
     if (state.showDeleteAccountConfirmationDialog) {
         AlertDialog(
-            onDismissRequest = settingsViewModel::hideDeleteAccountConfirmationDialog,
+            onDismissRequest = { settingsViewModel.handleAction(SettingsAction.HideDeleteAccountConfirmationDialog) },
             confirmButton = {
                 TextButton(
-                    onClick = settingsViewModel::deleteAccount
+                    onClick = { settingsViewModel.handleAction(SettingsAction.DeleteAccount) }
                 ) {
                     Text(text = stringResource(id = R.string.ok))
                 }
             },
             dismissButton = {
                 TextButton(
-                    onClick = settingsViewModel::hideDeleteAccountConfirmationDialog
+                    onClick = { settingsViewModel.handleAction(SettingsAction.HideDeleteAccountConfirmationDialog) }
                 ) {
                     Text(text = stringResource(id = R.string.cancel))
                 }
@@ -128,7 +129,7 @@ fun SettingsScreen(
 
     if (state.showChangePasswordDialog) {
         Dialog(
-            onDismissRequest = settingsViewModel::hideChangePasswordDialog,
+            onDismissRequest = { settingsViewModel.handleAction(SettingsAction.HideChangePasswordDialog) },
         ) {
             Surface(
                 modifier = Modifier.clip(shape = RoundedCornerShape(10.dp))
@@ -138,11 +139,11 @@ fun SettingsScreen(
                 ) {
                     ChangePassword(
                         state = state,
-                        onOldPasswordChange = settingsViewModel::updateOldPassword,
-                        onNewPasswordChange = settingsViewModel::updateNewPassword,
-                        onButtonClick = settingsViewModel::changePassword,
+                        onOldPasswordChange = { settingsViewModel.handleAction(SettingsAction.UpdateOldPassword(it)) },
+                        onNewPasswordChange = { settingsViewModel.handleAction(SettingsAction.UpdateNewPassword(it)) },
+                        onButtonClick = { settingsViewModel.handleAction(SettingsAction.ChangePassword) },
                         newPasswordFocusRequester = newPasswordFocusRequester,
-                        onDismissRequest = settingsViewModel::hideChangePasswordDialog
+                        onDismissRequest = { settingsViewModel.handleAction(SettingsAction.HideChangePasswordDialog) }
                     )
                 }
             }
@@ -163,9 +164,9 @@ fun SettingsScreen(
                 color = MaterialTheme.colorScheme.onBackground
             )
             SettingsItems(
-                showSignOutConfirmationDialog = settingsViewModel::showSignOutConfirmationDialog,
-                showDeleteAccountConfirmationDialog = settingsViewModel::showDeleteAccountConfirmationDialog,
-                showChangePasswordDialog = settingsViewModel::showChangePasswordDialog,
+                showSignOutConfirmationDialog = { settingsViewModel.handleAction(SettingsAction.ShowSignOutConfirmationDialog) },
+                showDeleteAccountConfirmationDialog = { settingsViewModel.handleAction(SettingsAction.ShowDeleteAccountConfirmationDialog) },
+                showChangePasswordDialog = { settingsViewModel.handleAction(SettingsAction.ShowChangePasswordDialog) },
                 modifier = when (screenSize) {
                     ScreenSize.NORMAL -> Modifier
                     ScreenSize.LARGE -> Modifier.padding(horizontal = 40.dp)

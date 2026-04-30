@@ -22,90 +22,44 @@ class SettingsViewModel @Inject constructor(
     private var state = MutableStateFlow(SettingsState())
     val uiState = state
 
-    fun signOut() = viewModelScope.launch {
-        articleRepository.deleteAll()
-        Firebase.auth.signOut()
-        state.update { currentState ->
-            currentState.copy(signOutOk = true)
+    fun handleAction(action: SettingsAction) {
+        when (action) {
+            is SettingsAction.SignOut -> signOut()
+            is SettingsAction.DeleteAccount -> deleteAccount()
+            is SettingsAction.ShowChangePasswordDialog -> state.update { it.copy(showChangePasswordDialog = true) }
+            is SettingsAction.HideChangePasswordDialog -> state.update { it.copy(showChangePasswordDialog = false, errorMessage = null) }
+            is SettingsAction.ShowSignOutConfirmationDialog -> state.update { it.copy(showSignOutConfirmationDialog = true) }
+            is SettingsAction.HideSignOutConfirmationDialog -> state.update { it.copy(showSignOutConfirmationDialog = false) }
+            is SettingsAction.ShowDeleteAccountConfirmationDialog -> state.update { it.copy(showDeleteAccountConfirmationDialog = true) }
+            is SettingsAction.HideDeleteAccountConfirmationDialog -> state.update { it.copy(showDeleteAccountConfirmationDialog = false) }
+            is SettingsAction.UpdateOldPassword -> state.update { it.copy(oldPassword = action.password) }
+            is SettingsAction.UpdateNewPassword -> state.update { it.copy(newPassword = action.password) }
+            is SettingsAction.ChangePassword -> changePassword()
         }
     }
 
-    fun deleteAccount() = viewModelScope.launch {
+    private fun signOut() = viewModelScope.launch {
+        articleRepository.deleteAll()
+        Firebase.auth.signOut()
+        state.update { it.copy(signOutOk = true) }
+    }
+
+    private fun deleteAccount() = viewModelScope.launch {
         articleRepository.deleteAll()
         Firebase.auth.currentUser?.delete()?.addOnCompleteListener { task ->
             if (task.isSuccessful) {
-                state.update { currentState ->
-                    currentState.copy(deleteOk = true)
-                }
+                state.update { it.copy(deleteOk = true) }
             }
         }
     }
 
-    fun showChangePasswordDialog() {
-        state.update { currentState ->
-            currentState.copy(showChangePasswordDialog = true)
-        }
-    }
-
-    fun hideChangePasswordDialog() {
-        state.update { currentState ->
-            currentState.copy(
-                showChangePasswordDialog = false,
-                errorMessage = null
-            )
-        }
-    }
-
-    fun hideSignOutConfirmationDialog() {
-        state.update { currentState ->
-            currentState.copy(showSignOutConfirmationDialog = false)
-        }
-    }
-
-    fun hideDeleteAccountConfirmationDialog() {
-        state.update { currentState ->
-            currentState.copy(showDeleteAccountConfirmationDialog = false)
-        }
-    }
-
-    fun showSignOutConfirmationDialog() {
-        state.update { currentState ->
-            currentState.copy(showSignOutConfirmationDialog = true)
-        }
-    }
-
-    fun showDeleteAccountConfirmationDialog() {
-        state.update { currentState ->
-            currentState.copy(showDeleteAccountConfirmationDialog = true)
-        }
-    }
-
-    fun updateOldPassword(password: String) {
-        state.update { currentState ->
-            currentState.copy(oldPassword = password)
-        }
-    }
-
-    fun updateNewPassword(password: String) {
-        state.update { currentState ->
-            currentState.copy(newPassword = password)
-        }
-    }
-
-    fun changePassword() {
+    private fun changePassword() {
         if (state.value.newPassword.isEmpty() || state.value.oldPassword.isEmpty()) {
-            state.update { currentState ->
-                currentState.copy(stringResErrorMessage = R.string.fields_empty_error)
-            }
+            state.update { it.copy(stringResErrorMessage = R.string.fields_empty_error) }
             return
         }
         viewModelScope.launch {
-            state.update { currentState ->
-                currentState.copy(
-                    isLoading = true,
-                    stringResErrorMessage = null,
-                )
-            }
+            state.update { it.copy(isLoading = true, stringResErrorMessage = null) }
             val credentials = EmailAuthProvider.getCredential(
                 Firebase.auth.currentUser?.email.toString(),
                 state.value.oldPassword
@@ -116,31 +70,17 @@ class SettingsViewModel @Inject constructor(
                         Firebase.auth.currentUser?.updatePassword(state.value.newPassword)
                             ?.addOnCompleteListener { task2 ->
                                 if (task2.isSuccessful) {
-                                    state.update { currentState ->
-                                        currentState.copy(isLoading = false)
-                                    }
-                                    hideChangePasswordDialog()
+                                    state.update { it.copy(isLoading = false) }
+                                    handleAction(SettingsAction.HideChangePasswordDialog)
                                 } else {
-                                    state.update { currentState ->
-                                        currentState.copy(
-                                            isLoading = false,
-                                            errorMessage = task.exception?.message.toString()
-                                        )
-                                    }
+                                    state.update { it.copy(isLoading = false, errorMessage = task.exception?.message.toString()) }
                                 }
                             }
                     } else {
-                        state.update { currentState ->
-                            currentState.copy(
-                                isLoading = false,
-                                errorMessage = task.exception?.message.toString()
-                            )
-                        }
+                        state.update { it.copy(isLoading = false, errorMessage = task.exception?.message.toString()) }
                     }
                 }
-
         }
-
     }
 
 }
@@ -157,3 +97,17 @@ data class SettingsState(
     val oldPassword: String = "",
     val newPassword: String = ""
 )
+
+sealed interface SettingsAction {
+    data object SignOut : SettingsAction
+    data object DeleteAccount : SettingsAction
+    data object ShowChangePasswordDialog : SettingsAction
+    data object HideChangePasswordDialog : SettingsAction
+    data object ShowSignOutConfirmationDialog : SettingsAction
+    data object HideSignOutConfirmationDialog : SettingsAction
+    data object ShowDeleteAccountConfirmationDialog : SettingsAction
+    data object HideDeleteAccountConfirmationDialog : SettingsAction
+    data class UpdateOldPassword(val password: String) : SettingsAction
+    data class UpdateNewPassword(val password: String) : SettingsAction
+    data object ChangePassword : SettingsAction
+}

@@ -16,24 +16,21 @@ class LocationPickerViewModel @Inject constructor(
     private var state = MutableStateFlow(LocationPickerState())
     val uiState = state
 
-    fun updateLocation(location: GeoPoint) {
-        state.update { currentState ->
-            currentState.copy(
-                selectedLocation = location
-            )
+    fun handleAction(action: LocationPickerAction) {
+        when (action) {
+            is LocationPickerAction.UpdateLocation -> state.update { it.copy(selectedLocation = action.location) }
+            is LocationPickerAction.UpdateZoom -> state.update { it.copy(zoomLevel = action.zoom) }
         }
     }
 
-    fun updateZoom(zoom: Double) {
-        state.update { currentState ->
-            currentState.copy(
-                zoomLevel = zoom
-            )
-        }
-    }
 }
 
 data class LocationPickerState(
     val selectedLocation: GeoPoint = GeoPoint(44.80567303794035, 20.476393389720563),
     val zoomLevel: Double = 15.0,
 )
+
+sealed interface LocationPickerAction {
+    data class UpdateLocation(val location: GeoPoint) : LocationPickerAction
+    data class UpdateZoom(val zoom: Double) : LocationPickerAction
+}

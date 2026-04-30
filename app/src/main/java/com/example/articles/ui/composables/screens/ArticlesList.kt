@@ -25,12 +25,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonElevation
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -39,7 +41,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,6 +52,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.articles.R
 import com.example.articles.models.UIArticle
@@ -61,6 +63,9 @@ import com.example.articles.ui.utils.isInteger
 import com.example.articles.ui.utils.toUIDate
 import com.example.articles.viewmodels.ArticlesListViewModel
 import com.example.articles.models.Location
+import androidx.compose.ui.window.Dialog
+import com.example.articles.ui.composables.utils.TwoOptionFab
+import com.example.articles.viewmodels.ArticlesListAction
 
 @Composable
 fun ArticlesList(
@@ -72,29 +77,45 @@ fun ArticlesList(
     articlesListViewModel: ArticlesListViewModel = hiltViewModel()
 ) {
 
-    val state by articlesListViewModel.uiState.collectAsState()
+    val state by articlesListViewModel.uiState.collectAsStateWithLifecycle()
     val screenSize = ScreenSize.getScreenSize()
 
     BackHandler {
-        if (state.shoppingModeActive) articlesListViewModel.stopShopping(false)
-        else onBackClick()
+        if (state.shoppingModeActive) {
+            articlesListViewModel.handleAction(ArticlesListAction.StopShopping(false))
+        } else {
+            onBackClick()
+        }
     }
 
     LaunchedEffect(Unit) {
-        articlesListViewModel.syncData()
+        articlesListViewModel.handleAction(ArticlesListAction.SyncData)
+    }
+
+    if (state.showCreateGroupDialog) {
+        Dialog(
+            onDismissRequest = {
+                articlesListViewModel.handleAction(ArticlesListAction.HideCreateGroupDialog)
+            }
+        ) {
+            CreateGroup(
+                onDismissRequest = {
+                    articlesListViewModel.handleAction(ArticlesListAction.HideCreateGroupDialog)
+                }
+            )
+        }
     }
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onFloatingActionButtonClick,
-                containerColor = MaterialTheme.colorScheme.primary,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = stringResource(id = R.string.add_new_article)
-                )
-            }
+            TwoOptionFab(
+                firstIcon = Icons.Default.Add,
+                firstText = stringResource(id = R.string.create_group),
+                onFirstClick = { articlesListViewModel.handleAction(ArticlesListAction.ShowCreateGroupDialog) },
+                secondIcon = Icons.Default.Add,
+                secondText = stringResource(id = R.string.add_new_article),
+                onSecondClick = onFloatingActionButtonClick,
+            )
         },
         modifier = modifier
     ) { innerPadding ->
@@ -111,8 +132,8 @@ fun ArticlesList(
                     if (state.shoppingModeActive) Icons.Default.Delete
                     else Icons.Default.ShoppingCart,
                 onTrailingIconClick = {
-                    if (state.shoppingModeActive) articlesListViewModel.stopShopping(deleteArticles = true)
-                    else articlesListViewModel.startShopping(index = null)
+                    if (state.shoppingModeActive) articlesListViewModel.handleAction(ArticlesListAction.StopShopping(deleteArticles = true))
+                    else articlesListViewModel.handleAction(ArticlesListAction.StartShopping(index = null))
                 },
                 trailingIconEnabled = state.articles.isNotEmpty(),
                 leadingIcon = Icons.Default.Settings,
@@ -144,16 +165,16 @@ fun ArticlesList(
                             onOpenNavigation = onOpenNavigation,
                             shoppingModeRunning = state.shoppingModeActive,
                             onCheckChange = {
-                                articlesListViewModel.updateCheckStatus(index, it)
+                                articlesListViewModel.handleAction(ArticlesListAction.ToggleCheckStatus(index, it))
                             },
                             togglePhoto = {
-                                articlesListViewModel.togglePhoto(index)
+                                articlesListViewModel.handleAction(ArticlesListAction.TogglePhoto(index))
                             },
                             onItemBought = {
-                                articlesListViewModel.buy(article)
+                                articlesListViewModel.handleAction(ArticlesListAction.BuyArticle(article))
                             },
                             onShoppingModeClick = {
-                                articlesListViewModel.startShopping(index = index)
+                                articlesListViewModel.handleAction(ArticlesListAction.StartShopping(index = index))
                             },
                             modifier = Modifier
                                 .animateItem()

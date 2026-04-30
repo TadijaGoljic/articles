@@ -51,6 +51,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.example.articles.R
@@ -60,6 +61,7 @@ import com.example.articles.ui.composables.utils.Toolbar
 import com.example.articles.ui.utils.ScreenSize
 import com.example.articles.ui.utils.copyUriToUri
 import com.example.articles.ui.utils.isInteger
+import com.example.articles.viewmodels.AddNewArticleAction
 import com.example.articles.viewmodels.AddNewArticleViewModel
 import com.example.articles.viewmodels.AddNewArticleViewModel.Companion.KEY_INDEX
 import com.example.articles.viewmodels.AddNewArticleViewModel.Companion.KEY_LOCATION
@@ -76,7 +78,7 @@ fun AddNewArticle(
     addNewArticleViewModel: AddNewArticleViewModel = hiltViewModel()
 ) {
 
-    val state by addNewArticleViewModel.uiState.collectAsState()
+    val state by addNewArticleViewModel.uiState.collectAsStateWithLifecycle()
     val screenSize = ScreenSize.getScreenSize()
 
     val savedStateHandle = navController.currentBackStackEntry?.savedStateHandle
@@ -92,14 +94,14 @@ fun AddNewArticle(
 
     LaunchedEffect(pickedLocation) {
         pickedLocation?.let { location ->
-            addNewArticleViewModel.revalidateLocations(location)
+            addNewArticleViewModel.handleAction(AddNewArticleAction.RevalidateLocation(location))
             savedStateHandle.remove<Location>(KEY_LOCATION)
             savedStateHandle.remove<Int>(KEY_INDEX)
         }
     }
 
     fun savePhoto(uri: Uri) {
-        addNewArticleViewModel.updatePhoto(uri.toString())
+        addNewArticleViewModel.handleAction(AddNewArticleAction.UpdatePhoto(uri.toString()))
     }
 
     var uri by remember { mutableStateOf(addNewArticleViewModel.photoUri()) }
@@ -161,19 +163,19 @@ fun AddNewArticle(
                     article = state.article,
                     onNameChange = {
                         if (it.isEmpty()) {
-                            addNewArticleViewModel.updateName(null)
+                            addNewArticleViewModel.handleAction(AddNewArticleAction.UpdateName(null))
                         } else if (it.length < 30) {
-                            addNewArticleViewModel.updateName(it)
+                            addNewArticleViewModel.handleAction(AddNewArticleAction.UpdateName(it))
                         }
                     },
                     onExpandIconClick = {
-                        addNewArticleViewModel.toggleExpanded()
+                        addNewArticleViewModel.handleAction(AddNewArticleAction.ToggleExpanded)
                     },
                     onArticleTypeChange = {
-                        addNewArticleViewModel.updateType(it)
+                        addNewArticleViewModel.handleAction(AddNewArticleAction.UpdateType(it))
                     },
                     onQuantityChange = {
-                        addNewArticleViewModel.updateQuantity(it)
+                        addNewArticleViewModel.handleAction(AddNewArticleAction.UpdateQuantity(it))
                     },
                     onLocationPickerClick = {
                         onLocationPickerClick()
@@ -186,14 +188,14 @@ fun AddNewArticle(
                         pickImage.launch("image/*")
                     },
                     onSeePhotoClick = {
-                        addNewArticleViewModel.togglePhotoVisibility()
+                        addNewArticleViewModel.handleAction(AddNewArticleAction.TogglePhotoVisibility)
                     },
                     modifier = Modifier
                         .padding(vertical = 5.dp)
                 )
             }
             Button(
-                onClick = { addNewArticleViewModel.save() },
+                onClick = { addNewArticleViewModel.handleAction(AddNewArticleAction.Save) },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = 10.dp)

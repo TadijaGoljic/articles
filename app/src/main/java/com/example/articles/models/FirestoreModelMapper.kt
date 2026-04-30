@@ -5,49 +5,25 @@ import android.util.Base64
 import androidx.core.net.toUri
 import com.example.articles.db.entities.ArticleEntity
 import com.example.articles.ui.utils.FileManager
-import com.example.articles.ui.utils.resizeImage
 import com.example.articles.ui.utils.FileManager.Companion.IMAGE_PREFIX
 import com.example.articles.ui.utils.FileManager.Companion.IMAGE_SUFFIX
+import com.example.articles.ui.utils.resizeImage
 import com.google.firebase.firestore.DocumentSnapshot
 import java.io.File
-import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class ModelMapper @Inject constructor(
+class FirestoreModelMapper @Inject constructor(
     private val fileManager: FileManager
 ) {
-
-    fun mapToDBEntity(uiArticle: UIArticle) = ArticleEntity(
-        idArticle = uiArticle.id,
-        name = uiArticle.name,
-        dateCreated = uiArticle.dateCreated.time,
-        location = uiArticle.location,
-        quantity = uiArticle.quantity,
-        unit = uiArticle.unit,
-        photoUri = uiArticle.photoUri,
-        deleted = uiArticle.deleted,
-        updatedAt = Date().time
-    )
-
-    fun mapToUIArticle(articleEntity: ArticleEntity) = UIArticle(
-        id = articleEntity.idArticle,
-        name = articleEntity.name,
-        dateCreated = Date(articleEntity.dateCreated),
-        location = articleEntity.location,
-        quantity = articleEntity.quantity,
-        unit = articleEntity.unit,
-        photoUri = articleEntity.photoUri,
-        deleted = articleEntity.deleted
-    )
 
     fun mapToFirestoreMap(articleEntity: ArticleEntity, context: Context): Map<String, Any?> {
         val file = articleEntity.photoUri?.let { uri ->
             fileManager.getFileFromUri(context, uri.toUri())
         }
-        var photoBytes : ByteArray? = null
+        var photoBytes: ByteArray? = null
         if (file != null) {
             while (file.length() > 10240) {
                 photoBytes = resizeImage(context, file.toUri())

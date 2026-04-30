@@ -12,7 +12,7 @@ import java.util.UUID
 @Dao
 interface GroupDao {
 
-    @Insert suspend fun insert(group: GroupEntity)
+    @Insert suspend fun addNewGroup(group: GroupEntity)
 
     @Query("DELETE FROM `groups` WHERE idGroup = :idGroup")
     suspend fun delete(idGroup: UUID)

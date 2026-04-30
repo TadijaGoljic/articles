@@ -30,7 +30,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -50,11 +49,13 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.articles.R
 import com.example.articles.ui.composables.utils.Logos
 import com.example.articles.ui.composables.utils.ProgressButton
 import com.example.articles.ui.utils.ScreenSize
 import com.example.articles.viewmodels.AuthenticationState
+import com.example.articles.viewmodels.SignInAction
 import com.example.articles.viewmodels.SignInState
 import com.example.articles.viewmodels.SignInViewModel
 import com.example.articles.viewmodels.SignInViewModel.Companion.SIGN_UP_TAG
@@ -67,13 +68,13 @@ fun SignInScreen(
     signInViewModel: SignInViewModel = hiltViewModel()
 ) {
 
-    val state by signInViewModel.uiState.collectAsState()
+    val state by signInViewModel.uiState.collectAsStateWithLifecycle()
     val passwordFocusRequester = remember { FocusRequester() }
     val configuration = LocalConfiguration.current
 
     BackHandler {
         if (state.authenticationState == AuthenticationState.SIGN_IN) onMoveToBackground()
-        else signInViewModel.updateAuthenticationState(AuthenticationState.SIGN_IN)
+        else signInViewModel.handleAction(SignInAction.UpdateAuthenticationState(AuthenticationState.SIGN_IN))
     }
 
     LaunchedEffect(state.ok) {
@@ -83,12 +84,12 @@ fun SignInScreen(
     if (state.showAlert) {
         AlertDialog(
             onDismissRequest = {
-                signInViewModel.hideAlert()
+                signInViewModel.handleAction(SignInAction.HideAlert)
             },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        signInViewModel.hideAlert()
+                        signInViewModel.handleAction(SignInAction.HideAlert)
                     }
                 ) {
                     Text(text = stringResource(id = R.string.ok))
@@ -106,12 +107,12 @@ fun SignInScreen(
     if (configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
         SignInPortrait(
             state = state,
-            onEmailChange = signInViewModel::updateEmail,
-            onPasswordChange = signInViewModel::updatePassword,
-            onSignInClick = signInViewModel::signIn,
-            onSignUpClick = signInViewModel::signUp,
-            onForgotPasswordClick = signInViewModel::forgotPassword,
-            updateAuthenticationState = signInViewModel::updateAuthenticationState,
+            onEmailChange = { signInViewModel.handleAction(SignInAction.UpdateEmail(it)) },
+            onPasswordChange = { signInViewModel.handleAction(SignInAction.UpdatePassword(it)) },
+            onSignInClick = { signInViewModel.handleAction(SignInAction.SignIn) },
+            onSignUpClick = { signInViewModel.handleAction(SignInAction.SignUp) },
+            onForgotPasswordClick = { signInViewModel.handleAction(SignInAction.ForgotPassword) },
+            updateAuthenticationState = { signInViewModel.handleAction(SignInAction.UpdateAuthenticationState(it)) },
             passwordFocusRequester = passwordFocusRequester,
             authenticationState = state.authenticationState,
             modifier = modifier
@@ -119,12 +120,12 @@ fun SignInScreen(
     } else {
         SignInLandscape(
             state = state,
-            onEmailChange = signInViewModel::updateEmail,
-            onPasswordChange = signInViewModel::updatePassword,
-            onSignInClick = signInViewModel::signIn,
-            onSignUpClick = signInViewModel::signUp,
-            onForgotPasswordClick = signInViewModel::forgotPassword,
-            updateAuthenticationState = signInViewModel::updateAuthenticationState,
+            onEmailChange = { signInViewModel.handleAction(SignInAction.UpdateEmail(it)) },
+            onPasswordChange = { signInViewModel.handleAction(SignInAction.UpdatePassword(it)) },
+            onSignInClick = { signInViewModel.handleAction(SignInAction.SignIn) },
+            onSignUpClick = { signInViewModel.handleAction(SignInAction.SignUp) },
+            onForgotPasswordClick = { signInViewModel.handleAction(SignInAction.ForgotPassword) },
+            updateAuthenticationState = { signInViewModel.handleAction(SignInAction.UpdateAuthenticationState(it)) },
             passwordFocusRequester = passwordFocusRequester,
             authenticationState = state.authenticationState,
             modifier = modifier

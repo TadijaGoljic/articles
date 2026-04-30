@@ -54,6 +54,8 @@
     <string name="hide_photo">Hide photo</string>
     <string name="no_articles_title">No Articles to Show</string>
     <string name="no_articles_message">To Add new Article click on \"+\" icon</string>
+    <string name="create_group">Create a group</string>
+    <string name="save_group">Save group</string>
 
     <!-- Units -->
     <string name="unit_quantity">Pieces</string>

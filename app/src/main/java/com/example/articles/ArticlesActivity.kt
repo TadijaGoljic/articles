@@ -74,15 +74,9 @@ class ArticlesActivity : ComponentActivity() {
             onOpenNavigation = { location ->
                 openNavigation(location = location)
             },
-            moveTaskToBackground = {
-                moveTaskToBackground()
-            },
-            onSignOut = {
-                onSignOut()
-            },
-            onAccountDelete = {
-                onAccountDelete()
-            },
+            moveTaskToBackground = ::moveTaskToBackground,
+            onSignOut = ::onSignOut,
+            onAccountDelete = ::onAccountDelete,
             modifier = modifier
         )
     }

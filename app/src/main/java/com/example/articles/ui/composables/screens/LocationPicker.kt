@@ -17,7 +17,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -25,8 +24,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.articles.R
 import com.example.articles.models.Location
+import com.example.articles.viewmodels.LocationPickerAction
 import com.example.articles.viewmodels.LocationPickerViewModel
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
@@ -47,7 +48,7 @@ fun LocationPicker(
 ) {
 
     val context = LocalContext.current
-    val state by locationPickerViewModel.uiState.collectAsState()
+    val state by locationPickerViewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(context) {
         Configuration.getInstance().load(
@@ -82,8 +83,8 @@ fun LocationPicker(
                             val mapEventsReceiver = object : MapEventsReceiver {
                                 override fun singleTapConfirmedHelper(p: GeoPoint?): Boolean {
                                     p?.let { geoPoint ->
-                                        locationPickerViewModel.updateLocation(geoPoint)
-                                        locationPickerViewModel.updateZoom(this@apply.zoomLevelDouble)
+                                        locationPickerViewModel.handleAction(LocationPickerAction.UpdateLocation(geoPoint))
+                                        locationPickerViewModel.handleAction(LocationPickerAction.UpdateZoom(this@apply.zoomLevelDouble))
 
                                         overlays.removeAll { it is Marker }
 

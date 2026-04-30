@@ -23,7 +23,7 @@
     <string name="new_password">Нова лозинка</string>
     <string name="old_password">Стара лозинка</string>
     <string name="fields_empty_error">Сва поља морају бити попуњена</string>
-    <string name="send">Попаљи</string>
+    <string name="send">Пошаљи</string>
 
     <!-- Articles -->
     <string name="app_name">Артикли</string>
@@ -53,7 +53,9 @@
     <string name="show_photo">Прикажи фотографију</string>
     <string name="hide_photo">Сакриј фотографију</string>
     <string name="no_articles_title">Нема артикала за приказивање</string>
-    <string name="no_articles_message">To Add new Article click on \"+\" icon</string>
+    <string name="no_articles_message">За додавање новог артикла притисните иконицу \"+\"</string>
+    <string name="create_group">Направи групу</string>
+    <string name="save_group">Сними групу</string>
 
     <!-- Units -->
     <string name="unit_quantity">Комада</string>
