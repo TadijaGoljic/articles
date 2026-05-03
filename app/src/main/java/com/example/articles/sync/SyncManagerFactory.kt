@@ -47,6 +47,13 @@ class SyncWorkerFactory @Inject constructor(
     @ApplicationContext context: Context
 ) : DelegatingWorkerFactory() {
     init {
-        addFactory(SyncManagerFactory(userPreferences, articleRepository, context, firestoreModelMapper))
+        addFactory(
+            SyncManagerFactory(
+                userPreferences = userPreferences,
+                articleRepository = articleRepository,
+                applicationContext = context,
+                firestoreModelMapper = firestoreModelMapper
+            )
+        )
     }
 }

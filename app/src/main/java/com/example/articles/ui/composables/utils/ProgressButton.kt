@@ -19,7 +19,8 @@ fun ProgressButton(
     onButtonClick: () -> Unit,
     isLoading: Boolean,
     text: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
 ) {
     Button(
         onClick = onButtonClick,

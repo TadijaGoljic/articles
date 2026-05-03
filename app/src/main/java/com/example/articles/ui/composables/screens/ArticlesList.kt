@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.paddingFrom
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -70,7 +71,8 @@ import com.example.articles.viewmodels.ArticlesListAction
 @Composable
 fun ArticlesList(
     onBackClick: () -> Unit,
-    onFloatingActionButtonClick: () -> Unit,
+    openAddNewArticleScreen: () -> Unit,
+    openCreateGroupScreen: () -> Unit,
     onOpenNavigation: (Location) -> Unit,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
@@ -92,29 +94,15 @@ fun ArticlesList(
         articlesListViewModel.handleAction(ArticlesListAction.SyncData)
     }
 
-    if (state.showCreateGroupDialog) {
-        Dialog(
-            onDismissRequest = {
-                articlesListViewModel.handleAction(ArticlesListAction.HideCreateGroupDialog)
-            }
-        ) {
-            CreateGroup(
-                onDismissRequest = {
-                    articlesListViewModel.handleAction(ArticlesListAction.HideCreateGroupDialog)
-                }
-            )
-        }
-    }
-
     Scaffold(
         floatingActionButton = {
             TwoOptionFab(
                 firstIcon = Icons.Default.Add,
                 firstText = stringResource(id = R.string.create_group),
-                onFirstClick = { articlesListViewModel.handleAction(ArticlesListAction.ShowCreateGroupDialog) },
+                onFirstClick = openCreateGroupScreen,
                 secondIcon = Icons.Default.Add,
                 secondText = stringResource(id = R.string.add_new_article),
-                onSecondClick = onFloatingActionButtonClick,
+                onSecondClick = openAddNewArticleScreen,
             )
         },
         modifier = modifier

@@ -12,6 +12,7 @@ import com.example.articles.ui.composables.screens.LocationPicker
 import com.example.articles.ui.composables.screens.SettingsScreen
 import com.example.articles.viewmodels.AddNewArticleViewModel.Companion.KEY_LOCATION
 import com.example.articles.models.Location
+import com.example.articles.ui.composables.screens.CreateGroup
 
 @SuppressLint("RestrictedApi")
 @Composable
@@ -32,8 +33,11 @@ fun ArticlesNavigationFlow(
     ) {
         composable(route = ArticlesDestinations.ARTICLES_LIST) {
             ArticlesList(
-                onFloatingActionButtonClick = {
+                openAddNewArticleScreen = {
                     navController.navigate(ArticlesDestinations.ADD_NEW_ARTICLE)
+                },
+                openCreateGroupScreen = {
+                    navController.navigate(ArticlesDestinations.CREATE_GROUP)
                 },
                 onOpenNavigation = { locationData ->
                     onOpenNavigation(locationData)
@@ -55,9 +59,7 @@ fun ArticlesNavigationFlow(
                     navController.navigate(ArticlesDestinations.PICK_LOCATION)
                 },
                 navController = navController,
-                onFinish = {
-                    navController.popBackStack()
-                }
+                onFinish = navController::popBackStack
             )
         }
         composable(route = ArticlesDestinations.PICK_LOCATION) {
@@ -74,10 +76,14 @@ fun ArticlesNavigationFlow(
         composable(route = ArticlesDestinations.SETTINGS) {
             SettingsScreen(
                 onSignOut = onSignOut,
-                onBackClick = {
-                    navController.popBackStack()
-                },
+                onBackClick = navController::popBackStack,
                 onAccountDelete = onAccountDelete
+            )
+        }
+        composable(route = ArticlesDestinations.CREATE_GROUP) {
+            CreateGroup(
+                onBackClick = navController::popBackStack,
+                modifier = Modifier
             )
         }
     }
@@ -89,4 +95,5 @@ private object ArticlesDestinations {
     const val ADD_NEW_ARTICLE = "add_new_article"
     const val PICK_LOCATION = "pick_location"
     const val SETTINGS = "settings"
+    const val CREATE_GROUP = "create_group"
 }

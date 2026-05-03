@@ -55,10 +55,6 @@ class ArticlesListViewModel @Inject constructor(
                 stopShopping(action.deleteArticles)
             is ArticlesListAction.BuyArticle ->
                 buy(action.article)
-            is ArticlesListAction.ShowCreateGroupDialog ->
-                showCreateGroupDialog()
-            is ArticlesListAction.HideCreateGroupDialog ->
-                hideCreateGroupDialog()
         }
     }
 
@@ -133,28 +129,11 @@ class ArticlesListViewModel @Inject constructor(
         }
     }
 
-    private fun showCreateGroupDialog() {
-        uiState.update { currentState ->
-            currentState.copy(
-                showCreateGroupDialog = true,
-            )
-        }
-    }
-
-    private fun hideCreateGroupDialog() {
-        uiState.update { currentState ->
-            currentState.copy(
-                showCreateGroupDialog = false,
-            )
-        }
-    }
-
 }
 
 data class ArticlesListState(
     val articles: List<UIArticle> = emptyList(),
     val shoppingModeActive: Boolean = false,
-    val showCreateGroupDialog: Boolean = false,
 )
 
 sealed interface ArticlesListAction {
@@ -164,6 +143,4 @@ sealed interface ArticlesListAction {
     data class StartShopping(val index: Int?) : ArticlesListAction
     data class StopShopping(val deleteArticles: Boolean) : ArticlesListAction
     data class BuyArticle(val article: UIArticle) : ArticlesListAction
-    data object ShowCreateGroupDialog : ArticlesListAction
-    data object HideCreateGroupDialog : ArticlesListAction
 }

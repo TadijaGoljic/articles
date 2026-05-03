@@ -3,6 +3,8 @@ package com.example.articles.repositories
 import com.example.articles.db.dao.GroupDao
 import com.example.articles.models.UIGroup
 import com.example.articles.models.toGroupEntity
+import com.example.articles.models.toUIGroup
+import kotlinx.coroutines.flow.map
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -18,6 +20,8 @@ class GroupRepository @Inject constructor(
     suspend fun delete(groupId: UUID) =
         groupDao.delete(groupId)
 
-    fun getAllGroupsWithArticles() = groupDao.getAllGroupsWithArticles()
+    fun getAllGroups() = groupDao.getAllGroups().map { list ->
+        list.map { group -> group.toUIGroup() }
+    }
 
 }

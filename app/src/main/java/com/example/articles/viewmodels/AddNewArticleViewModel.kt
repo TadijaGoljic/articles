@@ -8,9 +8,11 @@ import com.example.articles.models.ArticleUnit
 import com.example.articles.models.Location
 import com.example.articles.models.UIArticle
 import com.example.articles.repositories.ArticleRepository
+import com.example.articles.repositories.GroupRepository
 import com.example.articles.ui.utils.FileManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Date
@@ -19,6 +21,7 @@ import javax.inject.Inject
 @HiltViewModel
 class AddNewArticleViewModel @Inject constructor(
     private val articleRepository: ArticleRepository,
+    private val groupRepository: GroupRepository,
     private val fileManager: FileManager
 ) : ViewModel() {
 
@@ -29,6 +32,18 @@ class AddNewArticleViewModel @Inject constructor(
 
     private var state = MutableStateFlow(AddNewArticleState())
     val uiState = state
+
+    init {
+        viewModelScope.launch {
+            groupRepository.getAllGroups().collectLatest { groups ->
+                state.update { currentState ->
+                    currentState.copy(
+                        groupNames = groups.map { it.name }
+                    )
+                }
+            }
+        }
+    }
 
     fun handleAction(action: AddNewArticleAction) {
         when (action) {
@@ -137,6 +152,7 @@ data class AddNewArticleState(
     val article: UIArticle = UIArticle(),
     val ok: Boolean = false,
     @StringRes val message: Int? = null,
+    val groupNames: List<String> = emptyList(),
 )
 
 sealed interface AddNewArticleAction {

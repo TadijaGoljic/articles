@@ -23,6 +23,7 @@ data class UIArticle(
     val photoVisible: Boolean = false,
     val isError: Boolean = false,
     val deleted: Boolean = false,
+    val groupId: UUID? = null
 ) : Parcelable
 
 

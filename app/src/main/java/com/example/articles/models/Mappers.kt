@@ -2,7 +2,6 @@ package com.example.articles.models
 
 import com.example.articles.db.entities.ArticleEntity
 import com.example.articles.db.entities.GroupEntity
-import com.example.articles.db.entities.GroupWithArticles
 import java.util.Date
 
 fun ArticleEntity.toUIArticle() = UIArticle(
@@ -13,7 +12,8 @@ fun ArticleEntity.toUIArticle() = UIArticle(
     quantity = quantity,
     unit = unit,
     photoUri = photoUri,
-    deleted = deleted
+    deleted = deleted,
+    groupId = groupId
 )
 
 fun UIArticle.toArticleEntity() = ArticleEntity(
@@ -25,18 +25,13 @@ fun UIArticle.toArticleEntity() = ArticleEntity(
     unit = unit,
     photoUri = photoUri,
     deleted = deleted,
-    updatedAt = Date().time
+    updatedAt = Date().time,
+    groupId = groupId
 )
 
 fun GroupEntity.toUIGroup() = UIGroup(
     id = idGroup,
     name = name
-)
-
-fun GroupWithArticles.toUIGroup() = UIGroup(
-    id = group.idGroup,
-    name = group.name,
-    articles = articles.map { it.toUIArticle() }
 )
 
 fun UIGroup.toGroupEntity() = GroupEntity(

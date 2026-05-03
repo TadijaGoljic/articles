@@ -20,8 +20,10 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.KeyboardActionHandler
+import androidx.compose.foundation.text.input.OutputTransformation
+import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
@@ -44,7 +46,6 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -107,12 +108,34 @@ fun SignInScreen(
     if (configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
         SignInPortrait(
             state = state,
-            onEmailChange = { signInViewModel.handleAction(SignInAction.UpdateEmail(it)) },
-            onPasswordChange = { signInViewModel.handleAction(SignInAction.UpdatePassword(it)) },
-            onSignInClick = { signInViewModel.handleAction(SignInAction.SignIn) },
-            onSignUpClick = { signInViewModel.handleAction(SignInAction.SignUp) },
-            onForgotPasswordClick = { signInViewModel.handleAction(SignInAction.ForgotPassword) },
-            updateAuthenticationState = { signInViewModel.handleAction(SignInAction.UpdateAuthenticationState(it)) },
+            onSignInClick = {
+                signInViewModel.handleAction(
+                    SignInAction.SignIn(
+                        email = state.email.text.toString(),
+                        password = state.password.text.toString()
+                    )
+                )
+            },
+            onSignUpClick = {
+                signInViewModel.handleAction(
+                    SignInAction.SignUp(
+                        email = state.email.text.toString(),
+                        password = state.password.text.toString()
+                    )
+                )
+            },
+            onForgotPasswordClick = {
+                signInViewModel.handleAction(
+                    SignInAction.ForgotPassword(
+                        email = state.email.text.toString()
+                    )
+                )
+            },
+            updateAuthenticationState = {
+                signInViewModel.handleAction(
+                    SignInAction.UpdateAuthenticationState(it)
+                )
+            },
             passwordFocusRequester = passwordFocusRequester,
             authenticationState = state.authenticationState,
             modifier = modifier
@@ -120,12 +143,34 @@ fun SignInScreen(
     } else {
         SignInLandscape(
             state = state,
-            onEmailChange = { signInViewModel.handleAction(SignInAction.UpdateEmail(it)) },
-            onPasswordChange = { signInViewModel.handleAction(SignInAction.UpdatePassword(it)) },
-            onSignInClick = { signInViewModel.handleAction(SignInAction.SignIn) },
-            onSignUpClick = { signInViewModel.handleAction(SignInAction.SignUp) },
-            onForgotPasswordClick = { signInViewModel.handleAction(SignInAction.ForgotPassword) },
-            updateAuthenticationState = { signInViewModel.handleAction(SignInAction.UpdateAuthenticationState(it)) },
+            onSignInClick = {
+                signInViewModel.handleAction(
+                    SignInAction.SignIn(
+                        email = state.email.text.toString(),
+                        password = state.password.text.toString()
+                    )
+                )
+            },
+            onSignUpClick = {
+                signInViewModel.handleAction(
+                    SignInAction.SignUp(
+                        email = state.email.text.toString(),
+                        password = state.password.text.toString()
+                    )
+                )
+            },
+            onForgotPasswordClick = {
+                signInViewModel.handleAction(
+                    SignInAction.ForgotPassword(
+                        email = state.email.text.toString()
+                    )
+                )
+            },
+            updateAuthenticationState = {
+                signInViewModel.handleAction(
+                    SignInAction.UpdateAuthenticationState(it)
+                )
+            },
             passwordFocusRequester = passwordFocusRequester,
             authenticationState = state.authenticationState,
             modifier = modifier
@@ -137,8 +182,6 @@ fun SignInScreen(
 @Composable
 fun SignInPortrait(
     state: SignInState,
-    onEmailChange: (String) -> Unit,
-    onPasswordChange: (String) -> Unit,
     onSignInClick: () -> Unit,
     onSignUpClick: () -> Unit,
     onForgotPasswordClick: () -> Unit,
@@ -173,8 +216,6 @@ fun SignInPortrait(
         SignInScreenAction(
             modifier = Modifier.weight(1f),
             state = state,
-            onEmailChange = onEmailChange,
-            onPasswordChange = onPasswordChange,
             onSignInClick = onSignInClick,
             onSignUpClick = onSignUpClick,
             onForgotPasswordClick = onForgotPasswordClick,
@@ -188,8 +229,6 @@ fun SignInPortrait(
 @Composable
 fun SignInLandscape(
     state: SignInState,
-    onEmailChange: (String) -> Unit,
-    onPasswordChange: (String) -> Unit,
     onSignInClick: () -> Unit,
     onSignUpClick: () -> Unit,
     onForgotPasswordClick: () -> Unit,
@@ -221,8 +260,6 @@ fun SignInLandscape(
             SignInScreenAction(
                 modifier = Modifier.fillMaxSize(),
                 state = state,
-                onEmailChange = onEmailChange,
-                onPasswordChange = onPasswordChange,
                 onSignInClick = onSignInClick,
                 onSignUpClick = onSignUpClick,
                 onForgotPasswordClick = onForgotPasswordClick,
@@ -237,8 +274,6 @@ fun SignInLandscape(
 @Composable
 fun SignInScreenAction(
     state: SignInState,
-    onEmailChange: (String) -> Unit,
-    onPasswordChange: (String) -> Unit,
     onSignInClick: () -> Unit,
     onSignUpClick: () -> Unit,
     onForgotPasswordClick: () -> Unit,
@@ -263,8 +298,6 @@ fun SignInScreenAction(
         when (target) {
             AuthenticationState.SIGN_IN -> SignIn(
                 state = state,
-                onEmailChange = onEmailChange,
-                onPasswordChange = onPasswordChange,
                 onButtonClick = onSignInClick,
                 passwordFocusRequester = passwordFocusRequester,
                 updateAuthenticationState = updateAuthenticationState,
@@ -272,14 +305,11 @@ fun SignInScreenAction(
             )
             AuthenticationState.SIGN_UP -> SignUp(
                 state = state,
-                onEmailChange = onEmailChange,
-                onPasswordChange = onPasswordChange,
                 onButtonClick = onSignUpClick,
                 passwordFocusRequester = passwordFocusRequester,
             )
             AuthenticationState.FORGOT_PASSWORD -> ForgotPassword(
                 state = state,
-                onEmailChange = onEmailChange,
                 onButtonClick = onForgotPasswordClick,
             )
         }
@@ -289,8 +319,6 @@ fun SignInScreenAction(
 @Composable
 fun SignIn(
     state: SignInState,
-    onEmailChange: (String) -> Unit,
-    onPasswordChange: (String) -> Unit,
     onButtonClick: () -> Unit,
     updateAuthenticationState: (AuthenticationState) -> Unit,
     passwordFocusRequester: FocusRequester,
@@ -325,8 +353,7 @@ fun SignIn(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             OutlinedTextField(
-                value = state.email,
-                onValueChange = onEmailChange,
+                state = state.email,
                 placeholder = {
                     Text(text = stringResource(id = R.string.email))
                 },
@@ -337,19 +364,15 @@ fun SignIn(
                     keyboardType = KeyboardType.Email,
                     imeAction = ImeAction.Next
                 ),
-                keyboardActions = KeyboardActions(
-                    onNext = {
-                        passwordFocusRequester.requestFocus()
-                    }
-                ),
-                singleLine = true,
-                maxLines = 1,
+                onKeyboardAction = KeyboardActionHandler {
+                    passwordFocusRequester.requestFocus()
+                },
+                lineLimits = TextFieldLineLimits.SingleLine,
                 isError = state.errorMessage != null,
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
-                value = state.password,
-                onValueChange = onPasswordChange,
+                state = state.password,
                 placeholder = {
                     Text(text = stringResource(id = R.string.password))
                 },
@@ -360,14 +383,11 @@ fun SignIn(
                     keyboardType = KeyboardType.Password,
                     imeAction = ImeAction.Done
                 ),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        onButtonClick()
-                    }
-                ),
-                visualTransformation = PasswordVisualTransformation(),
-                singleLine = true,
-                maxLines = 1,
+                onKeyboardAction = KeyboardActionHandler {
+                    onButtonClick()
+                },
+                outputTransformation = OutputTransformation { replace(0, length, "•".repeat(length)) },
+                lineLimits = TextFieldLineLimits.SingleLine,
                 isError = state.errorMessage != null,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -441,8 +461,6 @@ fun SignIn(
 @Composable
 fun SignUp(
     state: SignInState,
-    onEmailChange: (String) -> Unit,
-    onPasswordChange: (String) -> Unit,
     onButtonClick: () -> Unit,
     passwordFocusRequester: FocusRequester,
     modifier: Modifier = Modifier
@@ -464,8 +482,7 @@ fun SignUp(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             OutlinedTextField(
-                value = state.email,
-                onValueChange = onEmailChange,
+                state = state.email,
                 placeholder = {
                     Text(text = stringResource(id = R.string.email))
                 },
@@ -476,19 +493,15 @@ fun SignUp(
                     keyboardType = KeyboardType.Email,
                     imeAction = ImeAction.Next
                 ),
-                keyboardActions = KeyboardActions(
-                    onNext = {
-                        passwordFocusRequester.requestFocus()
-                    }
-                ),
-                singleLine = true,
-                maxLines = 1,
+                onKeyboardAction = KeyboardActionHandler {
+                    passwordFocusRequester.requestFocus()
+                },
+                lineLimits = TextFieldLineLimits.SingleLine,
                 isError = state.errorMessage != null,
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
-                value = state.password,
-                onValueChange = onPasswordChange,
+                state = state.password,
                 placeholder = {
                     Text(text = stringResource(id = R.string.password))
                 },
@@ -499,14 +512,11 @@ fun SignUp(
                     keyboardType = KeyboardType.Password,
                     imeAction = ImeAction.Done
                 ),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        onButtonClick()
-                    }
-                ),
-                visualTransformation = PasswordVisualTransformation(),
-                singleLine = true,
-                maxLines = 1,
+                onKeyboardAction = KeyboardActionHandler {
+                    onButtonClick()
+                },
+                outputTransformation = OutputTransformation { replace(0, length, "•".repeat(length)) },
+                lineLimits = TextFieldLineLimits.SingleLine,
                 isError = state.errorMessage != null,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -525,7 +535,6 @@ fun SignUp(
 @Composable
 fun ForgotPassword(
     state: SignInState,
-    onEmailChange: (String) -> Unit,
     onButtonClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -546,8 +555,7 @@ fun ForgotPassword(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             OutlinedTextField(
-                value = state.email,
-                onValueChange = onEmailChange,
+                state = state.email,
                 placeholder = {
                     Text(text = stringResource(id = R.string.email))
                 },
@@ -558,13 +566,10 @@ fun ForgotPassword(
                     keyboardType = KeyboardType.Email,
                     imeAction = ImeAction.Done
                 ),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        onButtonClick()
-                    }
-                ),
-                singleLine = true,
-                maxLines = 1,
+                onKeyboardAction = KeyboardActionHandler {
+                    onButtonClick()
+                },
+                lineLimits = TextFieldLineLimits.SingleLine,
                 isError = state.errorMessage != null,
                 modifier = Modifier.fillMaxWidth()
             )

@@ -1,6 +1,7 @@
 package com.example.articles.viewmodels
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.articles.R
@@ -26,14 +27,18 @@ class SettingsViewModel @Inject constructor(
         when (action) {
             is SettingsAction.SignOut -> signOut()
             is SettingsAction.DeleteAccount -> deleteAccount()
-            is SettingsAction.ShowChangePasswordDialog -> state.update { it.copy(showChangePasswordDialog = true) }
-            is SettingsAction.HideChangePasswordDialog -> state.update { it.copy(showChangePasswordDialog = false, errorMessage = null) }
-            is SettingsAction.ShowSignOutConfirmationDialog -> state.update { it.copy(showSignOutConfirmationDialog = true) }
-            is SettingsAction.HideSignOutConfirmationDialog -> state.update { it.copy(showSignOutConfirmationDialog = false) }
-            is SettingsAction.ShowDeleteAccountConfirmationDialog -> state.update { it.copy(showDeleteAccountConfirmationDialog = true) }
-            is SettingsAction.HideDeleteAccountConfirmationDialog -> state.update { it.copy(showDeleteAccountConfirmationDialog = false) }
-            is SettingsAction.UpdateOldPassword -> state.update { it.copy(oldPassword = action.password) }
-            is SettingsAction.UpdateNewPassword -> state.update { it.copy(newPassword = action.password) }
+            is SettingsAction.ShowChangePasswordDialog ->
+                updateChangePasswordDialogVisibility(visible = true)
+            is SettingsAction.HideChangePasswordDialog ->
+                updateChangePasswordDialogVisibility(visible = false)
+            is SettingsAction.ShowSignOutConfirmationDialog ->
+                updateSignOutDialogVisibility(visible = true)
+            is SettingsAction.HideSignOutConfirmationDialog ->
+                updateSignOutDialogVisibility(visible = false)
+            is SettingsAction.ShowDeleteAccountConfirmationDialog ->
+                updateDeleteAccountDialogVisibility(visible = true)
+            is SettingsAction.HideDeleteAccountConfirmationDialog ->
+                updateDeleteAccountDialogVisibility(visible = false)
             is SettingsAction.ChangePassword -> changePassword()
         }
     }
@@ -41,20 +46,55 @@ class SettingsViewModel @Inject constructor(
     private fun signOut() = viewModelScope.launch {
         articleRepository.deleteAll()
         Firebase.auth.signOut()
-        state.update { it.copy(signOutOk = true) }
+        state.update { currentState ->
+            currentState.copy(signOutOk = true)
+        }
     }
 
     private fun deleteAccount() = viewModelScope.launch {
         articleRepository.deleteAll()
-        Firebase.auth.currentUser?.delete()?.addOnCompleteListener { task ->
+        Firebase
+            .auth
+            .currentUser
+            ?.delete()
+            ?.addOnCompleteListener { task ->
             if (task.isSuccessful) {
                 state.update { it.copy(deleteOk = true) }
             }
         }
     }
 
+    private fun updateChangePasswordDialogVisibility(visible: Boolean) {
+        if (!visible) {
+            state.value.oldPassword.edit { replace(0, length, "") }
+            state.value.newPassword.edit { replace(0, length, "") }
+        }
+        state.update { currentState ->
+            currentState.copy(
+                showChangePasswordDialog = visible,
+                errorMessage = null
+            )
+        }
+    }
+
+    private fun updateSignOutDialogVisibility(visible: Boolean) {
+        state.update { currentState ->
+            currentState.copy(
+                showSignOutConfirmationDialog = visible
+            )
+        }
+    }
+
+    private fun updateDeleteAccountDialogVisibility(visible: Boolean) {
+        state.update { currentState ->
+            currentState.copy(
+                showDeleteAccountConfirmationDialog = visible
+            )
+        }
+    }
+
     private fun changePassword() {
-        if (state.value.newPassword.isEmpty() || state.value.oldPassword.isEmpty()) {
+        if (state.value.newPassword.text.isEmpty() || state.value.oldPassword.text.isEmpty()) {
             state.update { it.copy(stringResErrorMessage = R.string.fields_empty_error) }
             return
         }
@@ -62,12 +102,12 @@ class SettingsViewModel @Inject constructor(
             state.update { it.copy(isLoading = true, stringResErrorMessage = null) }
             val credentials = EmailAuthProvider.getCredential(
                 Firebase.auth.currentUser?.email.toString(),
-                state.value.oldPassword
+                state.value.oldPassword.text.toString()
             )
             Firebase.auth.currentUser?.reauthenticate(credentials)
                 ?.addOnCompleteListener { task ->
                     if (task.isSuccessful) {
-                        Firebase.auth.currentUser?.updatePassword(state.value.newPassword)
+                        Firebase.auth.currentUser?.updatePassword(state.value.newPassword.text.toString())
                             ?.addOnCompleteListener { task2 ->
                                 if (task2.isSuccessful) {
                                     state.update { it.copy(isLoading = false) }
@@ -94,8 +134,8 @@ data class SettingsState(
     val isLoading: Boolean = false,
     @StringRes val stringResErrorMessage: Int? = null,
     val errorMessage: String? = null,
-    val oldPassword: String = "",
-    val newPassword: String = ""
+    val oldPassword: TextFieldState = TextFieldState(""),
+    val newPassword: TextFieldState = TextFieldState("")
 )
 
 sealed interface SettingsAction {
@@ -107,7 +147,5 @@ sealed interface SettingsAction {
     data object HideSignOutConfirmationDialog : SettingsAction
     data object ShowDeleteAccountConfirmationDialog : SettingsAction
     data object HideDeleteAccountConfirmationDialog : SettingsAction
-    data class UpdateOldPassword(val password: String) : SettingsAction
-    data class UpdateNewPassword(val password: String) : SettingsAction
     data object ChangePassword : SettingsAction
 }

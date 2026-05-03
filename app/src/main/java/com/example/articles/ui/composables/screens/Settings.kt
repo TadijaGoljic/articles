@@ -10,8 +10,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.KeyboardActionHandler
+import androidx.compose.foundation.text.input.OutputTransformation
+import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material3.AlertDialog
@@ -37,7 +39,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -139,8 +140,6 @@ fun SettingsScreen(
                 ) {
                     ChangePassword(
                         state = state,
-                        onOldPasswordChange = { settingsViewModel.handleAction(SettingsAction.UpdateOldPassword(it)) },
-                        onNewPasswordChange = { settingsViewModel.handleAction(SettingsAction.UpdateNewPassword(it)) },
                         onButtonClick = { settingsViewModel.handleAction(SettingsAction.ChangePassword) },
                         newPasswordFocusRequester = newPasswordFocusRequester,
                         onDismissRequest = { settingsViewModel.handleAction(SettingsAction.HideChangePasswordDialog) }
@@ -219,8 +218,6 @@ fun SettingsItems(
 @Composable
 fun ChangePassword(
     state: SettingsState,
-    onOldPasswordChange: (String) -> Unit,
-    onNewPasswordChange: (String) -> Unit,
     onButtonClick: () -> Unit,
     onDismissRequest: () -> Unit,
     newPasswordFocusRequester: FocusRequester,
@@ -237,8 +234,7 @@ fun ChangePassword(
             modifier = Modifier.padding(bottom = 8.dp)
         )
         OutlinedTextField(
-            value = state.oldPassword,
-            onValueChange = onOldPasswordChange,
+            state = state.oldPassword,
             placeholder = {
                 Text(text = stringResource(id = R.string.old_password))
             },
@@ -249,20 +245,16 @@ fun ChangePassword(
                 keyboardType = KeyboardType.Password,
                 imeAction = ImeAction.Next
             ),
-            keyboardActions = KeyboardActions(
-                onNext = {
-                    newPasswordFocusRequester.requestFocus()
-                }
-            ),
-            visualTransformation = PasswordVisualTransformation(),
-            singleLine = true,
-            maxLines = 1,
+            onKeyboardAction = KeyboardActionHandler {
+                newPasswordFocusRequester.requestFocus()
+            },
+            outputTransformation = OutputTransformation { replace(0, length, "•".repeat(length)) },
+            lineLimits = TextFieldLineLimits.SingleLine,
             isError = state.errorMessage != null || state.stringResErrorMessage != null,
             modifier = Modifier.fillMaxWidth()
         )
         OutlinedTextField(
-            value = state.newPassword,
-            onValueChange = onNewPasswordChange,
+            state = state.newPassword,
             placeholder = {
                 Text(text = stringResource(id = R.string.new_password))
             },
@@ -273,14 +265,11 @@ fun ChangePassword(
                 keyboardType = KeyboardType.Password,
                 imeAction = ImeAction.Done
             ),
-            keyboardActions = KeyboardActions(
-                onDone = {
-                    onButtonClick()
-                }
-            ),
-            visualTransformation = PasswordVisualTransformation(),
-            singleLine = true,
-            maxLines = 1,
+            onKeyboardAction = KeyboardActionHandler {
+                onButtonClick()
+            },
+            outputTransformation = OutputTransformation { replace(0, length, "•".repeat(length)) },
+            lineLimits = TextFieldLineLimits.SingleLine,
             isError = state.errorMessage != null || state.stringResErrorMessage != null,
             modifier = Modifier
                 .fillMaxWidth()

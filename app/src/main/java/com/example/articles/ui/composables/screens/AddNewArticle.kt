@@ -56,7 +56,6 @@ import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.example.articles.R
 import com.example.articles.models.ArticleUnit
-import com.example.articles.models.UIArticle
 import com.example.articles.ui.composables.utils.Toolbar
 import com.example.articles.ui.utils.ScreenSize
 import com.example.articles.ui.utils.copyUriToUri
@@ -66,6 +65,7 @@ import com.example.articles.viewmodels.AddNewArticleViewModel
 import com.example.articles.viewmodels.AddNewArticleViewModel.Companion.KEY_INDEX
 import com.example.articles.viewmodels.AddNewArticleViewModel.Companion.KEY_LOCATION
 import com.example.articles.models.Location
+import com.example.articles.viewmodels.AddNewArticleState
 
 
 @Composable
@@ -160,7 +160,7 @@ fun AddNewArticle(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 AddNewArticleItem(
-                    article = state.article,
+                    state = state,
                     onNameChange = {
                         if (it.isEmpty()) {
                             addNewArticleViewModel.handleAction(AddNewArticleAction.UpdateName(null))
@@ -213,7 +213,7 @@ fun AddNewArticle(
 
 @Composable
 fun AddNewArticleItem(
-    article: UIArticle,
+    state: AddNewArticleState,
     onNameChange: (String) -> Unit,
     onExpandIconClick: () -> Unit,
     onArticleTypeChange: (ArticleUnit) -> Unit,
@@ -226,7 +226,7 @@ fun AddNewArticleItem(
 ) {
 
     var isDropDownMenuExpanded by rememberSaveable { mutableStateOf(false) }
-    var textValue by rememberSaveable { mutableStateOf(article.quantity?.toString() ?: "") }
+    var textValue by rememberSaveable { mutableStateOf(state.article.quantity?.toString() ?: "") }
 
     Box(
         modifier = modifier
@@ -236,6 +236,24 @@ fun AddNewArticleItem(
             .padding(bottom = 5.dp)
     ) {
         Column {
+//            Row {
+//                Text(
+//                    "Select Group of your article: "
+//                )
+//                DropdownMenu(
+//                    expanded = true,
+//                    onDismissRequest = { }
+//                ) {
+//                    state.groupNames.forEach { groupName ->
+//                        DropdownMenuItem(
+//                            text = {
+//                                Text(text = groupName)
+//                            },
+//                            onClick = { }
+//                        )
+//                    }
+//                }
+//            }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -244,17 +262,19 @@ fun AddNewArticleItem(
                 ) {
                     Icon(
                         imageVector =
-                            if (article.expanded) Icons.Filled.KeyboardArrowDown
+                            if (state.article.expanded) Icons.Filled.KeyboardArrowDown
                             else Icons.Filled.ChevronRight,
                         contentDescription =
-                            if (article.expanded) stringResource(id = R.string.collapse)
+                            if (state.article.expanded) stringResource(id = R.string.collapse)
                             else stringResource(id = R.string.expand),
                         tint = if (isSystemInDarkTheme()) Color.White else Color.Black
                     )
                 }
                 OutlinedTextField(
-                    value = article.name ?: "",
-                    onValueChange = onNameChange,
+                    value = state.article.name ?: "",
+                    onValueChange = {
+                        onNameChange(it)
+                    },
                     label = {
                         Text(text = stringResource(id = R.string.name))
                     },
@@ -263,11 +283,11 @@ fun AddNewArticleItem(
                         .padding(end = 12.dp),
                     maxLines = 1,
                     singleLine = true,
-                    isError = article.isError
+                    isError = state.article.isError
                 )
             }
             AnimatedVisibility(
-                visible = article.expanded,
+                visible = state.article.expanded,
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -281,7 +301,7 @@ fun AddNewArticleItem(
                             imageVector = Icons.Default.LocationOn,
                             contentDescription = stringResource(id = R.string.choose_location),
                             tint =
-                                if (article.location != null) MaterialTheme.colorScheme.primary
+                                if (state.article.location != null) MaterialTheme.colorScheme.primary
                                 else if (isSystemInDarkTheme()) Color.White else Color.Black
                         )
                     }
@@ -297,12 +317,10 @@ fun AddNewArticleItem(
                         trailingIcon = {
                             Box {
                                 TextButton(
-                                    onClick = {
-                                        isDropDownMenuExpanded = true
-                                    }
+                                    onClick = { isDropDownMenuExpanded = true }
                                 ) {
                                     Text(
-                                        text = stringResource(id = article.unit.abbreviation),
+                                        text = stringResource(id = state.article.unit.abbreviation),
                                         color = Color.Gray,
                                     )
                                 }
@@ -327,11 +345,7 @@ fun AddNewArticleItem(
                             }
                         },
                         label = {
-                            Text(
-                                text = stringResource(
-                                    id = article.unit.label
-                                )
-                            )
+                            Text(text = stringResource(id = state.article.unit.label))
                         },
                         singleLine = true,
                         maxLines = 1,
@@ -343,7 +357,7 @@ fun AddNewArticleItem(
                         Icon(
                             imageVector = Icons.Filled.CameraAlt,
                             contentDescription = stringResource(id = R.string.take_a_photo),
-                            tint = if (article.isError) Color.Red else if (isSystemInDarkTheme()) Color.White else Color.Black
+                            tint = if (state.article.isError) Color.Red else if (isSystemInDarkTheme()) Color.White else Color.Black
                         )
                     }
                     IconButton(
@@ -352,21 +366,21 @@ fun AddNewArticleItem(
                         Icon(
                             imageVector = Icons.Filled.Photo,
                             contentDescription = stringResource(id = R.string.choose_photo),
-                            tint = if (article.isError) Color.Red else if (isSystemInDarkTheme()) Color.White else Color.Black
+                            tint = if (state.article.isError) Color.Red else if (isSystemInDarkTheme()) Color.White else Color.Black
                         )
                     }
                 }
             }
-            if (article.expanded && article.location != null) {
+            if (state.article.expanded && state.article.location != null) {
                 Text(
-                    text = "${stringResource(id = R.string.location)} - (${article.location})",
+                    text = "${stringResource(id = R.string.location)} - (${state.article.location})",
                     modifier = Modifier
                         .padding(top = 12.dp)
                         .align(Alignment.CenterHorizontally),
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
-            if (article.expanded && article.photoUri != null) {
+            if (state.article.expanded && state.article.photoUri != null) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.fillMaxWidth()
@@ -377,10 +391,10 @@ fun AddNewArticleItem(
                         Text(text = stringResource(id = R.string.tap_to_see_photo))
                     }
                 }
-                if (article.photoVisible) {
+                if (state.article.photoVisible) {
                     AsyncImage(
-                        model = article.photoUri,
-                        contentDescription = article.name,
+                        model = state.article.photoUri,
+                        contentDescription = state.article.name,
                         modifier = Modifier
                             .fillMaxWidth(0.8f)
                             .align(Alignment.CenterHorizontally)

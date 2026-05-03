@@ -1,0 +1,24 @@
+<!--
+  ~ Copyright (C) 2026 The Android Open Source Project
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="40dp"
+    android:height="40dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+  <path
+      android:pathData="M186.67,840q-27,0 -46.84,-19.83Q120,800.33 120,773.33v-586.66q0,-27 19.83,-46.84Q159.67,120 186.67,120h586.66q27,0 46.84,19.83Q840,159.67 840,186.67v586.66q0,27 -19.83,46.84Q800.33,840 773.33,840L186.67,840ZM186.67,773.33h586.66v-586.66L186.67,186.67v586.66ZM237.33,682h486l-148,-197.33 -128,167.33 -92,-124.67 -118,154.67ZM186.67,773.33v-586.66,586.66Z"
+      android:fillColor="#e3e3e3"/>
+</vector>
