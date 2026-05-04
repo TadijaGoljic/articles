@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -452,7 +453,10 @@ fun SignIn(
             onButtonClick = onButtonClick,
             isLoading = state.isLoading,
             text = stringResource(id = R.string.sign_in),
-            modifier = Modifier.padding(bottom = 10.dp)
+            modifier = Modifier
+                .padding(bottom = 10.dp)
+                .fillMaxWidth()
+                .size(48.dp),
         )
     }
 }
@@ -527,7 +531,10 @@ fun SignUp(
             onButtonClick = onButtonClick,
             isLoading = state.isLoading,
             text = stringResource(id = R.string.sign_up),
-            modifier = Modifier.padding(bottom = 10.dp)
+            modifier = Modifier
+                .padding(bottom = 10.dp)
+                .fillMaxWidth()
+                .size(48.dp),
         )
     }
 }
@@ -578,7 +585,10 @@ fun ForgotPassword(
             onButtonClick = onButtonClick,
             isLoading = state.isLoading,
             text = stringResource(id = R.string.forgot_password),
-            modifier = Modifier.padding(bottom = 10.dp)
+            modifier = Modifier
+                .padding(bottom = 10.dp)
+                .fillMaxWidth()
+                .size(48.dp),
         )
     }
 }

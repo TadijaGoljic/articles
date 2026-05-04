@@ -14,8 +14,8 @@ class GroupRepository @Inject constructor(
     private val groupDao: GroupDao,
 ) {
 
-    suspend fun addNewGroup(group: UIGroup) =
-        groupDao.addNewGroup(group.toGroupEntity())
+    suspend fun upsertGroup(group: UIGroup) =
+        groupDao.upsertGroup(group.toGroupEntity())
 
     suspend fun delete(groupId: UUID) =
         groupDao.delete(groupId)

@@ -24,11 +24,9 @@ fun ProgressButton(
 ) {
     Button(
         onClick = onButtonClick,
-        modifier = modifier
-            .padding(bottom = 8.dp)
-            .fillMaxWidth()
-            .size(48.dp),
-        shape = RoundedCornerShape(10.dp)
+        modifier = modifier,
+        shape = RoundedCornerShape(10.dp),
+        enabled = enabled
     ) {
         if (isLoading) {
             CircularProgressIndicator(
@@ -38,7 +36,7 @@ fun ProgressButton(
         } else {
             Text(
                 text = text,
-                fontSize = 20.sp,
+                fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onPrimary
             )
         }

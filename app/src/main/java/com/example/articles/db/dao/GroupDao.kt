@@ -1,9 +1,8 @@
 package com.example.articles.db.dao
 
 import androidx.room.Dao
-import androidx.room.Insert
 import androidx.room.Query
-import androidx.room.Transaction
+import androidx.room.Upsert
 import com.example.articles.db.entities.GroupEntity
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
@@ -11,7 +10,7 @@ import java.util.UUID
 @Dao
 interface GroupDao {
 
-    @Insert suspend fun addNewGroup(group: GroupEntity)
+    @Upsert suspend fun upsertGroup(group: GroupEntity)
 
     @Query("DELETE FROM `groups` WHERE idGroup = :idGroup")
     suspend fun delete(idGroup: UUID)

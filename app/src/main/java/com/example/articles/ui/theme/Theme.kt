@@ -13,7 +13,8 @@ private val LightColorScheme = lightColorScheme(
     surface = Color.white,
     onSurface = Color.black,
     background = Color.haze,
-    onBackground = Color.black
+    onBackground = Color.black,
+    error = Color.red
 )
 
 private val DarkColorScheme = darkColorScheme(
@@ -22,7 +23,8 @@ private val DarkColorScheme = darkColorScheme(
     surface = Color.white_dark,
     onSurface = Color.black_dark,
     background = Color.haze_dark,
-    onBackground = Color.black_dark
+    onBackground = Color.black_dark,
+    error = Color.red
 )
 
 @Composable

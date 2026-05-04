@@ -1,6 +1,5 @@
 package com.example.articles.ui.composables
 
-import android.annotation.SuppressLint
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
@@ -12,9 +11,9 @@ import com.example.articles.ui.composables.screens.LocationPicker
 import com.example.articles.ui.composables.screens.SettingsScreen
 import com.example.articles.viewmodels.AddNewArticleViewModel.Companion.KEY_LOCATION
 import com.example.articles.models.Location
-import com.example.articles.ui.composables.screens.CreateGroup
+import com.example.articles.ui.composables.screens.GroupsListPage
+import kotlinx.serialization.Serializable
 
-@SuppressLint("RestrictedApi")
 @Composable
 fun ArticlesNavigationFlow(
     onSignOut: () -> Unit,
@@ -28,41 +27,46 @@ fun ArticlesNavigationFlow(
 
     NavHost(
         navController = navController,
-        startDestination = ArticlesDestinations.ARTICLES_LIST,
+        startDestination = ArticlesDestinations.GroupsListDestination,
         modifier = modifier
     ) {
-        composable(route = ArticlesDestinations.ARTICLES_LIST) {
+        composable<ArticlesDestinations.GroupsListDestination> {
+            GroupsListPage(
+                onSettingsClick = {
+                    navController.navigate(ArticlesDestinations.SettingsDestination)
+                }
+            )
+        }
+        composable<ArticlesDestinations.ArticlesListDestination> {
             ArticlesList(
                 openAddNewArticleScreen = {
-                    navController.navigate(ArticlesDestinations.ADD_NEW_ARTICLE)
+                    navController.navigate(ArticlesDestinations.AddNewArticleDestination)
                 },
                 openCreateGroupScreen = {
-                    navController.navigate(ArticlesDestinations.CREATE_GROUP)
+                    navController.navigate(ArticlesDestinations.GroupsListDestination)
                 },
                 onOpenNavigation = { locationData ->
                     onOpenNavigation(locationData)
                 },
                 onBackClick = moveTaskToBackground,
                 onOpenSettings = {
-                    navController.navigate(ArticlesDestinations.SETTINGS)
+                    navController.navigate(ArticlesDestinations.SettingsDestination)
                 }
             )
         }
-        composable(route = ArticlesDestinations.ADD_NEW_ARTICLE) {
+        composable<ArticlesDestinations.AddNewArticleDestination> {
             AddNewArticle(
                 onBackButtonClicked = {
-                    if (navController.currentBackStackEntry?.destination?.route != ArticlesDestinations.ARTICLES_LIST) {
-                        navController.popBackStack()
-                    }
+                    navController.popBackStack()
                 },
                 onLocationPickerClick = {
-                    navController.navigate(ArticlesDestinations.PICK_LOCATION)
+                    navController.navigate(ArticlesDestinations.PickLocationDestination)
                 },
                 navController = navController,
                 onFinish = navController::popBackStack
             )
         }
-        composable(route = ArticlesDestinations.PICK_LOCATION) {
+        composable<ArticlesDestinations.PickLocationDestination> {
             LocationPicker(
                 onLocationSelected = { location ->
                     navController.previousBackStackEntry?.savedStateHandle[KEY_LOCATION] = location
@@ -73,27 +77,21 @@ fun ArticlesNavigationFlow(
                 }
             )
         }
-        composable(route = ArticlesDestinations.SETTINGS) {
+        composable<ArticlesDestinations.SettingsDestination> {
             SettingsScreen(
                 onSignOut = onSignOut,
                 onBackClick = navController::popBackStack,
                 onAccountDelete = onAccountDelete
             )
         }
-        composable(route = ArticlesDestinations.CREATE_GROUP) {
-            CreateGroup(
-                onBackClick = navController::popBackStack,
-                modifier = Modifier
-            )
-        }
     }
 
 }
 
-private object ArticlesDestinations {
-    const val ARTICLES_LIST = "articles_list"
-    const val ADD_NEW_ARTICLE = "add_new_article"
-    const val PICK_LOCATION = "pick_location"
-    const val SETTINGS = "settings"
-    const val CREATE_GROUP = "create_group"
+private sealed interface ArticlesDestinations {
+    @Serializable data object GroupsListDestination : ArticlesDestinations
+    @Serializable data object ArticlesListDestination : ArticlesDestinations
+    @Serializable data object AddNewArticleDestination : ArticlesDestinations
+    @Serializable data object PickLocationDestination : ArticlesDestinations
+    @Serializable data object SettingsDestination : ArticlesDestinations
 }

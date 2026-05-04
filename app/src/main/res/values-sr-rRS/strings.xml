@@ -57,7 +57,11 @@
 
     <!-- Groups -->
     <string name="create_group">Направи групу</string>
-    <string name="group_screen_message">Ово су негруписани артикли. Кликом на неки од њих додајете га у ову групу: </string>
+    <string name="your_groups">Вaше групе</string>
+    <string name="enter_group_name">Унесите име групе</string>
+    <string name="group_already_exists">Група већ постоји</string>
+    <string name="no_groups_title">Нема група за приказивање</string>
+    <string name="no_groups_message">За креирање нове групе притисните иконицу \"+\"</string>
 
     <!-- Units -->
     <string name="unit_quantity">Комада</string>

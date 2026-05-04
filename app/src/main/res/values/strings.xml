@@ -35,8 +35,6 @@
     <string name="take_a_photo">Take a photo</string>
     <string name="choose_location">Choose location</string>
     <string name="remove_article">Remove article</string>
-    <string name="expand">Expand</string>
-    <string name="collapse">Collapse</string>
     <string name="selected_location">Selected location</string>
     <string name="tap_on_the_map">Tap anywhere on the map to select a location</string>
     <string name="cancel">Cancel</string>
@@ -57,7 +55,11 @@
 
     <!-- Groups -->
     <string name="create_group">Create a group</string>
-    <string name="group_screen_message">These are ungrouped articles. Click on any of them to add it to this group: </string>
+    <string name="your_groups">Your groups</string>
+    <string name="enter_group_name">Enter group name</string>
+    <string name="group_already_exists">Group already exists</string>
+    <string name="no_groups_title">No Groups to Show</string>
+    <string name="no_groups_message">To Create a Group click on \"+\" icon</string>
 
     <!-- Units -->
     <string name="unit_quantity">Pieces</string>
@@ -68,6 +70,10 @@
     <string name="unit_grams_abbreviation">g</string>
     <string name="unit_liters">Liters</string>
     <string name="unit_liters_abbreviation">l</string>
+
+    <!-- Common -->
+    <string name="expand">Expand</string>
+    <string name="collapse">Collapse</string>
 
     <!-- Time -->
     <plurals name="seconds">
@@ -91,4 +97,7 @@
         <item quantity="other">days</item>
     </plurals>
 
+    <string name="edit">Edit</string>
+    <string name="delete">Delete</string>
+    <string name="edit_group">Edit group</string>
 </resources>

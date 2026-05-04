@@ -11,4 +11,5 @@ object Color {
     val black_dark = Color(0xFFF8FEFF)
     val haze = Color(0xFFECF0F2)
     val haze_dark = Color(0xFF191D1E)
+    val red = Color(0xFFE53935)
 }
