@@ -55,6 +55,8 @@
 
     <!-- Groups -->
     <string name="create_group">Create a group</string>
+    <string name="delete_group">Delete group</string>
+    <string name="edit_group">Edit group</string>
     <string name="your_groups">Your groups</string>
     <string name="enter_group_name">Enter group name</string>
     <string name="group_already_exists">Group already exists</string>
@@ -97,7 +99,4 @@
         <item quantity="other">days</item>
     </plurals>
 
-    <string name="edit">Edit</string>
-    <string name="delete">Delete</string>
-    <string name="edit_group">Edit group</string>
 </resources>

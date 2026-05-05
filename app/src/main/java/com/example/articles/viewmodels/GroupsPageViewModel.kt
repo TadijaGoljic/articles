@@ -48,6 +48,10 @@ class GroupsPageViewModel @Inject constructor(
                 editGroup(group = action.group, name = action.name)
             is GroupsPageAction.DeleteGroup ->
                 deleteGroup(group = action.group)
+            is GroupsPageAction.LongClick ->
+                updateEditDeleteBottomSheetVisibility(visible = true, group = action.group)
+            is GroupsPageAction.DismissBottomSheet ->
+                updateEditDeleteBottomSheetVisibility(visible = false, group = null)
         }
     }
 
@@ -66,7 +70,7 @@ class GroupsPageViewModel @Inject constructor(
                 isCreateGroupDialogLoading = true,
             )
         }
-        if (name.isEmpty() || name in state.value.groups.map { it.name }) {
+        if (name.isEmpty() || name.uppercase() in state.value.groups.map { it.name.uppercase() }) {
             state.update { currentState ->
                 currentState.copy(
                     isCreateGroupDialogLoading = false,
@@ -92,8 +96,9 @@ class GroupsPageViewModel @Inject constructor(
     private fun updateEditGroupDialogVisibility(visible: Boolean, group: UIGroup?) {
         state.update { currentState ->
             currentState.copy(
+                showEditDeleteBottonSheet = false,
                 showEditGroupDialog = visible,
-                groupToEdit = group,
+                longPressedGroup = group,
                 groupToEditName =
                     if (group != null) TextFieldState(group.name)
                     else TextFieldState()
@@ -102,12 +107,20 @@ class GroupsPageViewModel @Inject constructor(
     }
 
     private fun editGroup(group: UIGroup, name: String) {
+        if (name.equals(group.name, ignoreCase = true)) {
+            state.update { currentState ->
+                currentState.copy(
+                    showEditGroupDialog = false,
+                )
+            }
+            return
+        }
         state.update { currentState ->
             currentState.copy(
                 isEditDialogLoading = true,
             )
         }
-        if (name.isEmpty() || name in state.value.groups.map { it.name }) {
+        if (name.isEmpty() || name.uppercase() in state.value.groups.map { it.name.uppercase() }) {
             state.update { currentState ->
                 currentState.copy(
                     isEditDialogLoading = false,
@@ -131,8 +144,24 @@ class GroupsPageViewModel @Inject constructor(
     }
 
     private fun deleteGroup(group: UIGroup) {
+        state.update { currentState ->
+            currentState.copy(
+                showEditDeleteBottonSheet = false,
+            )
+        }
         viewModelScope.launch {
-            groupRepository.delete(groupId = group.id)
+            groupRepository.delete(
+                groupId = group.id,
+            )
+        }
+    }
+
+    private fun updateEditDeleteBottomSheetVisibility(visible: Boolean, group: UIGroup?) {
+        state.update { currentState ->
+            currentState.copy(
+                showEditDeleteBottonSheet = visible,
+                longPressedGroup = group
+            )
         }
     }
 
@@ -145,8 +174,9 @@ data class GroupsPageState(
     val isCreateGroupDialogLoading: Boolean = false,
     val showEditGroupDialog: Boolean = false,
     val groupToEditName: TextFieldState = TextFieldState(),
-    val groupToEdit: UIGroup? = null,
+    val longPressedGroup: UIGroup? = null,
     val isEditDialogLoading: Boolean = false,
+    val showEditDeleteBottonSheet: Boolean = false,
 )
 
 sealed interface GroupsPageAction {
@@ -157,4 +187,6 @@ sealed interface GroupsPageAction {
     data object HideEditGroupDialog : GroupsPageAction
     data class EditGroup(val group: UIGroup, val name: String) : GroupsPageAction
     data class DeleteGroup(val group: UIGroup) : GroupsPageAction
+    data class LongClick(val group: UIGroup) : GroupsPageAction
+    data object DismissBottomSheet : GroupsPageAction
 }

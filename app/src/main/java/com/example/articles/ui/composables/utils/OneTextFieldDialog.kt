@@ -21,7 +21,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -64,20 +63,15 @@ fun OneTextFieldDialog(
                 OutlinedTextField(
                     state = textFieldState,
                     label = { Text(text = stringResource(id = R.string.enter_group_name)) },
+                    supportingText = if (isError) {
+                        { Text(text = errorMessage) }
+                    } else null,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
                         .focusRequester(groupToCreateNameFocusRequester),
                     isError = isError
                 )
-                if (isError) {
-                    Text(
-                        text = errorMessage,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(top = 16.dp)

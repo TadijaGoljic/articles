@@ -57,6 +57,8 @@
 
     <!-- Groups -->
     <string name="create_group">Направи групу</string>
+    <string name="delete_group">Обриши групу</string>
+    <string name="edit_group">Измени групу</string>
     <string name="your_groups">Вaше групе</string>
     <string name="enter_group_name">Унесите име групе</string>
     <string name="group_already_exists">Група већ постоји</string>
