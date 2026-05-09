@@ -57,6 +57,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupsListPage(
+    onGroupClick: (UIGroup) -> Unit,
     onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier,
     groupsPageViewModel: GroupsPageViewModel = hiltViewModel()
@@ -151,7 +152,7 @@ fun GroupsListPage(
                             onLongClick = {
                                 groupsPageViewModel.handleAction(GroupsPageAction.LongClick(group))
                             },
-                            onClick = { },
+                            onClick = { onGroupClick(group) },
                             modifier = Modifier.padding(horizontal = 16.dp)
                         )
                         Spacer(modifier = Modifier.height(8.dp))

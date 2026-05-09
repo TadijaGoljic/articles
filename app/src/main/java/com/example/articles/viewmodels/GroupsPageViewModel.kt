@@ -150,7 +150,7 @@ class GroupsPageViewModel @Inject constructor(
             )
         }
         viewModelScope.launch {
-            groupRepository.delete(
+            groupRepository.deleteGroupById(
                 groupId = group.id,
             )
         }

@@ -13,9 +13,12 @@ interface GroupDao {
     @Upsert suspend fun upsertGroup(group: GroupEntity)
 
     @Query("DELETE FROM `groups` WHERE idGroup = :idGroup")
-    suspend fun delete(idGroup: UUID)
+    suspend fun deleteGroupById(idGroup: UUID)
 
     @Query("SELECT * FROM `groups`")
     fun getAllGroups(): Flow<List<GroupEntity>>
+
+    @Query("SELECT * FROM `groups` WHERE idGroup = :idGroup")
+    fun getGroupById(idGroup: UUID): Flow<GroupEntity?>
 
 }

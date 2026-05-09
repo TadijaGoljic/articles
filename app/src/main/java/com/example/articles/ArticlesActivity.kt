@@ -56,9 +56,6 @@ class ArticlesActivity : ComponentActivity() {
         startActivity(intent)
     }
 
-    private fun moveTaskToBackground() =
-        moveTaskToBack(true)
-
     private fun onSignOut() {
         finish()
         startActivity(Intent(this, AuthenticationActivity::class.java))
@@ -71,10 +68,6 @@ class ArticlesActivity : ComponentActivity() {
         modifier: Modifier = Modifier
     ) {
         ArticlesNavigationFlow(
-            onOpenNavigation = { location ->
-                openNavigation(location = location)
-            },
-            moveTaskToBackground = ::moveTaskToBackground,
             onSignOut = ::onSignOut,
             onAccountDelete = ::onAccountDelete,
             modifier = modifier

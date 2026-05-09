@@ -6,11 +6,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.articles.ui.composables.screens.AddNewArticle
-import com.example.articles.ui.composables.screens.ArticlesList
 import com.example.articles.ui.composables.screens.LocationPicker
 import com.example.articles.ui.composables.screens.SettingsScreen
-import com.example.articles.viewmodels.AddNewArticleViewModel.Companion.KEY_LOCATION
-import com.example.articles.models.Location
+import com.example.articles.ui.composables.screens.GroupDetailsPage
 import com.example.articles.ui.composables.screens.GroupsListPage
 import kotlinx.serialization.Serializable
 
@@ -18,8 +16,6 @@ import kotlinx.serialization.Serializable
 fun ArticlesNavigationFlow(
     onSignOut: () -> Unit,
     onAccountDelete: () -> Unit,
-    moveTaskToBackground: () -> Unit,
-    onOpenNavigation: (Location) -> Unit,
     modifier: Modifier = Modifier
 ) {
 
@@ -34,43 +30,37 @@ fun ArticlesNavigationFlow(
             GroupsListPage(
                 onSettingsClick = {
                     navController.navigate(ArticlesDestinations.SettingsDestination)
+                },
+                onGroupClick = { group ->
+                    navController.navigate(ArticlesDestinations.GroupDetailsDestination(groupId = group.id.toString()))
                 }
             )
         }
-        composable<ArticlesDestinations.ArticlesListDestination> {
-            ArticlesList(
-                openAddNewArticleScreen = {
-                    navController.navigate(ArticlesDestinations.AddNewArticleDestination)
+        composable<ArticlesDestinations.GroupDetailsDestination> {
+            GroupDetailsPage(
+                onBackClick = {
+                    navController.popBackStack()
                 },
-                openCreateGroupScreen = {
-                    navController.navigate(ArticlesDestinations.GroupsListDestination)
-                },
-                onOpenNavigation = { locationData ->
-                    onOpenNavigation(locationData)
-                },
-                onBackClick = moveTaskToBackground,
-                onOpenSettings = {
-                    navController.navigate(ArticlesDestinations.SettingsDestination)
+                onAddArticle = { group ->
+                    navController.navigate(ArticlesDestinations.AddNewArticleDestination(groupId = group.id.toString()))
                 }
             )
         }
         composable<ArticlesDestinations.AddNewArticleDestination> {
             AddNewArticle(
-                onBackButtonClicked = {
+                onBackClick = {
                     navController.popBackStack()
                 },
-                onLocationPickerClick = {
-                    navController.navigate(ArticlesDestinations.PickLocationDestination)
-                },
-                navController = navController,
-                onFinish = navController::popBackStack
+//                onLocationPickerClick = {
+//                    navController.navigate(ArticlesDestinations.PickLocationDestination)
+//                }
             )
         }
         composable<ArticlesDestinations.PickLocationDestination> {
             LocationPicker(
                 onLocationSelected = { location ->
-                    navController.previousBackStackEntry?.savedStateHandle[KEY_LOCATION] = location
-                    navController.popBackStack()
+//                    navController.previousBackStackEntry?.savedStateHandle[KEY_LOCATION] = location
+//                    navController.popBackStack()
                 },
                 onCancel = {
                     navController.popBackStack()
@@ -87,11 +77,10 @@ fun ArticlesNavigationFlow(
     }
 
 }
-
-private sealed interface ArticlesDestinations {
+sealed interface ArticlesDestinations {
     @Serializable data object GroupsListDestination : ArticlesDestinations
-    @Serializable data object ArticlesListDestination : ArticlesDestinations
-    @Serializable data object AddNewArticleDestination : ArticlesDestinations
+    @Serializable data class AddNewArticleDestination(val groupId: String) : ArticlesDestinations
     @Serializable data object PickLocationDestination : ArticlesDestinations
     @Serializable data object SettingsDestination : ArticlesDestinations
+    @Serializable data class GroupDetailsDestination(val groupId: String) : ArticlesDestinations
 }

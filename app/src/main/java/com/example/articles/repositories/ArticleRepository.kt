@@ -4,7 +4,6 @@ import com.example.articles.db.dao.ArticleDao
 import com.example.articles.models.UIArticle
 import com.example.articles.models.toArticleEntity
 import com.example.articles.models.toUIArticle
-import com.example.articles.models.toUIGroup
 import kotlinx.coroutines.flow.map
 import java.util.UUID
 import javax.inject.Inject
@@ -15,22 +14,19 @@ class ArticleRepository @Inject constructor(
     private val articleDao: ArticleDao,
 ) {
 
-    fun getAllArticles() = articleDao.getAll()
+    fun getAllArticles() = articleDao.getAllArticles()
 
-    suspend fun insert(article: UIArticle) =
-        articleDao.insert(article.toArticleEntity())
+    suspend fun upsertArticle(article: UIArticle) =
+        articleDao.upsertArticle(article.toArticleEntity())
 
-    suspend fun insertAll(articles: List<UIArticle>) =
-        articleDao.insertAll(articles.map { it.toArticleEntity() })
+    suspend fun insertAllArticles(articles: List<UIArticle>) =
+        articleDao.upsertAllArticles(articles.map { it.toArticleEntity() })
 
-    suspend fun delete(idArticle: UUID) = articleDao.delete(idArticle)
+    suspend fun deleteArticleById(idArticle: UUID) = articleDao.deleteArticleById(idArticle)
 
-    suspend fun deleteAll() = articleDao.deleteAll()
+    suspend fun deleteAllArticles() = articleDao.deleteAllArticles()
 
-    suspend fun markDeleted(articleId: UUID, timestamp: Long) =
-        articleDao.markDeleted(articleId, timestamp)
-
-    fun getAllUngroupedArticles() = articleDao.getAllUngroupedArticles().map { list ->
+    fun getArticlesByGroupId(groupId: UUID) = articleDao.getArticlesByGroupId(groupId).map { list ->
         list.map { article -> article.toUIArticle() }
     }
 

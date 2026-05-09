@@ -67,8 +67,8 @@ class SyncManager(
             firestoreModelMapper.toArticleEntity(it, applicationContext)
         }
         if (remoteEntities.isNotEmpty()) {
-            articleRepository.deleteAll()
-            articleRepository.insertAll(
+            articleRepository.deleteAllArticles()
+            articleRepository.insertAllArticles(
                 remoteEntities.map { it.toUIArticle() }
             )
         }
@@ -83,7 +83,7 @@ class SyncManager(
             val documentId = article.idArticle.toString()
             if (article.deleted) {
                 collection.document(documentId).delete().await()
-                articleRepository.delete(article.idArticle)
+                articleRepository.deleteArticleById(article.idArticle)
             } else {
                 collection.document(documentId)
                     .set(firestoreModelMapper.mapToFirestoreMap(article, applicationContext))

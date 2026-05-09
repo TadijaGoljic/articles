@@ -12,16 +12,12 @@ import java.util.UUID
 data class UIArticle(
     val id: UUID = UUID.randomUUID(),
     val name: String? = "",
+    val description: String? = "",
     val dateCreated: Date = Date(),
     val location: Location? = null,
-    val expanded: Boolean = false,
     val quantity: Double? = null,
     val unit: ArticleUnit = ArticleUnit.default,
     val photoUri: String? = null,
-    val photoTimestamp: Long? = null,
-    val checked: Boolean = false,
-    val photoVisible: Boolean = false,
-    val isError: Boolean = false,
     val deleted: Boolean = false,
     val groupId: UUID? = null
 ) : Parcelable

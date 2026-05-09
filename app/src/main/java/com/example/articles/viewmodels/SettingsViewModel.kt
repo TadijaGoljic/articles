@@ -44,7 +44,7 @@ class SettingsViewModel @Inject constructor(
     }
 
     private fun signOut() = viewModelScope.launch {
-        articleRepository.deleteAll()
+        articleRepository.deleteAllArticles()
         Firebase.auth.signOut()
         state.update { currentState ->
             currentState.copy(signOutOk = true)
@@ -52,7 +52,7 @@ class SettingsViewModel @Inject constructor(
     }
 
     private fun deleteAccount() = viewModelScope.launch {
-        articleRepository.deleteAll()
+        articleRepository.deleteAllArticles()
         Firebase
             .auth
             .currentUser

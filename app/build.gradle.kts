@@ -10,13 +10,13 @@ plugins {
 
 android {
     namespace = "com.example.articles"
-    compileSdk = 36
+    compileSdk = 37
     ndkVersion = "30.0.14904198"
 
     defaultConfig {
         applicationId = "com.example.articles"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 1
         versionName = "1.0"
 

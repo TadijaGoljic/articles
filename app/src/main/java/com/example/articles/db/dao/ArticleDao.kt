@@ -4,7 +4,6 @@ import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.Upsert
 import com.example.articles.db.entities.ArticleEntity
-import com.example.articles.db.entities.GroupEntity
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 
@@ -12,22 +11,19 @@ import java.util.UUID
 interface ArticleDao {
 
     @Query("SELECT * FROM articles")
-    fun getAll(): Flow<List<ArticleEntity>>
+    fun getAllArticles(): Flow<List<ArticleEntity>>
 
-    @Upsert suspend fun insert(article: ArticleEntity)
+    @Upsert suspend fun upsertArticle(article: ArticleEntity)
 
-    @Upsert suspend fun insertAll(articles: List<ArticleEntity>)
+    @Upsert suspend fun upsertAllArticles(articles: List<ArticleEntity>)
 
     @Query("DELETE FROM articles WHERE idArticle = :idArticle")
-    suspend fun delete(idArticle: UUID)
+    suspend fun deleteArticleById(idArticle: UUID)
 
     @Query("DELETE FROM articles")
-    suspend fun deleteAll()
+    suspend fun deleteAllArticles()
 
-    @Query("UPDATE articles SET deleted = 1, updatedAt = :timestamp WHERE idArticle = :id")
-    suspend fun markDeleted(id: UUID, timestamp: Long)
-
-    @Query("SELECT * FROM articles WHERE groupId IS NULL")
-    fun getAllUngroupedArticles(): Flow<List<ArticleEntity>>
+    @Query("SELECT * FROM articles WHERE groupId = :groupId")
+    fun getArticlesByGroupId(groupId: UUID): Flow<List<ArticleEntity>>
 
 }
