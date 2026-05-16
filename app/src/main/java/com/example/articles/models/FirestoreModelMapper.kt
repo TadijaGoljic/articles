@@ -2,12 +2,15 @@ package com.example.articles.models
 
 import android.content.Context
 import android.util.Base64
+import android.util.Log
 import androidx.core.net.toUri
+import com.example.articles.ArticlesApplication
 import com.example.articles.db.entities.ArticleEntity
-import com.example.articles.ui.utils.FileManager
-import com.example.articles.ui.utils.FileManager.Companion.IMAGE_PREFIX
-import com.example.articles.ui.utils.FileManager.Companion.IMAGE_SUFFIX
-import com.example.articles.ui.utils.resizeImage
+import com.example.articles.db.entities.GroupEntity
+import com.example.articles.utils.FileManager
+import com.example.articles.utils.FileManager.Companion.IMAGE_PREFIX
+import com.example.articles.utils.FileManager.Companion.IMAGE_SUFFIX
+import com.example.articles.utils.resizeImage
 import com.google.firebase.firestore.DocumentSnapshot
 import java.io.File
 import java.util.UUID
@@ -19,7 +22,7 @@ class FirestoreModelMapper @Inject constructor(
     private val fileManager: FileManager
 ) {
 
-    fun mapToFirestoreMap(articleEntity: ArticleEntity, context: Context): Map<String, Any?> {
+    fun toArticlesFirestoreMap(articleEntity: ArticleEntity, context: Context): Map<String, Any?> {
         val file = articleEntity.photoUri?.let { uri ->
             fileManager.getFileFromUri(context, uri.toUri())
         }
@@ -45,7 +48,9 @@ class FirestoreModelMapper @Inject constructor(
             "deleted" to articleEntity.deleted,
             "photo" to if (photoBytes != null) Base64.encodeToString(photoBytes, Base64.DEFAULT) else null,
             "updatedAt" to articleEntity.updatedAt,
-            "syncedAt" to System.currentTimeMillis()
+            "syncedAt" to System.currentTimeMillis(),
+            "groupId" to articleEntity.groupId.toString(),
+            "description" to articleEntity.description
         )
     }
 
@@ -68,8 +73,25 @@ class FirestoreModelMapper @Inject constructor(
             unit = ArticleUnit.valueOf(data["unit"] as? String ?: "PIECE"),
             photoUri = if (photo == null) null else file.toUri().toString(),
             deleted = data["deleted"] as? Boolean ?: false,
-            updatedAt = (data["updatedAt"] as? Long) ?: 0L
+            updatedAt = (data["updatedAt"] as? Long) ?: 0L,
+            groupId = UUID.fromString(data["groupId"] as? String) ?: UUID.randomUUID(),
+            description = data["description"] as? String
         )
     }
+
+    fun toGroupsFirestoreMap(groupEntity: GroupEntity) = mapOf(
+        "idGroup" to groupEntity.idGroup.toString(),
+        "name" to groupEntity.name,
+        "updatedAt" to groupEntity.updatedAt,
+        "syncedAt" to System.currentTimeMillis(),
+        "deleted" to groupEntity.deleted
+    )
+
+    fun toGroupEntity(snapshot: DocumentSnapshot) = GroupEntity(
+        idGroup = (snapshot["idGroup"] as? String)?.let { UUID.fromString(it) } ?: UUID.randomUUID(),
+        name = snapshot["name"] as? String ?: "",
+        updatedAt = snapshot["updatedAt"] as? Long ?: 0L,
+        deleted = snapshot["deleted"] as? Boolean ?: false
+    )
 
 }

@@ -55,7 +55,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.articles.R
 import com.example.articles.ui.composables.utils.Logos
 import com.example.articles.ui.composables.utils.ProgressButton
-import com.example.articles.ui.utils.ScreenSize
+import com.example.articles.utils.ScreenSize
 import com.example.articles.viewmodels.AuthenticationState
 import com.example.articles.viewmodels.SignInAction
 import com.example.articles.viewmodels.SignInState

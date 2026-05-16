@@ -48,7 +48,7 @@ fun GroupDetailsPage(
             )
             Spacer(modifier = Modifier.height(8.dp))
             state.articles.forEach { article ->
-                Text(article.name.toString())
+                Text(article.name.toString() + ": " + article.description.toString())
             }
             Spacer(modifier = Modifier.weight(1f))
             Button(

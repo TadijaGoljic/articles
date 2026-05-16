@@ -14,7 +14,7 @@ import java.util.UUID
         entity = GroupEntity::class,
         parentColumns = ["idGroup"],
         childColumns = ["groupId"],
-        onDelete = ForeignKey.SET_NULL
+        onDelete = ForeignKey.CASCADE
     )],
     indices = [Index("groupId")]
 )
@@ -27,6 +27,7 @@ data class ArticleEntity(
     val unit: ArticleUnit,
     val photoUri: String?,
     val deleted: Boolean,
+    val description: String?,
     val updatedAt: Long,
-    val groupId: UUID? = null
+    val groupId: UUID
 )

@@ -14,12 +14,12 @@ class ArticleRepository @Inject constructor(
     private val articleDao: ArticleDao,
 ) {
 
-    fun getAllArticles() = articleDao.getAllArticles()
+    fun getAllArticlesNoMapping() = articleDao.getAllArticles()
 
     suspend fun upsertArticle(article: UIArticle) =
         articleDao.upsertArticle(article.toArticleEntity())
 
-    suspend fun insertAllArticles(articles: List<UIArticle>) =
+    suspend fun upsertAllArticles(articles: List<UIArticle>) =
         articleDao.upsertAllArticles(articles.map { it.toArticleEntity() })
 
     suspend fun deleteArticleById(idArticle: UUID) = articleDao.deleteArticleById(idArticle)

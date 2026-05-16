@@ -1,5 +1,6 @@
 package com.example.articles.viewmodels
 
+import android.content.Context
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -8,7 +9,9 @@ import androidx.navigation.toRoute
 import com.example.articles.models.UIArticle
 import com.example.articles.repositories.ArticleRepository
 import com.example.articles.ui.composables.ArticlesDestinations
+import com.example.articles.utils.triggerSync
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -18,6 +21,7 @@ import javax.inject.Inject
 class AddNewArticleViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val articleRepository: ArticleRepository,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private val args = savedStateHandle.toRoute<ArticlesDestinations.AddNewArticleDestination>()
@@ -42,10 +46,11 @@ class AddNewArticleViewModel @Inject constructor(
         val article = state.value.article.copy(
             groupId = groupId,
             name = articleName,
-            description = articleDescription,
+            description = articleDescription
         )
         viewModelScope.launch {
             articleRepository.upsertArticle(article)
+            triggerSync(context)
         }
     }
 

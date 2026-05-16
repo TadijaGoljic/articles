@@ -9,11 +9,15 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkRequest
 import androidx.work.WorkerParameters
+import com.example.articles.ArticlesApplication
 import com.example.articles.db.entities.ArticleEntity
+import com.example.articles.db.entities.GroupEntity
 import com.example.articles.models.FirestoreModelMapper
 import com.example.articles.models.UserPreferences
 import com.example.articles.models.toUIArticle
+import com.example.articles.models.toUIGroup
 import com.example.articles.repositories.ArticleRepository
+import com.example.articles.repositories.GroupRepository
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.CollectionReference
@@ -21,7 +25,9 @@ import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
+import java.util.UUID
 import java.util.concurrent.TimeUnit
+import kotlin.collections.map
 
 
 class SyncManager(
@@ -29,6 +35,7 @@ class SyncManager(
     parameters: WorkerParameters,
     private val userPreferences: UserPreferences,
     private val articleRepository: ArticleRepository,
+    private val groupRepository: GroupRepository,
     private val applicationContext: Context,
     private val firestoreModelMapper: FirestoreModelMapper
 ) : CoroutineWorker(context, parameters) {
@@ -38,27 +45,38 @@ class SyncManager(
 
     override suspend fun doWork(): Result {
         val uid = auth.currentUser?.uid ?: return Result.failure()
+        val groupsCollection = firestore
+            .collection(USERS_COLLECTION_NAME)
+            .document(uid)
+            .collection(GROUPS_COLLECTION_NAME)
         val articlesCollection = firestore
             .collection(USERS_COLLECTION_NAME)
             .document(uid)
             .collection(ARTICLES_COLLECTION_NAME)
         return try {
-            sync(articlesCollection)
+            val syncTimestamp = userPreferences.lastSyncTimestamp
+            Log.d(ArticlesApplication.LOG_TAG, "Sync started, lastSyncTimestamp=$syncTimestamp")
+            syncGroups(groupsCollection, syncTimestamp)
+            syncArticles(articlesCollection, syncTimestamp)
+            userPreferences.lastSyncTimestamp = System.currentTimeMillis()
+            Log.d(ArticlesApplication.LOG_TAG, "Sync completed successfully")
             Result.success()
         } catch (e: Exception) {
-            Log.e("my_result", "Sync failed: ${e.message}")
+            Log.e(ArticlesApplication.LOG_TAG, "Sync failed: ${e.message}")
             Result.retry()
         }
     }
 
-    private suspend fun sync(
-        articlesCollection: CollectionReference
+    private suspend fun syncArticles(
+        articlesCollection: CollectionReference,
+        syncTimestamp: Long,
     ) {
-        val localChanges = articleRepository
-            .getAllArticles()
-            .map { list -> list.filter { it.updatedAt > userPreferences.lastSyncTimestamp } }
+        val localArticleChanges = articleRepository
+            .getAllArticlesNoMapping()
+            .map { list -> list.filter { it.updatedAt > syncTimestamp } }
             .first()
-        uploadLocalChanges(localChanges, articlesCollection)
+        Log.d(ArticlesApplication.LOG_TAG, "Uploading ${localArticleChanges.size} local article changes")
+        uploadLocalArticleChanges(localArticleChanges, articlesCollection)
         val remoteSnapshot = articlesCollection
             .whereGreaterThan("updatedAt", 0)
             .get()
@@ -66,27 +84,72 @@ class SyncManager(
         val remoteEntities = remoteSnapshot.documents.mapNotNull {
             firestoreModelMapper.toArticleEntity(it, applicationContext)
         }
+        Log.d(ArticlesApplication.LOG_TAG, "Fetched ${remoteEntities.size} articles from remote")
         if (remoteEntities.isNotEmpty()) {
-            articleRepository.deleteAllArticles()
-            articleRepository.insertAllArticles(
+            articleRepository.upsertAllArticles(
                 remoteEntities.map { it.toUIArticle() }
             )
         }
-        userPreferences.lastSyncTimestamp = System.currentTimeMillis()
     }
 
-    private suspend fun uploadLocalChanges(
+    private suspend fun syncGroups(
+        groupsCollection: CollectionReference,
+        syncTimestamp: Long
+    ) {
+        val localGroupChanges = groupRepository
+            .getAllGroupsNoMapping()
+            .map { list -> list.filter { it.updatedAt > syncTimestamp } }
+            .first()
+        Log.d(ArticlesApplication.LOG_TAG, "Uploading ${localGroupChanges.size} local group changes")
+        uploadLocalGroupChanges(localGroupChanges, groupsCollection)
+        val remoteSnapshot = groupsCollection
+            .whereGreaterThan("updatedAt", 0)
+            .get()
+            .await()
+        val remoteEntities = remoteSnapshot.documents.mapNotNull {
+            firestoreModelMapper.toGroupEntity(it)
+        }
+        Log.d(ArticlesApplication.LOG_TAG, "Fetched ${remoteEntities.size} groups from remote")
+        if (remoteEntities.isNotEmpty()) {
+            groupRepository.upsertAllGroups(
+                remoteEntities.map { it.toUIGroup() }
+            )
+        }
+    }
+
+    private suspend fun uploadLocalArticleChanges(
         articles: List<ArticleEntity>,
         collection: CollectionReference
     ) {
-        for (article in articles) {
+        articles.forEach { article ->
             val documentId = article.idArticle.toString()
             if (article.deleted) {
+                Log.d(ArticlesApplication.LOG_TAG, "Deleting remote article id=$documentId")
                 collection.document(documentId).delete().await()
                 articleRepository.deleteArticleById(article.idArticle)
             } else {
+                Log.d(ArticlesApplication.LOG_TAG, "Uploading article id=$documentId name=${article.name}")
                 collection.document(documentId)
-                    .set(firestoreModelMapper.mapToFirestoreMap(article, applicationContext))
+                    .set(firestoreModelMapper.toArticlesFirestoreMap(article, applicationContext))
+                    .await()
+            }
+        }
+    }
+
+    private suspend fun uploadLocalGroupChanges(
+        groups: List<GroupEntity>,
+        collection: CollectionReference
+    ) {
+        groups.forEach { group ->
+            val documentId = group.idGroup.toString()
+            if (group.deleted) {
+                Log.d(ArticlesApplication.LOG_TAG, "Deleting remote group id=$documentId")
+                collection.document(documentId).delete().await()
+                groupRepository.deleteGroupById(group.idGroup)
+            } else {
+                Log.d(ArticlesApplication.LOG_TAG, "Uploading group id=$documentId name=${group.name}")
+                collection.document(documentId)
+                    .set(firestoreModelMapper.toGroupsFirestoreMap(group))
                     .await()
             }
         }
@@ -96,6 +159,7 @@ class SyncManager(
         const val NAME = "SyncManager"
         const val USERS_COLLECTION_NAME = "users"
         const val ARTICLES_COLLECTION_NAME = "articles"
+        const val GROUPS_COLLECTION_NAME = "groups"
         fun sync() = OneTimeWorkRequestBuilder<SyncManager>()
             .setConstraints(Constraints
                 .Builder()

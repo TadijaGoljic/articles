@@ -9,5 +9,7 @@ data class UIGroup(
     val id: UUID = UUID.randomUUID(),
     val name: String = "",
     val articles: List<UIArticle> = emptyList(),
+    val updatedAt: Long = System.currentTimeMillis(),
     val expanded: Boolean = false,
+    val deleted: Boolean = false,
 ): Parcelable

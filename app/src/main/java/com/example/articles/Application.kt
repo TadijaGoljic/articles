@@ -16,4 +16,8 @@ class ArticlesApplication : Application(), Configuration.Provider {
             .setWorkerFactory(syncWorkerFactory)
             .build()
 
+    companion object {
+        const val LOG_TAG = "ArticlesApplication"
+    }
+
 }

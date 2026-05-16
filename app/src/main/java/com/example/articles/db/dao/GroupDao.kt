@@ -15,6 +15,9 @@ interface GroupDao {
     @Query("DELETE FROM `groups` WHERE idGroup = :idGroup")
     suspend fun deleteGroupById(idGroup: UUID)
 
+    @Query("DELETE FROM `groups`")
+    suspend fun deleteAllGroups()
+
     @Query("SELECT * FROM `groups`")
     fun getAllGroups(): Flow<List<GroupEntity>>
 

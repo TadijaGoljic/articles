@@ -29,7 +29,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.articles.R
 import com.example.articles.ui.composables.utils.Toolbar
-import com.example.articles.ui.utils.ScreenSize
+import com.example.articles.utils.ScreenSize
 import com.example.articles.viewmodels.AddNewArticleAction
 import com.example.articles.viewmodels.AddNewArticleViewModel
 import com.example.articles.viewmodels.AddNewArticleState

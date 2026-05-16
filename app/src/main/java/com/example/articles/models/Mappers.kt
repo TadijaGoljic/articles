@@ -13,7 +13,9 @@ fun ArticleEntity.toUIArticle() = UIArticle(
     unit = unit,
     photoUri = photoUri,
     deleted = deleted,
-    groupId = groupId
+    groupId = groupId,
+    description = description,
+    updatedAt = updatedAt
 )
 
 fun UIArticle.toArticleEntity() = ArticleEntity(
@@ -25,16 +27,21 @@ fun UIArticle.toArticleEntity() = ArticleEntity(
     unit = unit,
     photoUri = photoUri,
     deleted = deleted,
-    updatedAt = Date().time,
-    groupId = groupId
+    updatedAt = updatedAt,
+    groupId = groupId,
+    description = description
 )
 
 fun GroupEntity.toUIGroup() = UIGroup(
     id = idGroup,
-    name = name
+    name = name,
+    updatedAt = updatedAt,
+    deleted = deleted
 )
 
 fun UIGroup.toGroupEntity() = GroupEntity(
     idGroup = id,
-    name = name
+    name = name,
+    updatedAt = updatedAt,
+    deleted = deleted
 )

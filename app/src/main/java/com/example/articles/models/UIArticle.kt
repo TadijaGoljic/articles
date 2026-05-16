@@ -7,10 +7,11 @@ import com.example.articles.models.Location
 import kotlinx.parcelize.Parcelize
 import java.util.Date
 import java.util.UUID
+import java.util.UUID.randomUUID
 
 @Parcelize
 data class UIArticle(
-    val id: UUID = UUID.randomUUID(),
+    val id: UUID = randomUUID(),
     val name: String? = "",
     val description: String? = "",
     val dateCreated: Date = Date(),
@@ -19,7 +20,8 @@ data class UIArticle(
     val unit: ArticleUnit = ArticleUnit.default,
     val photoUri: String? = null,
     val deleted: Boolean = false,
-    val groupId: UUID? = null
+    val groupId: UUID = randomUUID(),
+    val updatedAt: Long = System.currentTimeMillis()
 ) : Parcelable
 
 

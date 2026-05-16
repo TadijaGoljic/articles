@@ -15,11 +15,14 @@ class GroupRepository @Inject constructor(
     private val groupDao: GroupDao,
 ) {
 
-    suspend fun upsertGroup(group: UIGroup) =
-        groupDao.upsertGroup(group.toGroupEntity())
+    suspend fun upsertGroup(group: UIGroup) = groupDao.upsertGroup(group.toGroupEntity())
 
-    suspend fun deleteGroupById(groupId: UUID) =
-        groupDao.deleteGroupById(groupId)
+    suspend fun upsertAllGroups(groups: List<UIGroup>) = groups.forEach { group ->
+        groupDao.upsertGroup(group.toGroupEntity()) }
+
+    suspend fun deleteGroupById(groupId: UUID) = groupDao.deleteGroupById(groupId)
+
+    fun getAllGroupsNoMapping() = groupDao.getAllGroups()
 
     fun getAllGroups() = groupDao.getAllGroups().map { list ->
         list.map { group -> group.toUIGroup() }

@@ -48,7 +48,7 @@ import com.example.articles.R
 import com.example.articles.ui.composables.utils.Position
 import com.example.articles.ui.composables.utils.SettingsItem
 import com.example.articles.ui.composables.utils.Toolbar
-import com.example.articles.ui.utils.ScreenSize
+import com.example.articles.utils.ScreenSize
 import com.example.articles.viewmodels.SettingsAction
 import com.example.articles.viewmodels.SettingsState
 import com.example.articles.viewmodels.SettingsViewModel
