@@ -1,15 +1,22 @@
 package com.example.articles.ui.composables
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.articles.models.Location
 import com.example.articles.ui.composables.screens.AddNewArticle
 import com.example.articles.ui.composables.screens.LocationPicker
 import com.example.articles.ui.composables.screens.SettingsScreen
 import com.example.articles.ui.composables.screens.GroupDetailsPage
 import com.example.articles.ui.composables.screens.GroupsListPage
+import com.example.articles.viewmodels.AddNewArticleAction
+import com.example.articles.viewmodels.AddNewArticleViewModel
 import kotlinx.serialization.Serializable
 
 @Composable
@@ -38,33 +45,40 @@ fun ArticlesNavigationFlow(
         }
         composable<ArticlesDestinations.GroupDetailsDestination> {
             GroupDetailsPage(
-                onBackClick = {
-                    navController.popBackStack()
-                },
+                onBackClick = navController::popBackStack,
                 onAddArticle = { group ->
                     navController.navigate(ArticlesDestinations.AddNewArticleDestination(groupId = group.id.toString()))
                 }
             )
         }
-        composable<ArticlesDestinations.AddNewArticleDestination> {
+        composable<ArticlesDestinations.AddNewArticleDestination> { backStackEntry ->
+            val addNewArticleViewModel: AddNewArticleViewModel = hiltViewModel()
+            val pickedLocation by backStackEntry.savedStateHandle
+                .getStateFlow<Location?>(KEY_LOCATION, null)
+                .collectAsStateWithLifecycle()
+
+            LaunchedEffect(pickedLocation) {
+                pickedLocation?.let { location ->
+                    addNewArticleViewModel.handleAction(AddNewArticleAction.UpdateLocation(location))
+                    backStackEntry.savedStateHandle.remove<Location>(KEY_LOCATION)
+                }
+            }
+
             AddNewArticle(
-                onBackClick = {
-                    navController.popBackStack()
+                onBackClick = navController::popBackStack,
+                onLocationPickerClick = {
+                    navController.navigate(ArticlesDestinations.PickLocationDestination)
                 },
-//                onLocationPickerClick = {
-//                    navController.navigate(ArticlesDestinations.PickLocationDestination)
-//                }
+                addNewArticleViewModel = addNewArticleViewModel
             )
         }
         composable<ArticlesDestinations.PickLocationDestination> {
             LocationPicker(
                 onLocationSelected = { location ->
-//                    navController.previousBackStackEntry?.savedStateHandle[KEY_LOCATION] = location
-//                    navController.popBackStack()
-                },
-                onCancel = {
+                    navController.previousBackStackEntry?.savedStateHandle?.set(KEY_LOCATION, location)
                     navController.popBackStack()
-                }
+                },
+                onCancel = navController::popBackStack
             )
         }
         composable<ArticlesDestinations.SettingsDestination> {
@@ -77,6 +91,9 @@ fun ArticlesNavigationFlow(
     }
 
 }
+
+private const val KEY_LOCATION = "KEY_LOCATION"
+
 sealed interface ArticlesDestinations {
     @Serializable data object GroupsListDestination : ArticlesDestinations
     @Serializable data class AddNewArticleDestination(val groupId: String) : ArticlesDestinations

@@ -45,7 +45,7 @@
     <string name="articles_photo">Article\'s photo</string>
     <string name="choose_photo">Choose photo</string>
     <string name="add">Add</string>
-    <string name="provide_name_photo">Please provide a name or a photo to save this article</string>
+    <string name="provide_name">Please provide an article name to save this article</string>
     <string name="start_navigation">Start navigation</string>
     <string name="ago">ago</string>
     <string name="show_photo">Show photo</string>

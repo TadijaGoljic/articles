@@ -1,102 +1,126 @@
 package com.example.articles.ui.composables.screens
 
+import android.Manifest
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.example.articles.R
+import com.example.articles.models.ArticleUnit
+import com.example.articles.ui.composables.utils.BottomSheetRowItem
+import com.example.articles.ui.composables.utils.ProgressButton
 import com.example.articles.ui.composables.utils.Toolbar
 import com.example.articles.utils.ScreenSize
+import com.example.articles.utils.copyUriToUri
 import com.example.articles.viewmodels.AddNewArticleAction
-import com.example.articles.viewmodels.AddNewArticleViewModel
 import com.example.articles.viewmodels.AddNewArticleState
+import com.example.articles.viewmodels.AddNewArticleViewModel
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddNewArticle(
     onBackClick: () -> Unit,
+    onLocationPickerClick: () -> Unit,
     modifier: Modifier = Modifier,
-    addNewArticleViewModel: AddNewArticleViewModel = hiltViewModel()
+    addNewArticleViewModel: AddNewArticleViewModel
 ) {
 
     val state by addNewArticleViewModel.uiState.collectAsStateWithLifecycle()
     val screenSize = ScreenSize.getScreenSize()
+    val context = LocalContext.current
+    var showPhotoSheet by remember { mutableStateOf(false) }
+    var cameraUri by remember { mutableStateOf<Uri?>(null) }
 
-//    val savedStateHandle = navController.currentBackStackEntry?.savedStateHandle
-//    val pickedLocationFlow = savedStateHandle?.getStateFlow<Location?>(KEY_LOCATION, null)
-//    val pickedLocation = pickedLocationFlow?.collectAsState()?.value
-//
-//    val context = LocalContext.current
-//    val keyboardController = LocalSoftwareKeyboardController.current
-//
-//    LaunchedEffect(state.ok) {
-//        if (state.ok) onFinish()
-//    }
-//
-//    LaunchedEffect(pickedLocation) {
-//        pickedLocation?.let { location ->
-//            addNewArticleViewModel.handleAction(AddNewArticleAction.RevalidateLocation(location))
-//            savedStateHandle.remove<Location>(KEY_LOCATION)
-//            savedStateHandle.remove<Int>(KEY_INDEX)
-//        }
-//    }
-//
-//    fun savePhoto(uri: Uri) {
-//        addNewArticleViewModel.handleAction(AddNewArticleAction.UpdatePhoto(uri.toString()))
-//    }
-//
-//    var uri by remember { mutableStateOf(addNewArticleViewModel.photoUri()) }
-//    val cameraLauncher = rememberLauncherForActivityResult(
-//        contract = ActivityResultContracts.TakePicture(),
-//        onResult = { success ->
-//            if (success) {
-//                savePhoto(uri)
-//            }
-//        }
-//    )
-//
-//    val pickImage = rememberLauncherForActivityResult(
-//        contract = ActivityResultContracts.GetContent()
-//    ) { uri: Uri? ->
-//        if (uri != null) {
-//            val photoUri = copyUriToUri(
-//                sourceUri = uri,
-//                destinationUri = addNewArticleViewModel.photoUri(),
-//                context = context
-//            ) ?: return@rememberLauncherForActivityResult
-//            savePhoto(photoUri)
-//        }
-//    }
-//
+    val cameraLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success) {
+            cameraUri?.let {
+                addNewArticleViewModel.handleAction(AddNewArticleAction.UpdatePhoto(it.toString()))
+            }
+        }
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            val uri = addNewArticleViewModel.photoUri()
+            cameraUri = uri
+            cameraLauncher.launch(uri)
+        }
+    }
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            val dest = addNewArticleViewModel.photoUri()
+            val copied = copyUriToUri(sourceUri = uri, destinationUri = dest, context = context)
+            if (copied != null) {
+                addNewArticleViewModel.handleAction(AddNewArticleAction.UpdatePhoto(copied.toString()))
+            }
+        }
+    }
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
             .fillMaxSize()
             .background(color = MaterialTheme.colorScheme.background)
             .systemBarsPadding()
+            .imePadding()
     ) {
         Toolbar(
             title = stringResource(id = R.string.add_new_article),
@@ -104,9 +128,9 @@ fun AddNewArticle(
             onLeadingIconClick = onBackClick,
             color = MaterialTheme.colorScheme.onBackground,
         )
-        Box(
+        BoxWithConstraints(
             modifier = Modifier
-                .fillMaxSize()
+                .weight(1f)
                 .then(
                     when (screenSize) {
                         ScreenSize.NORMAL -> Modifier
@@ -116,29 +140,67 @@ fun AddNewArticle(
                 )
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(bottom = 80.dp, start = 16.dp, end = 16.dp)
-                    .align(Alignment.TopCenter),
                 horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = maxHeight)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp)
             ) {
                 AddNewArticleItem(
                     state = state,
-                    modifier = Modifier.padding(vertical = 5.dp)
+                    onLocationPickerClick = onLocationPickerClick,
+                    onPhotoClick = { showPhotoSheet = true },
+                    modifier = Modifier.padding(vertical = 5.dp),
+                    showUnitsDropdownMenu = {
+                        addNewArticleViewModel.handleAction(AddNewArticleAction.ShowUnitsDropdownMenu)
+                    },
+                    hideUnitsDropdownMenu = {
+                        addNewArticleViewModel.handleAction(AddNewArticleAction.HideUnitsDropdownMenu)
+                    },
+                    onArticleTypeChange = { unit ->
+                        addNewArticleViewModel.handleAction(
+                            AddNewArticleAction.UpdateArticleUnit(unit = unit)
+                        )
+                    }
+                )
+                ProgressButton(
+                    onButtonClick = {
+                        addNewArticleViewModel.handleAction(AddNewArticleAction.SaveArticle)
+                        if (state.okToSave) {
+                            onBackClick()
+                        }
+                    },
+                    isLoading = state.isLoading,
+                    text = stringResource(id = R.string.save),
+                    modifier = Modifier.padding(vertical = 10.dp),
                 )
             }
-            Button(
-                onClick = {
-                    addNewArticleViewModel.handleAction(AddNewArticleAction.SaveArticle)
-                    onBackClick()
-                },
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 10.dp)
+        }
+
+        if (showPhotoSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showPhotoSheet = false },
+                sheetState = rememberModalBottomSheetState()
             ) {
-                Text(
-                    text = stringResource(id = R.string.save),
-                    color = Color.White
+                BottomSheetRowItem(
+                    icon = Icons.Default.CameraAlt,
+                    contentDescription = stringResource(id = R.string.take_a_photo),
+                    text = stringResource(id = R.string.take_a_photo),
+                    onClick = {
+                        showPhotoSheet = false
+                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                    }
+                )
+                BottomSheetRowItem(
+                    icon = Icons.Default.Image,
+                    contentDescription = stringResource(id = R.string.choose_photo),
+                    text = stringResource(id = R.string.choose_photo),
+                    onClick = {
+                        showPhotoSheet = false
+                        galleryLauncher.launch("image/*")
+                    }
                 )
             }
         }
@@ -149,6 +211,11 @@ fun AddNewArticle(
 @Composable
 fun AddNewArticleItem(
     state: AddNewArticleState,
+    onLocationPickerClick: () -> Unit,
+    showUnitsDropdownMenu: () -> Unit,
+    hideUnitsDropdownMenu: () -> Unit,
+    onArticleTypeChange: (ArticleUnit) -> Unit,
+    onPhotoClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
 
@@ -162,40 +229,6 @@ fun AddNewArticleItem(
             modifier = Modifier
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         ) {
-//            Row {
-//                Text(
-//                    "Select Group of your article: "
-//                )
-//                DropdownMenu(
-//                    expanded = true,
-//                    onDismissRequest = { }
-//                ) {
-//                    state.groupNames.forEach { groupName ->
-//                        DropdownMenuItem(
-//                            text = {
-//                                Text(text = groupName)
-//                            },
-//                            onClick = { }
-//                        )
-//                    }
-//                }
-//            }
-//            Row(
-//                verticalAlignment = Alignment.CenterVertically,
-//            ) {
-//                IconButton(
-//                    onClick = onExpandIconClick
-//                ) {
-//                    Icon(
-//                        imageVector =
-//                            if (state.article.expanded) Icons.Filled.KeyboardArrowDown
-//                            else Icons.Filled.ChevronRight,
-//                        contentDescription =
-//                            if (state.article.expanded) stringResource(id = R.string.collapse)
-//                            else stringResource(id = R.string.expand),
-//                        tint = if (isSystemInDarkTheme()) Color.White else Color.Black
-//                    )
-//                }
             OutlinedTextField(
                 state = state.articleName,
                 placeholder = {
@@ -203,6 +236,56 @@ fun AddNewArticleItem(
                 },
                 label = {
                     Text(text = stringResource(id = R.string.name))
+                },
+                isError = state.isError,
+                supportingText = {
+                    if (state.isError) {
+                        Text(
+                            text = stringResource(id = R.string.provide_name),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+//            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                state = state.articleQuantity,
+                placeholder = {
+                    Text(text = stringResource(id = state.article.unit.label))
+                },
+                label = {
+                    Text(text = stringResource(id = state.article.unit.label))
+                },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                trailingIcon = {
+                    Box {
+                        TextButton(
+                            onClick = showUnitsDropdownMenu
+                        ) {
+                            Text(
+                                text = stringResource(id = state.article.unit.abbreviation),
+                                color = Color.Gray,
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = state.unitsDropdownMenuVisible,
+                            onDismissRequest = hideUnitsDropdownMenu
+                        ) {
+                            ArticleUnit.entries.forEach { unit ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(text = stringResource(id = unit.abbreviation))
+                                    },
+                                    onClick = {
+                                        onArticleTypeChange(unit)
+                                        hideUnitsDropdownMenu()
+                                    }
+                                )
+                            }
+                        }
+                    }
                 },
                 modifier = Modifier.fillMaxWidth()
             )
@@ -221,124 +304,59 @@ fun AddNewArticleItem(
                     maxHeightInLines = 5
                 )
             )
-//            }
-//            AnimatedVisibility(
-//                visible = state.article.expanded,
-//            ) {
-//                Row(
-//                    verticalAlignment = Alignment.CenterVertically,
-//                ) {
-//                    IconButton(
-//                        onClick = {
-//                            onLocationPickerClick()
-//                        }
-//                    ) {
-//                        Icon(
-//                            imageVector = Icons.Default.LocationOn,
-//                            contentDescription = stringResource(id = R.string.choose_location),
-//                            tint =
-//                                if (state.article.location != null) MaterialTheme.colorScheme.primary
-//                                else if (isSystemInDarkTheme()) Color.White else Color.Black
-//                        )
-//                    }
-//                    val isValueInteger = textValue.toDoubleOrNull()?.isInteger() ?: false
-//                    OutlinedTextField(
-//                        value = if (isValueInteger) textValue.toDouble().toInt()
-//                            .toString() else textValue,
-//                        onValueChange = { newValue ->
-//                            textValue = newValue
-//                            onQuantityChange(newValue.toDoubleOrNull())
-//                        },
-//                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-//                        trailingIcon = {
-//                            Box {
-//                                TextButton(
-//                                    onClick = { isDropDownMenuExpanded = true }
-//                                ) {
-//                                    Text(
-//                                        text = stringResource(id = state.article.unit.abbreviation),
-//                                        color = Color.Gray,
-//                                    )
-//                                }
-//                                DropdownMenu(
-//                                    expanded = isDropDownMenuExpanded,
-//                                    onDismissRequest = {
-//                                        isDropDownMenuExpanded = false
-//                                    }
-//                                ) {
-//                                    ArticleUnit.entries.forEach { unit ->
-//                                        DropdownMenuItem(
-//                                            text = {
-//                                                Text(text = stringResource(id = unit.abbreviation))
-//                                            },
-//                                            onClick = {
-//                                                onArticleTypeChange(unit)
-//                                                isDropDownMenuExpanded = false
-//                                            }
-//                                        )
-//                                    }
-//                                }
-//                            }
-//                        },
-//                        label = {
-//                            Text(text = stringResource(id = state.article.unit.label))
-//                        },
-//                        singleLine = true,
-//                        maxLines = 1,
-//                        modifier = Modifier.weight(1f)
-//                    )
-//                    IconButton(
-//                        onClick = onOpenCameraClick,
-//                    ) {
-//                        Icon(
-//                            imageVector = Icons.Filled.CameraAlt,
-//                            contentDescription = stringResource(id = R.string.take_a_photo),
-//                            tint = if (state.article.isError) Color.Red else if (isSystemInDarkTheme()) Color.White else Color.Black
-//                        )
-//                    }
-//                    IconButton(
-//                        onClick = onChooseImageClick,
-//                    ) {
-//                        Icon(
-//                            imageVector = Icons.Filled.Photo,
-//                            contentDescription = stringResource(id = R.string.choose_photo),
-//                            tint = if (state.article.isError) Color.Red else if (isSystemInDarkTheme()) Color.White else Color.Black
-//                        )
-//                    }
-//                }
-//            }
-//            if (state.article.expanded && state.article.location != null) {
-//                Text(
-//                    text = "${stringResource(id = R.string.location)} - (${state.article.location})",
-//                    modifier = Modifier
-//                        .padding(top = 12.dp)
-//                        .align(Alignment.CenterHorizontally),
-//                    color = MaterialTheme.colorScheme.primary,
-//                )
-//            }
-//            if (state.article.expanded && state.article.photoUri != null) {
-//                Column(
-//                    horizontalAlignment = Alignment.CenterHorizontally,
-//                    modifier = Modifier.fillMaxWidth()
-//                ) {
-//                    TextButton(
-//                        onClick = onSeePhotoClick
-//                    ) {
-//                        Text(text = stringResource(id = R.string.tap_to_see_photo))
-//                    }
-//                }
-//                if (state.article.photoVisible) {
-//                    AsyncImage(
-//                        model = state.article.photoUri,
-//                        contentDescription = state.article.name,
-//                        modifier = Modifier
-//                            .fillMaxWidth(0.8f)
-//                            .align(Alignment.CenterHorizontally)
-//                    )
-//                    Spacer(modifier = Modifier.height(8.dp))
-//                }
-//            }
+            DataRow(
+                title = state.article.location?.let {
+                    "%.4f, %.4f".format(it.latitude, it.longitude)
+                } ?: stringResource(id = R.string.choose_location),
+                buttonText = stringResource(id = R.string.choose_location),
+                onButtonClick = onLocationPickerClick,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+            DataRow(
+                title = stringResource(id = R.string.choose_photo),
+                buttonText = stringResource(id = R.string.choose_photo),
+                onButtonClick = onPhotoClick
+            )
+            state.article.photoUri?.let { uri ->
+                AsyncImage(
+                    model = uri,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                )
+            }
         }
     }
 
+}
+
+@Composable
+fun DataRow(
+    title: String,
+    buttonText: String,
+    onButtonClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = modifier
+        ) {
+            Text(
+                text = title,
+            )
+            Spacer(
+                modifier = Modifier.weight(1f)
+            )
+            Button(
+                onClick = onButtonClick
+            ) {
+                Text(
+                    text = buttonText,
+                )
+            }
+        }
+    }
 }

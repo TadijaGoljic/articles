@@ -47,7 +47,7 @@
     <string name="articles_photo">Фотографија артикла</string>
     <string name="choose_photo">Одаберите фотографију</string>
     <string name="add">Додај</string>
-    <string name="provide_name_photo">Молимо вас унесите назив или фотографију како бисте сачували артикал</string>
+    <string name="provide_name">Молимо вас унесите назив артикла како бисте сачували артикал</string>
     <string name="start_navigation">Покрени навигацију</string>
     <string name="ago">пре</string>
     <string name="show_photo">Прикажи фотографију</string>

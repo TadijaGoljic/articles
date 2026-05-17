@@ -5,12 +5,14 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.articles.models.UIGroup
+import com.example.articles.repositories.ArticleRepository
 import com.example.articles.repositories.GroupRepository
 import com.example.articles.utils.triggerSync
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -18,6 +20,7 @@ import javax.inject.Inject
 @HiltViewModel
 class GroupsPageViewModel @Inject constructor(
     private val groupRepository: GroupRepository,
+    private val articleRepository: ArticleRepository,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -26,10 +29,19 @@ class GroupsPageViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            groupRepository.getAllGroups().collectLatest { list ->
+            combine(
+                groupRepository.getAllGroups(),
+                articleRepository.getAllArticles()
+            ) { groups, articles ->
+                groups.map { group ->
+                    group.copy(
+                        articles = articles.filter { article -> article.groupId == group.id }
+                    )
+                }
+            }.collectLatest { groupsWithArticles ->
                 state.update { currentState ->
                     currentState.copy(
-                        groups = list
+                        groups = groupsWithArticles
                     )
                 }
             }

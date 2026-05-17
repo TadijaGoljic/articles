@@ -243,7 +243,7 @@ fun GroupItem(
                     .padding(horizontal = 4.dp)
             ) {
                 IconButton(
-                    onClick = { },
+                    onClick = {  },
                     modifier = Modifier
                         .size(24.dp)
                         .align(Alignment.CenterStart),

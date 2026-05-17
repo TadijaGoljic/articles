@@ -6,7 +6,6 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
-
 private val LightColorScheme = lightColorScheme(
     primary = Color.blue,
     onPrimary = Color.white,
@@ -14,7 +13,14 @@ private val LightColorScheme = lightColorScheme(
     onSurface = Color.black,
     background = Color.haze,
     onBackground = Color.black,
-    surfaceVariant = Color.haze
+    surfaceVariant = Color.haze,
+    surfaceContainer = Color.white,
+    surfaceContainerLowest = Color.white,
+    surfaceContainerLow = Color.white,
+    surfaceContainerHigh = Color.white,
+    surfaceContainerHighest = Color.white,
+    surfaceBright = Color.white,
+    surfaceDim = Color.white,
 )
 
 private val DarkColorScheme = darkColorScheme(
@@ -24,7 +30,14 @@ private val DarkColorScheme = darkColorScheme(
     onSurface = Color.black_dark,
     background = Color.haze_dark,
     onBackground = Color.black_dark,
-    surfaceVariant = Color.haze_dark
+    surfaceVariant = Color.haze_dark,
+    surfaceContainer = Color.white_dark,
+    surfaceContainerLowest = Color.white_dark,
+    surfaceContainerLow = Color.white_dark,
+    surfaceContainerHigh = Color.white_dark,
+    surfaceContainerHighest = Color.white_dark,
+    surfaceBright = Color.white_dark,
+    surfaceDim = Color.white_dark,
 )
 
 @Composable

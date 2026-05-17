@@ -30,4 +30,8 @@ class ArticleRepository @Inject constructor(
         list.map { article -> article.toUIArticle() }
     }
 
+    fun getAllArticles() = articleDao.getAllArticles().map { list ->
+        list.map { article -> article.toUIArticle() }
+    }
+
 }
