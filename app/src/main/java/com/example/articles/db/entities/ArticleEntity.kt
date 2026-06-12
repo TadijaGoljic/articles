@@ -29,5 +29,7 @@ data class ArticleEntity(
     val deleted: Boolean,
     val description: String?,
     val updatedAt: Long,
-    val groupId: UUID
+    val groupId: UUID,
+    val websiteLink: String?,
+    val pricePerUnit: Double?
 )

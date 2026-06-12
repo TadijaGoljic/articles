@@ -64,6 +64,8 @@ class AddNewArticleViewModel @Inject constructor(
         val articleName = state.value.articleName.text.toString()
         val articleDescription = state.value.articleDescription.text.toString()
         val articleQuantity = state.value.articleQuantity.text.toString().toDoubleOrNull()
+        val articlePricePerUnit = state.value.articlePricePerUnit.text.toString().toDoubleOrNull()
+        val articleWebsiteLink = state.value.articleWebsiteLink.text.toString()
         if (articleName.isBlank()) {
             state.update { currentState ->
                 currentState.copy(
@@ -77,7 +79,9 @@ class AddNewArticleViewModel @Inject constructor(
             groupId = groupId,
             name = articleName,
             description = articleDescription,
-            quantity = articleQuantity
+            quantity = articleQuantity,
+            pricePerUnit = articlePricePerUnit,
+            websiteLink = articleWebsiteLink,
         )
         viewModelScope.launch {
             articleRepository.upsertArticle(article)
@@ -165,6 +169,8 @@ data class AddNewArticleState(
     val articleName: TextFieldState = TextFieldState(),
     val articleDescription: TextFieldState = TextFieldState(),
     val articleQuantity: TextFieldState = TextFieldState(),
+    val articlePricePerUnit: TextFieldState = TextFieldState(),
+    val articleWebsiteLink: TextFieldState = TextFieldState(),
     val unitsDropdownMenuVisible: Boolean = false,
     val isLoading: Boolean = false,
     val isError: Boolean = false,

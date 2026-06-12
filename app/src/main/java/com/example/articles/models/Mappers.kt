@@ -15,7 +15,9 @@ fun ArticleEntity.toUIArticle() = UIArticle(
     deleted = deleted,
     groupId = groupId,
     description = description,
-    updatedAt = updatedAt
+    updatedAt = updatedAt,
+    websiteLink = websiteLink,
+    pricePerUnit = pricePerUnit
 )
 
 fun UIArticle.toArticleEntity() = ArticleEntity(
@@ -29,7 +31,9 @@ fun UIArticle.toArticleEntity() = ArticleEntity(
     deleted = deleted,
     updatedAt = updatedAt,
     groupId = groupId,
-    description = description
+    description = description,
+    websiteLink = websiteLink,
+    pricePerUnit = pricePerUnit
 )
 
 fun GroupEntity.toUIGroup() = UIGroup(

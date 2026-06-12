@@ -58,6 +58,8 @@
     <string name="no_articles_title">Нема артикала за приказивање</string>
     <string name="no_articles_message">За додавање новог артикла притисните иконицу \"+\"</string>
     <string name="article_description">Опис</string>
+    <string name="price_per_unit">Цена по јединици мере</string>
+    <string name="website_link">Вебсајт линк</string>
 
     <!-- Groups -->
     <string name="create_group">Направи групу</string>

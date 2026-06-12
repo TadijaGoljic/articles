@@ -21,7 +21,9 @@ data class UIArticle(
     val photoUri: String? = null,
     val deleted: Boolean = false,
     val groupId: UUID = randomUUID(),
-    val updatedAt: Long = System.currentTimeMillis()
+    val updatedAt: Long = System.currentTimeMillis(),
+    val websiteLink: String? = null,
+    val pricePerUnit: Double? = null,
 ) : Parcelable
 
 

@@ -56,6 +56,8 @@
     <string name="no_articles_title">No Articles to Show</string>
     <string name="no_articles_message">To Add new Article click on \"+\" icon</string>
     <string name="article_description">Description</string>
+    <string name="price_per_unit">Price per unit</string>
+    <string name="website_link">Website link</string>
 
     <!-- Groups -->
     <string name="create_group">Create a group</string>

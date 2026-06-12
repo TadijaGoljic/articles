@@ -50,7 +50,9 @@ class FirestoreModelMapper @Inject constructor(
             "updatedAt" to articleEntity.updatedAt,
             "syncedAt" to System.currentTimeMillis(),
             "groupId" to articleEntity.groupId.toString(),
-            "description" to articleEntity.description
+            "description" to articleEntity.description,
+            "websiteLink" to articleEntity.websiteLink,
+            "pricePerUnit" to articleEntity.pricePerUnit
         )
     }
 
@@ -75,7 +77,9 @@ class FirestoreModelMapper @Inject constructor(
             deleted = data["deleted"] as? Boolean ?: false,
             updatedAt = (data["updatedAt"] as? Long) ?: 0L,
             groupId = UUID.fromString(data["groupId"] as? String) ?: UUID.randomUUID(),
-            description = data["description"] as? String
+            description = data["description"] as? String,
+            websiteLink = data["websiteLink"] as? String,
+            pricePerUnit = data["pricePerUnit"] as? Double
         )
     }
 

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,6 +29,7 @@ import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Money
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -316,42 +318,70 @@ fun AddNewArticleItem(
                 },
                 modifier = Modifier.fillMaxWidth()
             )
-            OutlinedTextField(
-                state = state.articleQuantity,
-                placeholder = {
-                    Text(text = stringResource(id = state.article.unit.label))
-                },
-                label = {
-                    Text(text = stringResource(id = state.article.unit.label))
-                },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                trailingIcon = {
-                    Box {
-                        TextButton(
-                            onClick = showUnitsDropdownMenu
-                        ) {
-                            Text(
-                                text = stringResource(id = state.article.unit.abbreviation),
-                                color = Color.Gray,
-                            )
-                        }
-                        DropdownMenu(
-                            expanded = state.unitsDropdownMenuVisible,
-                            onDismissRequest = hideUnitsDropdownMenu
-                        ) {
-                            ArticleUnit.entries.forEach { unit ->
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(text = stringResource(id = unit.abbreviation))
-                                    },
-                                    onClick = {
-                                        onArticleTypeChange(unit)
-                                        hideUnitsDropdownMenu()
-                                    }
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedTextField(
+                    state = state.articleQuantity,
+                    placeholder = {
+                        Text(text = stringResource(id = state.article.unit.label))
+                    },
+                    label = {
+                        Text(text = stringResource(id = state.article.unit.label))
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    trailingIcon = {
+                        Box {
+                            TextButton(
+                                onClick = showUnitsDropdownMenu
+                            ) {
+                                Text(
+                                    text = stringResource(id = state.article.unit.abbreviation),
+                                    color = Color.Gray,
                                 )
                             }
+                            DropdownMenu(
+                                expanded = state.unitsDropdownMenuVisible,
+                                onDismissRequest = hideUnitsDropdownMenu
+                            ) {
+                                ArticleUnit.entries.forEach { unit ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(text = stringResource(id = unit.abbreviation))
+                                        },
+                                        onClick = {
+                                            onArticleTypeChange(unit)
+                                            hideUnitsDropdownMenu()
+                                        }
+                                    )
+                                }
+                            }
                         }
-                    }
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    state = state.articlePricePerUnit,
+                    placeholder = {
+                        Text(text = stringResource(id = R.string.price_per_unit))
+                    },
+                    label = {
+                        Text(text = stringResource(id = R.string.price_per_unit))
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                state = state.articleWebsiteLink,
+                placeholder = {
+                    Text(text = stringResource(id = R.string.website_link))
+                },
+                label = {
+                    Text(text = stringResource(id = R.string.website_link))
                 },
                 modifier = Modifier.fillMaxWidth()
             )
