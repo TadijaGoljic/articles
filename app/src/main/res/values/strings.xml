@@ -33,7 +33,8 @@
     <string name="save">Save</string>
     <string name="name">Name</string>
     <string name="take_a_photo">Take a photo</string>
-    <string name="choose_location">Choose location</string>
+    <string name="add_location">Add location</string>
+    <string name="change_location">Change location</string>
     <string name="remove_article">Remove article</string>
     <string name="selected_location">Selected location</string>
     <string name="tap_on_the_map">Tap anywhere on the map to select a location</string>
@@ -43,9 +44,11 @@
     <string name="photo">Photo</string>
     <string name="tap_to_see_photo">Tap to see photo</string>
     <string name="articles_photo">Article\'s photo</string>
-    <string name="choose_photo">Choose photo</string>
+    <string name="add_photo">Add photo</string>
+    <string name="change_photo">Change photo</string>
     <string name="add">Add</string>
     <string name="provide_name">Please provide an article name to save this article</string>
+    <string name="required">Required</string>
     <string name="start_navigation">Start navigation</string>
     <string name="ago">ago</string>
     <string name="show_photo">Show photo</string>
@@ -99,5 +102,9 @@
         <item quantity="one">day</item>
         <item quantity="other">days</item>
     </plurals>
+
+    <!-- Settings -->
+    <string name="export_data">Export data</string>
+    <string name="data">Data</string>
 
 </resources>

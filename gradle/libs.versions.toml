@@ -23,6 +23,8 @@ activityCompose = "1.13.0"
 composeBom = "2026.05.00"
 materialIconsExtended = "1.7.8"
 osmdroidAndroid = "6.1.20"
+retrofit = "3.0.0"
+retrofit2KotlinxSerializationConverter = "1.0.0"
 roomDatabase = "2.8.4"
 runtimeLivedata = "1.11.1"
 ui = "1.11.1"
@@ -72,6 +74,8 @@ androidx-hilt-common = { group = "androidx.hilt", name = "hilt-common", version.
 androidx-hilt-work = { group = "androidx.hilt", name = "hilt-work", version.ref = "hiltWork" }
 firebase-auth-ktx = { group = "com.google.firebase", name = "firebase-auth-ktx", version.ref = "firebaseAuthKtx" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
+retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
+retrofit2-kotlinx-serialization-converter = { module = "com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter", version.ref = "retrofit2KotlinxSerializationConverter" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

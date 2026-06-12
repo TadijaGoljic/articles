@@ -1,5 +1,6 @@
 package com.example.articles.ui.composables.screens
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -26,11 +27,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
@@ -53,6 +56,7 @@ import com.example.articles.viewmodels.SettingsAction
 import com.example.articles.viewmodels.SettingsState
 import com.example.articles.viewmodels.SettingsViewModel
 
+@SuppressLint("LocalContextGetResourceValueCall")
 @Composable
 fun SettingsScreen(
     onSignOut: () -> Unit,
@@ -65,6 +69,18 @@ fun SettingsScreen(
     val state by settingsViewModel.uiState.collectAsStateWithLifecycle()
     val newPasswordFocusRequester = remember { FocusRequester() }
     val screenSize = ScreenSize.getScreenSize()
+    val context = LocalContext.current
+
+    LaunchedEffect(state.exportContent) {
+        state.exportContent?.let { content ->
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, content)
+            }
+            context.startActivity(Intent.createChooser(intent, context.getString(R.string.export_data)))
+            settingsViewModel.handleAction(SettingsAction.ClearExport)
+        }
+    }
 
     LaunchedEffect(state.signOutOk) {
         if (state.signOutOk) onSignOut()
@@ -163,9 +179,18 @@ fun SettingsScreen(
                 color = MaterialTheme.colorScheme.onBackground
             )
             SettingsItems(
-                showSignOutConfirmationDialog = { settingsViewModel.handleAction(SettingsAction.ShowSignOutConfirmationDialog) },
-                showDeleteAccountConfirmationDialog = { settingsViewModel.handleAction(SettingsAction.ShowDeleteAccountConfirmationDialog) },
-                showChangePasswordDialog = { settingsViewModel.handleAction(SettingsAction.ShowChangePasswordDialog) },
+                showSignOutConfirmationDialog = {
+                    settingsViewModel.handleAction(SettingsAction.ShowSignOutConfirmationDialog)
+                },
+                showDeleteAccountConfirmationDialog = {
+                    settingsViewModel.handleAction(SettingsAction.ShowDeleteAccountConfirmationDialog)
+                },
+                showChangePasswordDialog = {
+                    settingsViewModel.handleAction(SettingsAction.ShowChangePasswordDialog)
+                },
+                onExportGroups = {
+                    settingsViewModel.handleAction(SettingsAction.ExportGroups)
+                },
                 modifier = when (screenSize) {
                     ScreenSize.NORMAL -> Modifier
                     ScreenSize.LARGE -> Modifier.padding(horizontal = 40.dp)
@@ -181,6 +206,7 @@ fun SettingsItems(
     showSignOutConfirmationDialog: () -> Unit,
     showDeleteAccountConfirmationDialog: () -> Unit,
     showChangePasswordDialog: () -> Unit,
+    onExportGroups: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -194,6 +220,7 @@ fun SettingsItems(
                 .padding(horizontal = 14.dp)
                 .padding(bottom = 2.dp)
         )
+        Spacer(modifier = Modifier.height(4.dp))
         SettingsItem(
             label = stringResource(id = R.string.sign_out),
             onItemClick = showSignOutConfirmationDialog,
@@ -210,6 +237,22 @@ fun SettingsItems(
             label = stringResource(id = R.string.change_password),
             onItemClick = showChangePasswordDialog,
             position = Position.BOTTOM,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = stringResource(id = R.string.data),
+            color = Color.Gray,
+            fontSize = 18.sp,
+            modifier = Modifier
+                .padding(horizontal = 14.dp)
+                .padding(bottom = 2.dp)
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        SettingsItem(
+            label = stringResource(id = R.string.export_data),
+            onItemClick = onExportGroups,
+            position = Position.SINGLE,
             modifier = Modifier.padding(horizontal = 16.dp)
         )
     }

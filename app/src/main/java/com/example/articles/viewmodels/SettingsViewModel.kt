@@ -1,23 +1,34 @@
 package com.example.articles.viewmodels
 
+import android.content.Context
 import androidx.annotation.StringRes
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.articles.R
+import com.example.articles.db.ArticleDatabase
 import com.example.articles.repositories.ArticleRepository
+import com.example.articles.repositories.GroupRepository
 import com.google.firebase.Firebase
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.auth
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
+    private val database: ArticleDatabase,
+    private val groupRepository: GroupRepository,
     private val articleRepository: ArticleRepository,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private var state = MutableStateFlow(SettingsState())
@@ -40,11 +51,13 @@ class SettingsViewModel @Inject constructor(
             is SettingsAction.HideDeleteAccountConfirmationDialog ->
                 updateDeleteAccountDialogVisibility(visible = false)
             is SettingsAction.ChangePassword -> changePassword()
+            is SettingsAction.ExportGroups -> exportGroups()
+            is SettingsAction.ClearExport -> state.update { it.copy(exportContent = null) }
         }
     }
 
     private fun signOut() = viewModelScope.launch {
-        articleRepository.deleteAllArticles()
+        database.clearAllTables()
         Firebase.auth.signOut()
         state.update { currentState ->
             currentState.copy(signOutOk = true)
@@ -52,7 +65,7 @@ class SettingsViewModel @Inject constructor(
     }
 
     private fun deleteAccount() = viewModelScope.launch {
-        articleRepository.deleteAllArticles()
+        database.clearAllTables()
         Firebase
             .auth
             .currentUser
@@ -92,6 +105,34 @@ class SettingsViewModel @Inject constructor(
             )
         }
     }
+
+    private fun exportGroups() = viewModelScope.launch {
+        val groups = groupRepository.getAllGroups().first().filter { !it.deleted }
+        val sb = StringBuilder()
+        val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        sb.appendLine("Articles Export")
+        sb.appendLine("Exported: $date")
+        groups.forEach { group ->
+            sb.appendLine()
+            sb.appendLine("== ${group.name} ==")
+            val articles = articleRepository.getArticlesByGroupId(group.id).first()
+                .filter { !it.deleted }
+            articles.forEach { article ->
+                val quantity = article.quantity
+                val unit = context.getString(article.unit.abbreviation)
+                val quantityStr = if (quantity != null) " (${formatQuantity(quantity)} $unit)" else ""
+                sb.appendLine("• ${article.name}$quantityStr")
+                if (!article.description.isNullOrBlank()) {
+                    sb.appendLine("  ${article.description}")
+                }
+            }
+        }
+        state.update { it.copy(exportContent = sb.toString()) }
+    }
+
+    private fun formatQuantity(quantity: Double): String =
+        if (quantity == quantity.toLong().toDouble()) quantity.toLong().toString()
+        else quantity.toString()
 
     private fun changePassword() {
         if (state.value.newPassword.text.isEmpty() || state.value.oldPassword.text.isEmpty()) {
@@ -135,7 +176,8 @@ data class SettingsState(
     @StringRes val stringResErrorMessage: Int? = null,
     val errorMessage: String? = null,
     val oldPassword: TextFieldState = TextFieldState(""),
-    val newPassword: TextFieldState = TextFieldState("")
+    val newPassword: TextFieldState = TextFieldState(""),
+    val exportContent: String? = null,
 )
 
 sealed interface SettingsAction {
@@ -148,4 +190,6 @@ sealed interface SettingsAction {
     data object ShowDeleteAccountConfirmationDialog : SettingsAction
     data object HideDeleteAccountConfirmationDialog : SettingsAction
     data object ChangePassword : SettingsAction
+    data object ExportGroups : SettingsAction
+    data object ClearExport : SettingsAction
 }

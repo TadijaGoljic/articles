@@ -7,9 +7,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import android.net.Uri
+import android.util.Log
+import com.example.articles.ArticlesApplication.Companion.LOG_TAG
 import com.example.articles.models.ArticleUnit
 import com.example.articles.models.Location
 import com.example.articles.models.UIArticle
+import com.example.articles.nominatim.NominatimAPI
 import com.example.articles.repositories.ArticleRepository
 import com.example.articles.utils.FileManager
 import com.example.articles.ui.composables.ArticlesDestinations
@@ -27,6 +30,7 @@ class AddNewArticleViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val articleRepository: ArticleRepository,
     private val fileManager: FileManager,
+    private val nominatimAPI: NominatimAPI,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
@@ -43,9 +47,13 @@ class AddNewArticleViewModel @Inject constructor(
             is AddNewArticleAction.SaveArticle -> saveArticle()
             is AddNewArticleAction.UpdateLocation -> updateLocation(location = action.location)
             is AddNewArticleAction.UpdatePhoto -> updatePhoto(photoUri = action.photoUri)
+            is AddNewArticleAction.ClearLocation -> updateLocation(null)
+            is AddNewArticleAction.ClearPhoto -> updatePhoto(null)
             is AddNewArticleAction.ShowUnitsDropdownMenu -> updateUnitsDropdownMenuVisibility(visible = true)
             is AddNewArticleAction.HideUnitsDropdownMenu -> updateUnitsDropdownMenuVisibility(visible = false)
             is AddNewArticleAction.UpdateArticleUnit -> updateArticleUnit(unit = action.unit)
+            is AddNewArticleAction.ShowBottomSheet -> updateBottomSheetVisibility(visible = true)
+            is AddNewArticleAction.HideBottomSheet -> updateBottomSheetVisibility(visible = false)
         }
     }
 
@@ -83,15 +91,43 @@ class AddNewArticleViewModel @Inject constructor(
         }
     }
 
-    private fun updateLocation(location: Location) {
-        state.update { currentState ->
-            currentState.copy(
-                article = currentState.article.copy(location = location)
-            )
+    private fun updateLocation(location: Location?) {
+        if (location == null) {
+            state.update { currentState ->
+                currentState.copy(
+                    article = currentState.article.copy(location = location),
+                    locationString = null
+                )
+            }
+        } else {
+            viewModelScope.launch {
+                state.update { currentState ->
+                    currentState.copy(
+                        isLocationStringLoading = true
+                    )
+                }
+                val locationString = nominatimAPI.reverseGeocode(
+                    location.latitude,
+                    location.longitude
+                ).let {
+                    Log.d(LOG_TAG, "updateLocation: $it")
+                    val address = it.address
+                    val street = listOfNotNull(address?.road, address?.houseNumber).joinToString(" ")
+                    val town = address?.city ?: address?.cityDistrict ?: address?.suburb ?: address?.county
+                    listOfNotNull(street.ifEmpty { null }, town).joinToString(", ")
+                }
+                state.update { currentState ->
+                    currentState.copy(
+                        article = currentState.article.copy(location = location),
+                        locationString = locationString,
+                        isLocationStringLoading = false
+                    )
+                }
+            }
         }
     }
 
-    private fun updatePhoto(photoUri: String) {
+    private fun updatePhoto(photoUri: String?) {
         state.update { currentState ->
             currentState.copy(
                 article = currentState.article.copy(photoUri = photoUri)
@@ -113,10 +149,19 @@ class AddNewArticleViewModel @Inject constructor(
         }
     }
 
+    private fun updateBottomSheetVisibility(visible: Boolean) {
+        state.update { currentState ->
+            currentState.copy(
+                isBottomSheetVisible = visible
+            )
+        }
+    }
+
 }
 
 data class AddNewArticleState(
     val article: UIArticle = UIArticle(),
+    val locationString: String? = null,
     val articleName: TextFieldState = TextFieldState(),
     val articleDescription: TextFieldState = TextFieldState(),
     val articleQuantity: TextFieldState = TextFieldState(),
@@ -124,13 +169,19 @@ data class AddNewArticleState(
     val isLoading: Boolean = false,
     val isError: Boolean = false,
     val okToSave: Boolean = false,
+    val isBottomSheetVisible: Boolean = false,
+    val isLocationStringLoading: Boolean = false,
 )
 
 sealed interface AddNewArticleAction {
     data object SaveArticle : AddNewArticleAction
     data class UpdateLocation(val location: Location) : AddNewArticleAction
     data class UpdatePhoto(val photoUri: String) : AddNewArticleAction
+    data object ClearLocation : AddNewArticleAction
+    data object ClearPhoto : AddNewArticleAction
     data object ShowUnitsDropdownMenu : AddNewArticleAction
     data object HideUnitsDropdownMenu : AddNewArticleAction
     data class UpdateArticleUnit(val unit: ArticleUnit) : AddNewArticleAction
+    data object ShowBottomSheet : AddNewArticleAction
+    data object HideBottomSheet : AddNewArticleAction
 }

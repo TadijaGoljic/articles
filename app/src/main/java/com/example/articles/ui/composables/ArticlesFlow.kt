@@ -66,8 +66,13 @@ fun ArticlesNavigationFlow(
 
             AddNewArticle(
                 onBackClick = navController::popBackStack,
-                onLocationPickerClick = {
-                    navController.navigate(ArticlesDestinations.PickLocationDestination)
+                onLocationPickerClick = { location ->
+                    navController.navigate(
+                        ArticlesDestinations.PickLocationDestination(
+                            latitude = location?.latitude,
+                            longitude = location?.longitude
+                        )
+                    )
                 },
                 addNewArticleViewModel = addNewArticleViewModel
             )
@@ -97,7 +102,7 @@ private const val KEY_LOCATION = "KEY_LOCATION"
 sealed interface ArticlesDestinations {
     @Serializable data object GroupsListDestination : ArticlesDestinations
     @Serializable data class AddNewArticleDestination(val groupId: String) : ArticlesDestinations
-    @Serializable data object PickLocationDestination : ArticlesDestinations
+    @Serializable data class PickLocationDestination(val latitude: Double? = null, val longitude: Double? = null) : ArticlesDestinations
     @Serializable data object SettingsDestination : ArticlesDestinations
     @Serializable data class GroupDetailsDestination(val groupId: String) : ArticlesDestinations
 }

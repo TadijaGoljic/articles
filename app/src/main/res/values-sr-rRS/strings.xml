@@ -33,7 +33,8 @@
     <string name="save">Сачувај</string>
     <string name="name">Назив</string>
     <string name="take_a_photo">Отвори камеру</string>
-    <string name="choose_location">Изабери локацију</string>
+    <string name="add_location">Додај локацију</string>
+    <string name="change_location">Промени локацију</string>
     <string name="remove_article">Обриши артикал</string>
     <string name="expand">Рашири</string>
     <string name="collapse">Скупи</string>
@@ -45,9 +46,11 @@
     <string name="photo">Фотографија</string>
     <string name="tap_to_see_photo">Додирнита да видите фотографију</string>
     <string name="articles_photo">Фотографија артикла</string>
-    <string name="choose_photo">Одаберите фотографију</string>
+    <string name="add_photo">Додај фотографију</string>
+    <string name="change_photo">Промени фотографију</string>
     <string name="add">Додај</string>
     <string name="provide_name">Молимо вас унесите назив артикла како бисте сачували артикал</string>
+    <string name="required">Обавезно</string>
     <string name="start_navigation">Покрени навигацију</string>
     <string name="ago">пре</string>
     <string name="show_photo">Прикажи фотографију</string>
@@ -101,5 +104,9 @@
         <item quantity="few">дана</item>
         <item quantity="other">дана</item>
     </plurals>
+
+    <!-- Settings -->
+    <string name="export_data">Извези податке</string>
+    <string name="data">Подаци</string>
 
 </resources>

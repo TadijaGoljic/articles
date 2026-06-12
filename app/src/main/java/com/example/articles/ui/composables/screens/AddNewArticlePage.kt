@@ -5,7 +5,6 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -28,14 +27,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -43,6 +46,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,13 +54,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.articles.R
 import com.example.articles.models.ArticleUnit
+import com.example.articles.models.Location
 import com.example.articles.ui.composables.utils.BottomSheetRowItem
 import com.example.articles.ui.composables.utils.ProgressButton
 import com.example.articles.ui.composables.utils.Toolbar
@@ -65,13 +74,14 @@ import com.example.articles.utils.copyUriToUri
 import com.example.articles.viewmodels.AddNewArticleAction
 import com.example.articles.viewmodels.AddNewArticleState
 import com.example.articles.viewmodels.AddNewArticleViewModel
+import kotlinx.coroutines.launch
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddNewArticle(
     onBackClick: () -> Unit,
-    onLocationPickerClick: () -> Unit,
+    onLocationPickerClick: (Location?) -> Unit,
     modifier: Modifier = Modifier,
     addNewArticleViewModel: AddNewArticleViewModel
 ) {
@@ -79,9 +89,8 @@ fun AddNewArticle(
     val state by addNewArticleViewModel.uiState.collectAsStateWithLifecycle()
     val screenSize = ScreenSize.getScreenSize()
     val context = LocalContext.current
-    var showPhotoSheet by remember { mutableStateOf(false) }
-    var cameraUri by remember { mutableStateOf<Uri?>(null) }
 
+    var cameraUri by remember { mutableStateOf<Uri?>(null) }
     val cameraLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicture()
     ) { success ->
@@ -113,6 +122,9 @@ fun AddNewArticle(
             }
         }
     }
+
+    val sheetState = rememberModalBottomSheetState()
+    val coroutineScope = rememberCoroutineScope()
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -150,8 +162,16 @@ fun AddNewArticle(
             ) {
                 AddNewArticleItem(
                     state = state,
-                    onLocationPickerClick = onLocationPickerClick,
-                    onPhotoClick = { showPhotoSheet = true },
+                    onLocationPickerClick = { onLocationPickerClick(state.article.location) },
+                    onClearLocation = {
+                        addNewArticleViewModel.handleAction(AddNewArticleAction.ClearLocation)
+                    },
+                    onPhotoClick = {
+                        addNewArticleViewModel.handleAction(AddNewArticleAction.ShowBottomSheet)
+                    },
+                    onClearPhoto = {
+                        addNewArticleViewModel.handleAction(AddNewArticleAction.ClearPhoto)
+                    },
                     modifier = Modifier.padding(vertical = 5.dp),
                     showUnitsDropdownMenu = {
                         addNewArticleViewModel.handleAction(AddNewArticleAction.ShowUnitsDropdownMenu)
@@ -165,57 +185,86 @@ fun AddNewArticle(
                         )
                     }
                 )
-                ProgressButton(
-                    onButtonClick = {
-                        addNewArticleViewModel.handleAction(AddNewArticleAction.SaveArticle)
-                        if (state.okToSave) {
-                            onBackClick()
-                        }
-                    },
-                    isLoading = state.isLoading,
-                    text = stringResource(id = R.string.save),
-                    modifier = Modifier.padding(vertical = 10.dp),
-                )
+                Row {
+                    Button(
+                        onClick = onBackClick,
+                        modifier = Modifier
+                            .padding(top = 8.dp, bottom = 8.dp, start = 8.dp, end = 4.dp)
+                            .weight(weight = 1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Transparent,
+                            contentColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Text(text = stringResource(id = R.string.cancel))
+                    }
+                    ProgressButton(
+                        onButtonClick = {
+                            addNewArticleViewModel.handleAction(AddNewArticleAction.SaveArticle)
+                            if (state.okToSave) {
+                                onBackClick()
+                            }
+                        },
+                        isLoading = state.isLoading,
+                        text = stringResource(id = R.string.save),
+                        modifier = Modifier
+                            .padding(top = 8.dp, bottom = 8.dp, start = 4.dp, end = 8.dp)
+                            .weight(weight = 1f),
+                    )
+                }
             }
         }
-
-        if (showPhotoSheet) {
+        if (state.isBottomSheetVisible) {
             ModalBottomSheet(
-                onDismissRequest = { showPhotoSheet = false },
-                sheetState = rememberModalBottomSheetState()
+                onDismissRequest = {
+                    coroutineScope
+                        .launch { sheetState.hide() }
+                        .invokeOnCompletion {
+                            addNewArticleViewModel.handleAction(AddNewArticleAction.HideBottomSheet)
+                        }
+                },
+                sheetState = sheetState,
+                containerColor = MaterialTheme.colorScheme.surface
             ) {
-                BottomSheetRowItem(
-                    icon = Icons.Default.CameraAlt,
-                    contentDescription = stringResource(id = R.string.take_a_photo),
-                    text = stringResource(id = R.string.take_a_photo),
-                    onClick = {
-                        showPhotoSheet = false
-                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-                    }
-                )
-                BottomSheetRowItem(
-                    icon = Icons.Default.Image,
-                    contentDescription = stringResource(id = R.string.choose_photo),
-                    text = stringResource(id = R.string.choose_photo),
-                    onClick = {
-                        showPhotoSheet = false
-                        galleryLauncher.launch("image/*")
-                    }
-                )
+                Column(
+                    modifier = Modifier.padding(bottom = 60.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    BottomSheetRowItem(
+                        icon = Icons.Default.CameraAlt,
+                        contentDescription = stringResource(id = R.string.take_a_photo),
+                        text = stringResource(id = R.string.take_a_photo),
+                        onClick = {
+                            addNewArticleViewModel.handleAction(AddNewArticleAction.HideBottomSheet)
+                            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                        }
+                    )
+                    BottomSheetRowItem(
+                        icon = Icons.Default.Image,
+                        contentDescription = stringResource(id = R.string.add_photo),
+                        text = stringResource(id = R.string.add_photo),
+                        onClick = {
+                            addNewArticleViewModel.handleAction(AddNewArticleAction.HideBottomSheet)
+                            galleryLauncher.launch("image/*")
+                        }
+                    )
+                }
             }
         }
-    }
 
+    }
 }
 
 @Composable
 fun AddNewArticleItem(
     state: AddNewArticleState,
     onLocationPickerClick: () -> Unit,
+    onClearLocation: () -> Unit,
     showUnitsDropdownMenu: () -> Unit,
     hideUnitsDropdownMenu: () -> Unit,
     onArticleTypeChange: (ArticleUnit) -> Unit,
     onPhotoClick: () -> Unit,
+    onClearPhoto: () -> Unit,
     modifier: Modifier = Modifier
 ) {
 
@@ -235,7 +284,12 @@ fun AddNewArticleItem(
                     Text(text = stringResource(id = R.string.name))
                 },
                 label = {
-                    Text(text = stringResource(id = R.string.name))
+                    val errorColor = MaterialTheme.colorScheme.error
+                    Text(text = buildAnnotatedString {
+                        append(stringResource(id = R.string.name))
+                        append(" ")
+                        withStyle(SpanStyle(color = errorColor)) { append("*") }
+                    })
                 },
                 isError = state.isError,
                 supportingText = {
@@ -245,11 +299,23 @@ fun AddNewArticleItem(
                             textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth()
                         )
+                    } else {
+                        Text(
+                            text = buildAnnotatedString {
+                                withStyle(SpanStyle(color = MaterialTheme.colorScheme.error)) {
+                                    append("*")
+                                }
+                                append(" ")
+                                append(stringResource(id = R.string.required))
+                            },
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.End
+                        )
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
             )
-//            Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
                 state = state.articleQuantity,
                 placeholder = {
@@ -305,17 +371,30 @@ fun AddNewArticleItem(
                 )
             )
             DataRow(
-                title = state.article.location?.let {
-                    "%.4f, %.4f".format(it.latitude, it.longitude)
-                } ?: stringResource(id = R.string.choose_location),
-                buttonText = stringResource(id = R.string.choose_location),
+                labelText = state.locationString,
+                buttonText =
+                    if (state.article.location != null) stringResource(id = R.string.change_location)
+                    else stringResource(id = R.string.add_location),
                 onButtonClick = onLocationPickerClick,
-                modifier = Modifier.padding(top = 8.dp)
+                onDeleteClick = {
+                    if (state.article.location != null) onClearLocation()
+                },
+                labelTextLoading = state.isLocationStringLoading,
+                modifier = Modifier.padding(top = 16.dp)
             )
             DataRow(
-                title = stringResource(id = R.string.choose_photo),
-                buttonText = stringResource(id = R.string.choose_photo),
-                onButtonClick = onPhotoClick
+                labelText =
+                    if (state.article.photoUri != null) stringResource(id = R.string.photo)
+                    else null,
+                buttonText =
+                    if (state.article.photoUri != null) stringResource(id = R.string.change_photo)
+                    else stringResource(id = R.string.add_photo),
+                onButtonClick = onPhotoClick,
+                onDeleteClick = {
+                    if (state.article.photoUri != null) onClearPhoto()
+                },
+                labelTextLoading = false,
+                modifier = Modifier.padding(top = 8.dp)
             )
             state.article.photoUri?.let { uri ->
                 AsyncImage(
@@ -323,6 +402,7 @@ fun AddNewArticleItem(
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxWidth()
+                        .heightIn(min = 200.dp, max = 300.dp)
                         .padding(top = 8.dp)
                         .clip(RoundedCornerShape(8.dp))
                 )
@@ -334,28 +414,47 @@ fun AddNewArticleItem(
 
 @Composable
 fun DataRow(
-    title: String,
     buttonText: String,
     onButtonClick: () -> Unit,
+    labelText: String?,
+    labelTextLoading: Boolean,
+    onDeleteClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Surface {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = modifier
-        ) {
-            Text(
-                text = title,
-            )
-            Spacer(
-                modifier = Modifier.weight(1f)
-            )
-            Button(
-                onClick = onButtonClick
-            ) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier.fillMaxWidth()
+    ) {
+        if (labelTextLoading) {
+            CircularProgressIndicator()
+        } else {
+            if (labelText != null) {
                 Text(
-                    text = buttonText,
+                    text = labelText,
+                    overflow = TextOverflow.Visible,
+                    modifier = Modifier.weight(1f)
                 )
+                TextButton(
+                    onClick = onButtonClick
+                ) {
+                    Text(text = buttonText)
+                }
+                IconButton(
+                    onClick = onDeleteClick
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                Button(
+                    onClick = onButtonClick,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(text = buttonText)
+                }
             }
         }
     }
