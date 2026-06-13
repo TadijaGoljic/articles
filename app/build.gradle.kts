@@ -98,6 +98,7 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.google.firebase.firestore.ktx)
     implementation(libs.firebase.auth.ktx)
+    implementation(libs.firebase.messaging)
 
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.kotlinx.serialization.json)

@@ -1,10 +1,13 @@
 package com.example.articles
 
+import android.Manifest
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.core.net.toUri
@@ -16,11 +19,17 @@ import com.example.articles.sync.SyncManager
 import com.example.articles.ui.composables.ArticlesNavigationFlow
 import com.example.articles.ui.theme.ArticlesTheme
 import com.example.articles.models.Location
+import android.util.Log
+import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class ArticlesActivity : ComponentActivity() {
+
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {}
 
     companion object {
         private const val GOOGLE_MAPS_PACKAGE_NAME = "com.google.android.apps.maps"
@@ -30,6 +39,12 @@ class ArticlesActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+        FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
+            Log.d(ArticlesApplication.LOG_TAG, "FCM token: $token")
+        }
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(state = Lifecycle.State.STARTED) {
                 WorkManager.getInstance(this@ArticlesActivity).enqueue(SyncManager.sync())
