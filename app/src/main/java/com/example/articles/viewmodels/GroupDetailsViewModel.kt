@@ -47,9 +47,51 @@ class GroupDetailsViewModel @Inject constructor(
         }
     }
 
+    fun handleAction(action: GroupDetailsAction) {
+        when (action) {
+            is GroupDetailsAction.ArticleLongClick -> onArticleLongClick(action.article)
+            is GroupDetailsAction.HideBottomSheet -> onHideBottomSheet()
+            is GroupDetailsAction.RemoveArticle -> removeArticle(
+                article = state.value.articleToEditOrDelete ?: return
+            )
+        }
+    }
+
+    private fun onArticleLongClick(article: UIArticle) {
+        state.update { currentState ->
+            currentState.copy(
+                articleToEditOrDelete = article,
+                showEditDeleteBottonSheet = true
+            )
+        }
+    }
+
+    private fun onHideBottomSheet() {
+        state.update { currentState ->
+            currentState.copy(
+                articleToEditOrDelete = null,
+                showEditDeleteBottonSheet = false
+            )
+        }
+    }
+
+    private fun removeArticle(article: UIArticle) {
+        viewModelScope.launch {
+            articleRepository.deleteArticleById(article.id)
+        }
+    }
+
 }
 
 data class GroupDetailsState(
     val group: UIGroup = UIGroup(),
     val articles: List<UIArticle> = emptyList(),
+    val articleToEditOrDelete: UIArticle? = null,
+    val showEditDeleteBottonSheet: Boolean = false,
 )
+
+sealed interface GroupDetailsAction {
+    data class ArticleLongClick(val article: UIArticle): GroupDetailsAction
+    data object HideBottomSheet: GroupDetailsAction
+    data object RemoveArticle: GroupDetailsAction
+}

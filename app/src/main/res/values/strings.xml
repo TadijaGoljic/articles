@@ -35,6 +35,7 @@
     <string name="take_a_photo">Take a photo</string>
     <string name="add_location">Add location</string>
     <string name="change_location">Change location</string>
+    <string name="edit_article">Edit article</string>
     <string name="remove_article">Remove article</string>
     <string name="selected_location">Selected location</string>
     <string name="tap_on_the_map">Tap anywhere on the map to select a location</string>

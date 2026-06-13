@@ -35,6 +35,7 @@
     <string name="take_a_photo">Отвори камеру</string>
     <string name="add_location">Додај локацију</string>
     <string name="change_location">Промени локацију</string>
+    <string name="edit_article">Измени артикал</string>
     <string name="remove_article">Обриши артикал</string>
     <string name="expand">Рашири</string>
     <string name="collapse">Скупи</string>
