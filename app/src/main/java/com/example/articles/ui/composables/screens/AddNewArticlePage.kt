@@ -45,6 +45,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -128,6 +129,10 @@ fun AddNewArticle(
     val sheetState = rememberModalBottomSheetState()
     val coroutineScope = rememberCoroutineScope()
 
+    LaunchedEffect(state.okToSave) {
+        if (state.okToSave) onBackClick()
+    }
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
@@ -137,7 +142,7 @@ fun AddNewArticle(
             .imePadding()
     ) {
         Toolbar(
-            title = stringResource(id = R.string.add_new_article),
+            title = stringResource(id = if (state.isEditMode) R.string.edit_article else R.string.add_new_article),
             leadingIcon = Icons.Default.ChevronLeft,
             onLeadingIconClick = onBackClick,
             color = MaterialTheme.colorScheme.onBackground,
@@ -203,9 +208,6 @@ fun AddNewArticle(
                     ProgressButton(
                         onButtonClick = {
                             addNewArticleViewModel.handleAction(AddNewArticleAction.SaveArticle)
-                            if (state.okToSave) {
-                                onBackClick()
-                            }
                         },
                         isLoading = state.isLoading,
                         text = stringResource(id = R.string.save),

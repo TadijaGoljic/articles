@@ -48,6 +48,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun GroupDetailsPage(
     onAddArticle: (articleGroup: UIGroup) -> Unit,
+    onEditArticle: (UIArticle) -> Unit,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
     groupDetailsViewModel: GroupDetailsViewModel = hiltViewModel()
@@ -78,8 +79,9 @@ fun GroupDetailsPage(
                     contentDescription = stringResource(id = R.string.edit_article),
                     text = stringResource(id = R.string.edit_article),
                     onClick = {
-                        // TODO Claude
+                        val articleToEdit = state.articleToEditOrDelete
                         groupDetailsViewModel.handleAction(GroupDetailsAction.HideBottomSheet)
+                        articleToEdit?.let { onEditArticle(it) }
                     }
                 )
                 BottomSheetRowItem(

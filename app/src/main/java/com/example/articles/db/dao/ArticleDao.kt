@@ -26,4 +26,7 @@ interface ArticleDao {
     @Query("SELECT * FROM articles WHERE groupId = :groupId")
     fun getArticlesByGroupId(groupId: UUID): Flow<List<ArticleEntity>>
 
+    @Query("SELECT * FROM articles WHERE idArticle = :id")
+    fun getArticleById(id: UUID): Flow<ArticleEntity?>
+
 }

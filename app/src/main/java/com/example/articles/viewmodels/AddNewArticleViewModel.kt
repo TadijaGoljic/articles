@@ -20,6 +20,7 @@ import com.example.articles.utils.triggerSync
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -39,6 +40,37 @@ class AddNewArticleViewModel @Inject constructor(
 
     private var state = MutableStateFlow(AddNewArticleState())
     val uiState = state
+
+    init {
+        args.articleId?.let { id ->
+            viewModelScope.launch {
+                articleRepository.getArticleById(UUID.fromString(id)).first()?.let { article ->
+                    state.value.articleName.edit {
+                        replace(0, length, article.name ?: "")
+                    }
+                    state.value.articleDescription.edit {
+                        replace(0, length, article.description ?: "")
+                    }
+                    state.value.articleQuantity.edit {
+                        replace(0, length, article.quantity?.toString() ?: "")
+                    }
+                    state.value.articlePricePerUnit.edit {
+                        replace(0, length, article.pricePerUnit?.toString() ?: "")
+                    }
+                    state.value.articleWebsiteLink.edit {
+                        replace(0, length, article.websiteLink ?: "")
+                    }
+                    state.update { currentState ->
+                        currentState.copy(
+                            article = article,
+                            isEditMode = true
+                        )
+                    }
+                    article.location?.let { updateLocation(it) }
+                }
+            }
+        }
+    }
 
     fun photoUri(): Uri = fileManager.photoUri()
 
@@ -177,6 +209,7 @@ data class AddNewArticleState(
     val okToSave: Boolean = false,
     val isBottomSheetVisible: Boolean = false,
     val isLocationStringLoading: Boolean = false,
+    val isEditMode: Boolean = false,
 )
 
 sealed interface AddNewArticleAction {

@@ -34,4 +34,6 @@ class ArticleRepository @Inject constructor(
         list.map { article -> article.toUIArticle() }
     }
 
+    fun getArticleById(id: UUID) = articleDao.getArticleById(id).map { it?.toUIArticle() }
+
 }

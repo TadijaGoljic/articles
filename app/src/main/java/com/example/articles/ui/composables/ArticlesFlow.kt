@@ -48,6 +48,14 @@ fun ArticlesNavigationFlow(
                 onBackClick = navController::popBackStack,
                 onAddArticle = { group ->
                     navController.navigate(ArticlesDestinations.AddNewArticleDestination(groupId = group.id.toString()))
+                },
+                onEditArticle = { article ->
+                    navController.navigate(
+                        ArticlesDestinations.AddNewArticleDestination(
+                            groupId = article.groupId.toString(),
+                            articleId = article.id.toString()
+                        )
+                    )
                 }
             )
         }
@@ -101,7 +109,7 @@ private const val KEY_LOCATION = "KEY_LOCATION"
 
 sealed interface ArticlesDestinations {
     @Serializable data object GroupsListDestination : ArticlesDestinations
-    @Serializable data class AddNewArticleDestination(val groupId: String) : ArticlesDestinations
+    @Serializable data class AddNewArticleDestination(val groupId: String, val articleId: String? = null) : ArticlesDestinations
     @Serializable data class PickLocationDestination(val latitude: Double? = null, val longitude: Double? = null) : ArticlesDestinations
     @Serializable data object SettingsDestination : ArticlesDestinations
     @Serializable data class GroupDetailsDestination(val groupId: String) : ArticlesDestinations
