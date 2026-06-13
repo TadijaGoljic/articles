@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import android.net.Uri
 import android.util.Log
+import androidx.compose.ui.text.TextRange
 import com.example.articles.ArticlesApplication.Companion.LOG_TAG
 import com.example.articles.models.ArticleUnit
 import com.example.articles.models.Location

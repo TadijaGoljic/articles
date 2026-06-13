@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -242,34 +243,29 @@ fun GroupItem(
                     .fillMaxWidth()
                     .padding(horizontal = 4.dp)
             ) {
+                Text(
+                    text = "${group.name} (${group.articles.size})",
+                    fontSize = 24.sp,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.align(Alignment.CenterStart),
+                    maxLines = 1
+                )
                 IconButton(
                     onClick = {  },
                     modifier = Modifier
                         .size(24.dp)
-                        .align(Alignment.CenterStart),
+                        .align(Alignment.CenterEnd),
                     enabled = group.articles.isNotEmpty()
                 ) {
                     Icon(
                         imageVector =
-                            if (group.expanded) Icons.Default.KeyboardArrowDown
-                            else Icons.Default.ChevronRight,
+                            if (group.expanded) Icons.Default.KeyboardArrowUp
+                            else Icons.Default.KeyboardArrowDown,
                         contentDescription =
                             if (group.expanded) stringResource(id = R.string.collapse)
                             else stringResource(id = R.string.expand),
                     )
                 }
-                Text(
-                    text = group.name,
-                    fontSize = 24.sp,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.align(Alignment.Center),
-                    maxLines = 1
-                )
-                Text(
-                    text = group.articles.size.toString(),
-                    maxLines = 1,
-                    modifier = Modifier.align(Alignment.CenterEnd)
-                )
             }
         }
     }

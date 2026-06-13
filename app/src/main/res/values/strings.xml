@@ -71,6 +71,8 @@
     <string name="no_groups_message">To Create a Group click on \"+\" icon</string>
 
     <!-- Units -->
+    <string name="unit">Unit</string>
+    <string name="quantity">Quantity</string>
     <string name="unit_quantity">Pieces</string>
     <string name="unit_quantity_abbreviation">pcs</string>
     <string name="unit_kilograms">Kilograms</string>

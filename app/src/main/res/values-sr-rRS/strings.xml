@@ -73,6 +73,8 @@
     <string name="no_groups_message">За креирање нове групе притисните иконицу \"+\"</string>
 
     <!-- Units -->
+    <string name="unit">Јединица мере</string>
+    <string name="quantity">Количина</string>
     <string name="unit_quantity">Комада</string>
     <string name="unit_quantity_abbreviation">ком</string>
     <string name="unit_kilograms">Килограма</string>
