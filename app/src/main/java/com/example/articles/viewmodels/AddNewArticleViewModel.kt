@@ -109,7 +109,7 @@ class AddNewArticleViewModel @Inject constructor(
             }
             return
         }
-        if (!articleWebsiteLink.isValidUri()) {
+        if (articleWebsiteLink.isNotBlank() && !articleWebsiteLink.isValidUri()) {
             state.update { currentState ->
                 currentState.copy(
                     isLoading = false,

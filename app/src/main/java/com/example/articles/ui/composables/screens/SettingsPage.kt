@@ -28,6 +28,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import android.content.Intent
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -77,7 +78,12 @@ fun SettingsScreen(
                 type = "text/plain"
                 putExtra(Intent.EXTRA_TEXT, content)
             }
-            context.startActivity(Intent.createChooser(intent, context.getString(R.string.export_data)))
+            context.startActivity(
+                Intent.createChooser(
+                    intent,
+                    context.getString(R.string.export_data)
+                )
+            )
             settingsViewModel.handleAction(SettingsAction.ClearExport)
         }
     }
@@ -97,7 +103,14 @@ fun SettingsScreen(
                 TextButton(
                     onClick = { settingsViewModel.handleAction(SettingsAction.SignOut) }
                 ) {
-                    Text(text = stringResource(id = R.string.ok))
+                    if (state.signOutLoading) {
+                        CircularProgressIndicator(
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    } else {
+                        Text(text = stringResource(id = R.string.ok))
+                    }
                 }
             },
             dismissButton = {
@@ -124,7 +137,14 @@ fun SettingsScreen(
                 TextButton(
                     onClick = { settingsViewModel.handleAction(SettingsAction.DeleteAccount) }
                 ) {
-                    Text(text = stringResource(id = R.string.ok))
+                    if (state.deleteAccountLoading) {
+                        CircularProgressIndicator(
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    } else {
+                        Text(text = stringResource(id = R.string.ok))
+                    }
                 }
             },
             dismissButton = {

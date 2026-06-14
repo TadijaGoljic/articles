@@ -34,6 +34,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -42,6 +43,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -132,21 +134,31 @@ fun GroupDetailsPage(
                     onLeadingIconClick = onBackClick
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                LazyColumn(
-                    modifier = Modifier.padding(bottom = 60.dp)
-                ) {
-                    items(state.articles) { article ->
-                        ArticleItem(
-                            article = article,
-                            onLongClick = {
-                                groupDetailsViewModel.handleAction(
-                                    GroupDetailsAction.ArticleLongClick(article = article)
-                                )
-                            },
-                            onOpenNavigation = onOpenNavigation,
-                            onOpenLink = onOpenLink
-                        )
+                if (state.articles.isNotEmpty()) {
+                    LazyColumn(
+                        modifier = Modifier.padding(bottom = 60.dp)
+                    ) {
+                        items(state.articles) { article ->
+                            ArticleItem(
+                                article = article,
+                                onLongClick = {
+                                    groupDetailsViewModel.handleAction(
+                                        GroupDetailsAction.ArticleLongClick(article = article)
+                                    )
+                                },
+                                onOpenNavigation = onOpenNavigation,
+                                onOpenLink = onOpenLink
+                            )
+                        }
                     }
+                } else {
+                    NoArticles(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .height(78.dp)
+                            .clip(shape = RoundedCornerShape(16.dp))
+                    )
                 }
             }
             Button(
@@ -342,6 +354,32 @@ fun ArticleItem(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun NoArticles(
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+    ) {
+        Column(
+            modifier = Modifier.padding(10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = stringResource(id = R.string.no_articles_title),
+                color = Color.Gray,
+                style = MaterialTheme.typography.titleMedium
+            )
+            Text(
+                text = stringResource(id = R.string.no_articles_message),
+                color = Color.Gray,
+                style = MaterialTheme.typography.labelMedium
+            )
         }
     }
 }

@@ -12,12 +12,16 @@ import com.example.articles.repositories.GroupRepository
 import com.google.firebase.Firebase
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.auth
+import com.google.firebase.firestore.firestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -57,24 +61,45 @@ class SettingsViewModel @Inject constructor(
     }
 
     private fun signOut() = viewModelScope.launch {
-        database.clearAllTables()
+        state.update { currentState ->
+            currentState.copy(
+                signOutLoading = true
+            )
+        }
+        withContext(Dispatchers.IO) { database.clearAllTables() }
         Firebase.auth.signOut()
         state.update { currentState ->
-            currentState.copy(signOutOk = true)
+            currentState.copy(
+                signOutLoading = false,
+                signOutOk = true
+            )
         }
     }
 
     private fun deleteAccount() = viewModelScope.launch {
-        database.clearAllTables()
-        Firebase
-            .auth
-            .currentUser
+        state.update { currentState ->
+            currentState.copy(
+                deleteAccountLoading = true
+            )
+        }
+        val uid = Firebase.auth.currentUser?.uid
+        withContext(Dispatchers.IO) { database.clearAllTables() }
+        if (uid != null) {
+            val userRef = Firebase.firestore.collection("users").document(uid)
+            userRef.delete().await()
+        }
+        Firebase.auth.currentUser
             ?.delete()
             ?.addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                state.update { it.copy(deleteOk = true) }
+                if (task.isSuccessful) {
+                    state.update { currentState ->
+                        currentState.copy(
+                            deleteAccountLoading = false,
+                            deleteOk = true
+                        )
+                    }
+                }
             }
-        }
     }
 
     private fun updateChangePasswordDialogVisibility(visible: Boolean) {
@@ -178,6 +203,8 @@ data class SettingsState(
     val oldPassword: TextFieldState = TextFieldState(""),
     val newPassword: TextFieldState = TextFieldState(""),
     val exportContent: String? = null,
+    val deleteAccountLoading: Boolean = false,
+    val signOutLoading: Boolean = false,
 )
 
 sealed interface SettingsAction {
