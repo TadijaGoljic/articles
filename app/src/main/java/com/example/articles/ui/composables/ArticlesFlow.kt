@@ -23,6 +23,8 @@ import kotlinx.serialization.Serializable
 fun ArticlesNavigationFlow(
     onSignOut: () -> Unit,
     onAccountDelete: () -> Unit,
+    onOpenNavigation: (Location) -> Unit,
+    onOpenLink: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
 
@@ -56,7 +58,9 @@ fun ArticlesNavigationFlow(
                             articleId = article.id.toString()
                         )
                     )
-                }
+                },
+                onOpenNavigation = onOpenNavigation,
+                onOpenLink = onOpenLink
             )
         }
         composable<ArticlesDestinations.AddNewArticleDestination> { backStackEntry ->

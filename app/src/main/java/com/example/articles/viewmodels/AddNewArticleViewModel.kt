@@ -17,6 +17,7 @@ import com.example.articles.nominatim.NominatimAPI
 import com.example.articles.repositories.ArticleRepository
 import com.example.articles.utils.FileManager
 import com.example.articles.ui.composables.ArticlesDestinations
+import com.example.articles.utils.isValidUri
 import com.example.articles.utils.triggerSync
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -103,7 +104,16 @@ class AddNewArticleViewModel @Inject constructor(
             state.update { currentState ->
                 currentState.copy(
                     isLoading = false,
-                    isError = true
+                    articleNameError = true
+                )
+            }
+            return
+        }
+        if (!articleWebsiteLink.isValidUri()) {
+            state.update { currentState ->
+                currentState.copy(
+                    isLoading = false,
+                    articleWebsiteLinkError = true
                 )
             }
             return
@@ -206,7 +216,8 @@ data class AddNewArticleState(
     val articleWebsiteLink: TextFieldState = TextFieldState(),
     val unitsDropdownMenuVisible: Boolean = false,
     val isLoading: Boolean = false,
-    val isError: Boolean = false,
+    val articleNameError: Boolean = false,
+    val articleWebsiteLinkError: Boolean = false,
     val okToSave: Boolean = false,
     val isBottomSheetVisible: Boolean = false,
     val isLocationStringLoading: Boolean = false,

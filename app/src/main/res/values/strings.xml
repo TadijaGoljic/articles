@@ -59,6 +59,7 @@
     <string name="article_description">Description</string>
     <string name="price_per_unit">Price per unit</string>
     <string name="website_link">Website link</string>
+    <string name="invalid_website_link">Invalid link format</string>
 
     <!-- Groups -->
     <string name="create_group">Create a group</string>

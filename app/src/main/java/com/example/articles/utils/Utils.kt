@@ -13,6 +13,7 @@ import java.io.FileInputStream
 import java.util.Date
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
+import androidx.core.net.toUri
 
 fun Double.isInteger(): Boolean = this % 1 == 0.0
 
@@ -84,5 +85,14 @@ fun triggerSync(context: Context) {
             ExistingWorkPolicy.KEEP,
             SyncManager.sync()
         )
+    }
+}
+
+fun String.isValidUri(): Boolean {
+    return try {
+        val parsed = this.toUri()
+        !parsed.scheme.isNullOrBlank()
+    } catch (e: Exception) {
+        false
     }
 }

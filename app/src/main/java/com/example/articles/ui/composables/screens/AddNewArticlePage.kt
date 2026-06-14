@@ -295,9 +295,9 @@ fun AddNewArticleItem(
                         withStyle(SpanStyle(color = errorColor)) { append("*") }
                     })
                 },
-                isError = state.isError,
+                isError = state.articleNameError,
                 supportingText = {
-                    if (state.isError) {
+                    if (state.articleNameError) {
                         Text(
                             text = stringResource(id = R.string.provide_name),
                             textAlign = TextAlign.Center,
@@ -384,6 +384,16 @@ fun AddNewArticleItem(
                 },
                 label = {
                     Text(text = stringResource(id = R.string.website_link))
+                },
+                isError = state.articleWebsiteLinkError,
+                supportingText = {
+                    if (state.articleWebsiteLinkError) {
+                        Text(
+                            text = stringResource(id = R.string.invalid_website_link),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 },
                 modifier = Modifier.fillMaxWidth()
             )

@@ -71,6 +71,9 @@ class ArticlesActivity : ComponentActivity() {
         startActivity(intent)
     }
 
+    private fun openLink(url: String) =
+        startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
+
     private fun onSignOut() {
         finish()
         startActivity(Intent(this, AuthenticationActivity::class.java))
@@ -85,6 +88,8 @@ class ArticlesActivity : ComponentActivity() {
         ArticlesNavigationFlow(
             onSignOut = ::onSignOut,
             onAccountDelete = ::onAccountDelete,
+            onOpenNavigation = ::openNavigation,
+            onOpenLink = ::openLink,
             modifier = modifier
         )
     }
