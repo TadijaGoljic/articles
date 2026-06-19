@@ -51,6 +51,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.articles.R
 import com.example.articles.ui.composables.utils.Position
 import com.example.articles.ui.composables.utils.SettingsItem
+import com.example.articles.ui.composables.utils.SettingsItemWithSwitch
 import com.example.articles.ui.composables.utils.Toolbar
 import com.example.articles.utils.ScreenSize
 import com.example.articles.viewmodels.SettingsAction
@@ -215,7 +216,11 @@ fun SettingsScreen(
                     ScreenSize.NORMAL -> Modifier
                     ScreenSize.LARGE -> Modifier.padding(horizontal = 40.dp)
                     ScreenSize.VERY_LARGE -> Modifier.padding(horizontal = 160.dp)
-                }
+                },
+                onSyncDataClick = { status ->
+                    settingsViewModel.handleAction(SettingsAction.UpdateSyncDataStatus(status))
+                },
+                isSyncDataChecked = state.syncData
             )
         }
     }
@@ -226,7 +231,9 @@ fun SettingsItems(
     showSignOutConfirmationDialog: () -> Unit,
     showDeleteAccountConfirmationDialog: () -> Unit,
     showChangePasswordDialog: () -> Unit,
+    onSyncDataClick: (Boolean) -> Unit,
     onExportGroups: () -> Unit,
+    isSyncDataChecked: Boolean,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -272,7 +279,14 @@ fun SettingsItems(
         SettingsItem(
             label = stringResource(id = R.string.export_data),
             onItemClick = onExportGroups,
-            position = Position.SINGLE,
+            position = Position.TOP,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+        SettingsItemWithSwitch(
+            label = stringResource(id = R.string.sync_data),
+            onItemClick = onSyncDataClick,
+            position = Position.BOTTOM,
+            isChecked = isSyncDataChecked,
             modifier = Modifier.padding(horizontal = 16.dp)
         )
     }

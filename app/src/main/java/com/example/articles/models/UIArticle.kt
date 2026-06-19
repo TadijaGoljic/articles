@@ -24,6 +24,8 @@ data class UIArticle(
     val updatedAt: Long = System.currentTimeMillis(),
     val websiteLink: String? = null,
     val pricePerUnit: Double? = null,
+    val bought: Boolean = false,
+    val expanded: Boolean = true,
 ) : Parcelable
 
 

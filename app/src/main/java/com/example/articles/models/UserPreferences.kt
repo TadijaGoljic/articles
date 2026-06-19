@@ -18,9 +18,14 @@ class UserPreferences @Inject constructor(
         get() = sharedPreferences.getLong(LAST_SYNC_TIMESTAMP_KEY, 0)
         set(value) = sharedPreferences.edit { putLong(LAST_SYNC_TIMESTAMP_KEY, value) }
 
+    var syncDataEnabled: Boolean
+        get() = sharedPreferences.getBoolean(DATA_SYNCHRONIZATION_ENABLED_KEY, true)
+        set(value) = sharedPreferences.edit { putBoolean(DATA_SYNCHRONIZATION_ENABLED_KEY, value) }
+
     companion object {
         const val USER_PREFERENCES_KEY = "user_preferences_articles"
         const val LAST_SYNC_TIMESTAMP_KEY = "last_sync_timestamp"
+        const val DATA_SYNCHRONIZATION_ENABLED_KEY = "data_synchronization_enabled"
     }
 
 }

@@ -52,7 +52,8 @@ class FirestoreModelMapper @Inject constructor(
             "groupId" to articleEntity.groupId.toString(),
             "description" to articleEntity.description,
             "websiteLink" to articleEntity.websiteLink,
-            "pricePerUnit" to articleEntity.pricePerUnit
+            "pricePerUnit" to articleEntity.pricePerUnit,
+            "bought" to articleEntity.bought
         )
     }
 
@@ -79,7 +80,8 @@ class FirestoreModelMapper @Inject constructor(
             groupId = UUID.fromString(data["groupId"] as? String) ?: UUID.randomUUID(),
             description = data["description"] as? String,
             websiteLink = data["websiteLink"] as? String,
-            pricePerUnit = data["pricePerUnit"] as? Double
+            pricePerUnit = data["pricePerUnit"] as? Double,
+            bought = data["bought"] as? Boolean ?: false
         )
     }
 

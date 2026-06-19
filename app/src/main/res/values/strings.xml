@@ -24,6 +24,8 @@
     <string name="old_password">Old password</string>
     <string name="fields_empty_error">All fields need to be filled</string>
     <string name="send">Send</string>
+    <string name="sync_data">Sync data</string>
+    <string name="filter">Filter</string>
 
     <!-- Articles -->
     <string name="app_name">Articles</string>
@@ -60,6 +62,15 @@
     <string name="price_per_unit">Price per unit</string>
     <string name="website_link">Website link</string>
     <string name="invalid_website_link">Invalid link format</string>
+    <string name="mark_as_bought">Mark as bought</string>
+    <string name="mark_as_not_bought">Mark as not bought</string>
+    <string name="expand_all_articles">Expand all articles</string>
+    <string name="collapse_all_articles">Collapse all articles</string>
+
+    <!-- Filters-->
+    <string name="filters_all">All</string>
+    <string name="filters_bought">Bought</string>
+    <string name="filters_unbought">Unbought</string>
 
     <!-- Groups -->
     <string name="create_group">Create a group</string>

@@ -14,18 +14,20 @@ import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.work.WorkManager
-import com.example.articles.sync.SyncManager
 import com.example.articles.ui.composables.ArticlesNavigationFlow
 import com.example.articles.ui.theme.ArticlesTheme
 import com.example.articles.models.Location
 import android.util.Log
+import com.example.articles.utils.TriggerSync
 import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class ArticlesActivity : ComponentActivity() {
+
+    @Inject lateinit var triggerSync: TriggerSync
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -47,7 +49,7 @@ class ArticlesActivity : ComponentActivity() {
         }
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(state = Lifecycle.State.STARTED) {
-                WorkManager.getInstance(this@ArticlesActivity).enqueue(SyncManager.sync())
+                triggerSync()
             }
         }
         setContent {

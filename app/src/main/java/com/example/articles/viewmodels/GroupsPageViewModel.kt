@@ -1,15 +1,13 @@
 package com.example.articles.viewmodels
 
-import android.content.Context
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.articles.models.UIGroup
 import com.example.articles.repositories.ArticleRepository
 import com.example.articles.repositories.GroupRepository
-import com.example.articles.utils.triggerSync
+import com.example.articles.utils.TriggerSync
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -21,7 +19,7 @@ import javax.inject.Inject
 class GroupsPageViewModel @Inject constructor(
     private val groupRepository: GroupRepository,
     private val articleRepository: ArticleRepository,
-    @ApplicationContext private val context: Context
+    private val triggerSync: TriggerSync
 ) : ViewModel() {
 
     private val state = MutableStateFlow(GroupsPageState())
@@ -106,7 +104,7 @@ class GroupsPageViewModel @Inject constructor(
                     )
                 }
             }
-            triggerSync(context = context)
+            triggerSync()
         }
     }
 
@@ -156,7 +154,7 @@ class GroupsPageViewModel @Inject constructor(
                         showEditGroupDialog = false,
                     )
                 }
-                triggerSync(context = context)
+                triggerSync()
             }
         }
     }

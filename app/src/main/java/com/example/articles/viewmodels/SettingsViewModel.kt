@@ -7,8 +7,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.articles.R
 import com.example.articles.db.ArticleDatabase
+import com.example.articles.models.UserPreferences
 import com.example.articles.repositories.ArticleRepository
 import com.example.articles.repositories.GroupRepository
+import com.example.articles.utils.TriggerSync
 import com.google.firebase.Firebase
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.auth
@@ -32,11 +34,21 @@ class SettingsViewModel @Inject constructor(
     private val database: ArticleDatabase,
     private val groupRepository: GroupRepository,
     private val articleRepository: ArticleRepository,
+    private val userPreferences: UserPreferences,
+    private val triggerSync: TriggerSync,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private var state = MutableStateFlow(SettingsState())
     val uiState = state
+
+    init {
+        state.update { currentState ->
+            currentState.copy(
+                syncData = userPreferences.syncDataEnabled
+            )
+        }
+    }
 
     fun handleAction(action: SettingsAction) {
         when (action) {
@@ -56,7 +68,9 @@ class SettingsViewModel @Inject constructor(
                 updateDeleteAccountDialogVisibility(visible = false)
             is SettingsAction.ChangePassword -> changePassword()
             is SettingsAction.ExportGroups -> exportGroups()
-            is SettingsAction.ClearExport -> state.update { it.copy(exportContent = null) }
+            is SettingsAction.ClearExport -> cleanExport()
+            is SettingsAction.UpdateSyncDataStatus ->
+                updateSyncDataStatus(syncData = action.syncData)
         }
     }
 
@@ -189,6 +203,22 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    private fun cleanExport() {
+        state.update { currentsState ->
+            currentsState.copy(exportContent = null)
+        }
+    }
+
+    private fun updateSyncDataStatus(syncData: Boolean) {
+        state.update { currentState ->
+            currentState.copy(
+                syncData = syncData
+            )
+        }
+        userPreferences.syncDataEnabled = syncData
+        triggerSync()
+    }
+
 }
 
 data class SettingsState(
@@ -198,13 +228,14 @@ data class SettingsState(
     val showDeleteAccountConfirmationDialog: Boolean = false,
     val showChangePasswordDialog: Boolean = false,
     val isLoading: Boolean = false,
-    @StringRes val stringResErrorMessage: Int? = null,
     val errorMessage: String? = null,
     val oldPassword: TextFieldState = TextFieldState(""),
     val newPassword: TextFieldState = TextFieldState(""),
     val exportContent: String? = null,
     val deleteAccountLoading: Boolean = false,
     val signOutLoading: Boolean = false,
+    val syncData: Boolean = true,
+    @StringRes val stringResErrorMessage: Int? = null
 )
 
 sealed interface SettingsAction {
@@ -219,4 +250,5 @@ sealed interface SettingsAction {
     data object ChangePassword : SettingsAction
     data object ExportGroups : SettingsAction
     data object ClearExport : SettingsAction
+    data class UpdateSyncDataStatus(val syncData: Boolean) : SettingsAction
 }

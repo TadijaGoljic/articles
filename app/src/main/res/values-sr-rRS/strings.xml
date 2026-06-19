@@ -24,6 +24,7 @@
     <string name="old_password">Стара лозинка</string>
     <string name="fields_empty_error">Сва поља морају бити попуњена</string>
     <string name="send">Пошаљи</string>
+    <string name="sync_data">Синхронизуј податке</string>
 
     <!-- Articles -->
     <string name="app_name">Артикли</string>
@@ -62,6 +63,16 @@
     <string name="price_per_unit">Цена по јединици мере</string>
     <string name="website_link">Вебсајт линк</string>
     <string name="invalid_website_link">Линк није важећег формара</string>
+    <string name="mark_as_bought">Означи као купљено</string>
+    <string name="mark_as_not_bought">Означи као некупљено</string>
+    <string name="filter">Филтрирај</string>
+    <string name="expand_all_articles">Рашири све артикле</string>
+    <string name="collapse_all_articles">Скупи све артикле</string>
+
+    <!-- Filters-->
+    <string name="filters_all">Сви</string>
+    <string name="filters_bought">Купљени</string>
+    <string name="filters_unbought">Некупљени</string>
 
     <!-- Groups -->
     <string name="create_group">Направи групу</string>

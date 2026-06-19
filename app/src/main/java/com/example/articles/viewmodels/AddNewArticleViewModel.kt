@@ -17,8 +17,8 @@ import com.example.articles.nominatim.NominatimAPI
 import com.example.articles.repositories.ArticleRepository
 import com.example.articles.utils.FileManager
 import com.example.articles.ui.composables.ArticlesDestinations
+import com.example.articles.utils.TriggerSync
 import com.example.articles.utils.isValidUri
-import com.example.articles.utils.triggerSync
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,7 +34,7 @@ class AddNewArticleViewModel @Inject constructor(
     private val articleRepository: ArticleRepository,
     private val fileManager: FileManager,
     private val nominatimAPI: NominatimAPI,
-    @ApplicationContext private val context: Context,
+    private val triggerSync: TriggerSync,
 ) : ViewModel() {
 
     private val args = savedStateHandle.toRoute<ArticlesDestinations.AddNewArticleDestination>()
@@ -128,7 +128,7 @@ class AddNewArticleViewModel @Inject constructor(
         )
         viewModelScope.launch {
             articleRepository.upsertArticle(article)
-            triggerSync(context)
+            triggerSync()
             state.update { currentState ->
                 currentState.copy(
                     isLoading = false,

@@ -1,11 +1,15 @@
 package com.example.articles.ui.composables.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import com.example.articles.ui.composables.utils.Toolbar
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,19 +18,27 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronLeft
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.RemoveShoppingCart
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -36,12 +48,14 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -58,9 +72,12 @@ import com.example.articles.models.Location
 import com.example.articles.models.UIArticle
 import com.example.articles.models.UIGroup
 import com.example.articles.ui.composables.utils.BottomSheetRowItem
+import com.example.articles.ui.composables.utils.Toolbar
+import com.example.articles.viewmodels.FilterType
 import com.example.articles.viewmodels.GroupDetailsAction
 import com.example.articles.viewmodels.GroupDetailsViewModel
 import kotlinx.coroutines.launch
+import java.util.logging.Filter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -94,6 +111,27 @@ fun GroupDetailsPage(
                 modifier = Modifier.padding(bottom = 60.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                if (state.articleToEditOrDelete?.bought == true) {
+                    BottomSheetRowItem(
+                        icon = Icons.Default.RemoveShoppingCart,
+                        contentDescription = stringResource(id = R.string.mark_as_not_bought),
+                        text = stringResource(id = R.string.mark_as_not_bought),
+                        onClick = {
+                            groupDetailsViewModel.handleAction(GroupDetailsAction.MarkAsNotBought)
+                            groupDetailsViewModel.handleAction(GroupDetailsAction.HideBottomSheet)
+                        }
+                    )
+                } else {
+                    BottomSheetRowItem(
+                        icon = Icons.Default.ShoppingCart,
+                        contentDescription = stringResource(id = R.string.mark_as_bought),
+                        text = stringResource(id = R.string.mark_as_bought),
+                        onClick = {
+                            groupDetailsViewModel.handleAction(GroupDetailsAction.MarkAsBought)
+                            groupDetailsViewModel.handleAction(GroupDetailsAction.HideBottomSheet)
+                        }
+                    )
+                }
                 BottomSheetRowItem(
                     icon = Icons.Default.Edit,
                     contentDescription = stringResource(id = R.string.edit_article),
@@ -117,6 +155,40 @@ fun GroupDetailsPage(
         }
     }
 
+    DropdownMenu(
+        expanded = state.filterDropdownMenuVisible,
+        onDismissRequest = {
+            groupDetailsViewModel.handleAction(GroupDetailsAction.HideFilterDropdownMenu)
+        }
+    ) {
+        Column {
+            DropdownMenuItem(
+                text = {
+                    Text(text = stringResource(id = R.string.filters_all))
+                },
+                onClick = {
+                    groupDetailsViewModel.handleAction(GroupDetailsAction.FilterSelected(FilterType.ALL))
+                }
+            )
+            DropdownMenuItem(
+                text = {
+                    Text(text = stringResource(id = R.string.filters_bought))
+                },
+                onClick = {
+                    groupDetailsViewModel.handleAction(GroupDetailsAction.FilterSelected(FilterType.BOUGHT))
+                }
+            )
+            DropdownMenuItem(
+                text = {
+                    Text(text = stringResource(id = R.string.filters_unbought))
+                },
+                onClick = {
+                    groupDetailsViewModel.handleAction(GroupDetailsAction.FilterSelected(FilterType.UNBOUGHT))
+                }
+            )
+        }
+    }
+
     Scaffold { innerPadding ->
         Box(
             modifier = modifier
@@ -134,6 +206,57 @@ fun GroupDetailsPage(
                     onLeadingIconClick = onBackClick
                 )
                 Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .fillMaxWidth()
+                ) {
+                    Button(
+                        onClick = {
+                            groupDetailsViewModel.handleAction(GroupDetailsAction.ShowFilterDropdownMenu)
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            contentColor = MaterialTheme.colorScheme.primary,
+                        ),
+                        shape = RoundedCornerShape(10.dp),
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .width(100.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.FilterList,
+                                contentDescription = stringResource(id = R.string.filter),
+                                modifier = Modifier.align(Alignment.CenterStart)
+                            )
+                            Text(
+                                text = stringResource(id = R.string.filter),
+                                modifier = Modifier.align(Alignment.Center)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    TextButton(
+                        onClick = {
+                            groupDetailsViewModel.handleAction(
+                                if (state.articles.all { it.expanded }) GroupDetailsAction.CollapseAllArticles
+                                else GroupDetailsAction.ExpandAllArticles
+                            )
+                        },
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.onBackground,
+                        )
+                    ) {
+                        Text(
+                            text =
+                                if (state.articles.all { it.expanded }) stringResource(id = R.string.collapse_all_articles)
+                                else stringResource(id = R.string.expand_all_articles)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
                 if (state.articles.isNotEmpty()) {
                     LazyColumn(
                         modifier = Modifier.padding(bottom = 60.dp)
@@ -147,7 +270,15 @@ fun GroupDetailsPage(
                                     )
                                 },
                                 onOpenNavigation = onOpenNavigation,
-                                onOpenLink = onOpenLink
+                                onOpenLink = onOpenLink,
+                                onChangeExpandedStatus = {
+                                    groupDetailsViewModel.handleAction(
+                                        GroupDetailsAction.UpdateExpandedStatus(
+                                            article = article,
+                                            expanded = !article.expanded
+                                        )
+                                    )
+                                }
                             )
                         }
                     }
@@ -193,14 +324,24 @@ fun ArticleItem(
     onLongClick: (UIArticle) -> Unit,
     onOpenNavigation: (Location) -> Unit,
     onOpenLink: (String) -> Unit,
+    onChangeExpandedStatus: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+
+    val hasDescription = !article.description.isNullOrBlank()
+    val hasQuantitySection = article.quantity != null
+    val hasLocationWebsiteSection = !article.websiteLink.isNullOrBlank() || article.location != null
+
     Box(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 4.dp)
             .clip(shape = RoundedCornerShape(10.dp))
-            .background(color = MaterialTheme.colorScheme.surface)
+            .background(
+                color =
+                    if (article.bought) Color.Green.copy(alpha = 0.2f)
+                    else MaterialTheme.colorScheme.surface
+            )
             .combinedClickable(
                 onClick = {},
                 onLongClick = { onLongClick(article) }
@@ -218,140 +359,153 @@ fun ArticleItem(
                         .align(Alignment.Center)
                 )
                 IconButton(
-                    onClick = {},
+                    onClick = onChangeExpandedStatus,
                     modifier = Modifier
                         .align(Alignment.CenterEnd)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.ChevronRight,
+                        imageVector =
+                            if (!article.expanded) Icons.Default.KeyboardArrowDown
+                            else Icons.Default.KeyboardArrowUp,
                         contentDescription = stringResource(id = R.string.expand)
                     )
                 }
             }
-            HorizontalDivider(modifier = Modifier.fillMaxWidth())
-            Spacer(modifier = Modifier.height(4.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+            AnimatedVisibility(
+                visible = article.expanded,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(3f)
-                ) {
-                    if (!article.description.isNullOrBlank()) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
+                Column {
+                    HorizontalDivider(modifier = Modifier.fillMaxWidth())
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(start = 8.dp)
+                                .weight(3f)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Description,
-                                contentDescription = stringResource(id = R.string.article_description)
-                            )
-                            Text(
-                                text = article.description,
-                                fontSize = 18.sp,
-                                modifier = Modifier.padding(start = 4.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(4.dp))
-                    }
-                    if (article.quantity != null) {
-                        Spacer(modifier = Modifier.height(20.dp))
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(start = 12.dp),
-                        ) {
-                            Column(
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(text = stringResource(id = R.string.quantity) + " :")
-                                Text(text = stringResource(id = R.string.unit) + " :")
-                                if (article.pricePerUnit != null) {
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(text = stringResource(id = R.string.price_per_unit) + " :")
+                            if (!article.description.isNullOrBlank()) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(start = 8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Description,
+                                        contentDescription = stringResource(id = R.string.article_description)
+                                    )
+                                    Text(
+                                        text = article.description,
+                                        fontSize = 18.sp,
+                                        modifier = Modifier.padding(start = 4.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+                            if (hasQuantitySection) {
+                                if (hasDescription) {
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                }
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(start = 12.dp),
+                                ) {
+                                    Column(
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text(text = stringResource(id = R.string.quantity) + " :")
+                                        Text(text = stringResource(id = R.string.unit) + " :")
+                                        if (article.pricePerUnit != null) {
+                                            Text(text = stringResource(id = R.string.price_per_unit) + " :")
+                                        }
+                                    }
+                                    Column(
+                                        modifier = Modifier.weight(2f)
+                                    ) {
+                                        Text(text = article.quantity.toString())
+                                        Text(
+                                            text = article.unit.toString().first().uppercase()
+                                                    + article.unit.toString().drop(1).lowercase()
+                                        )
+                                        if (article.pricePerUnit != null) {
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(text = article.pricePerUnit.toString())
+                                        }
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+                            if (hasLocationWebsiteSection) {
+                                if (hasQuantitySection || hasDescription) {
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                }
+                                if (!article.websiteLink.isNullOrBlank()) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = modifier
+                                            .padding(start = 8.dp)
+                                            .clickable {
+                                                onOpenLink(article.websiteLink)
+                                            },
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Language,
+                                            contentDescription = stringResource(id = R.string.website_link),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                        Text(
+                                            text = stringResource(id = R.string.website_link),
+                                            fontSize = 14.sp,
+                                            modifier = Modifier.padding(start = 4.dp),
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                }
+                                if (article.location != null) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = modifier
+                                            .padding(start = 8.dp)
+                                            .clickable {
+                                                onOpenNavigation(article.location)
+                                            },
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.LocationOn,
+                                            contentDescription = stringResource(id = R.string.website_link),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                        Text(
+                                            text = stringResource(id = R.string.location),
+                                            fontSize = 14.sp,
+                                            modifier = Modifier.padding(start = 4.dp),
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(8.dp))
                                 }
                             }
-                            Column(
-                                modifier = Modifier.weight(2f)
-                            ) {
-                                Text(text = article.quantity.toString())
-                                Text(
-                                    text = article.unit.toString().first().uppercase()
-                                            + article.unit.toString().drop(1).lowercase()
-                                )
-                                if (article.pricePerUnit != null) {
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(text = article.pricePerUnit.toString())
-                                }
-                            }
                         }
-                        Spacer(modifier = Modifier.height(4.dp))
-                    }
-                    if (!article.websiteLink.isNullOrBlank() || article.location != null) {
-                        Spacer(modifier = Modifier.height(20.dp))
-                        if (!article.websiteLink.isNullOrBlank()) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = modifier
-                                    .padding(start = 8.dp)
-                                    .clickable {
-                                        onOpenLink(article.websiteLink)
-                                    },
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Language,
-                                    contentDescription = stringResource(id = R.string.website_link),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                                Text(
-                                    text = stringResource(id = R.string.website_link),
-                                    fontSize = 14.sp,
-                                    modifier = Modifier.padding(start = 4.dp),
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
-                        }
-                        if (article.location != null) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = modifier
-                                    .padding(start = 8.dp)
-                                    .clickable {
-                                        onOpenNavigation(article.location)
-                                    },
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.LocationOn,
-                                    contentDescription = stringResource(id = R.string.website_link),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                                Text(
-                                    text = stringResource(id = R.string.location),
-                                    fontSize = 14.sp,
-                                    modifier = Modifier.padding(start = 4.dp),
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
+                        article.photoUri?.let { uri ->
+                            AsyncImage(
+                                model = uri,
+                                contentDescription = stringResource(id = R.string.photo),
+                                contentScale = ContentScale.FillWidth,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(top = 4.dp, bottom = 8.dp, start = 8.dp, end = 8.dp)
+                                    .fillMaxSize()
+                            )
                         }
                     }
-                }
-                article.photoUri?.let { uri ->
-                    AsyncImage(
-                        model = uri,
-                        contentDescription = stringResource(id = R.string.photo),
-                        contentScale = ContentScale.FillWidth,
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(top = 4.dp, bottom = 8.dp, start = 8.dp, end = 8.dp)
-                            .fillMaxSize()
-                    )
                 }
             }
         }

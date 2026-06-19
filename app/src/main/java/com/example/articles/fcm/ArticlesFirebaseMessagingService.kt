@@ -3,20 +3,23 @@ package com.example.articles.fcm
 import android.util.Log
 import com.example.articles.ArticlesApplication.Companion.LOG_TAG
 import com.example.articles.sync.SyncManager
-import com.example.articles.utils.triggerSync
 import android.provider.Settings
+import com.example.articles.utils.TriggerSync
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.firestore
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import javax.inject.Inject
 
 class ArticlesFirebaseMessagingService : FirebaseMessagingService() {
 
+    @Inject lateinit var triggerSync: TriggerSync
+
     override fun onMessageReceived(message: RemoteMessage) {
         Log.d(LOG_TAG, "FCM message received: ${message.data}")
-        triggerSync(this)
+        triggerSync()
     }
 
     override fun onNewToken(token: String) {

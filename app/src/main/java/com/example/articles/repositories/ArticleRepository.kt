@@ -24,8 +24,6 @@ class ArticleRepository @Inject constructor(
 
     suspend fun deleteArticleById(idArticle: UUID) = articleDao.deleteArticleById(idArticle)
 
-    suspend fun deleteAllArticles() = articleDao.deleteAllArticles()
-
     fun getArticlesByGroupId(groupId: UUID) = articleDao.getArticlesByGroupId(groupId).map { list ->
         list.map { article -> article.toUIArticle() }
     }
@@ -35,5 +33,15 @@ class ArticleRepository @Inject constructor(
     }
 
     fun getArticleById(id: UUID) = articleDao.getArticleById(id).map { it?.toUIArticle() }
+
+    fun getBoughtArticlesByGroupId(groupId: UUID) =
+        articleDao.getBoughtArticlesByGroupId(groupId).map { list ->
+            list.map { it.toUIArticle() }
+        }
+
+    fun getUnboughtArticlesByGroupId(groupId: UUID) =
+        articleDao.getUnboughtArticlesByGroupId(groupId).map { list ->
+            list.map { it.toUIArticle() }
+        }
 
 }
