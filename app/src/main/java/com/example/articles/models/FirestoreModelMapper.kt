@@ -64,7 +64,7 @@ class FirestoreModelMapper @Inject constructor(
         if (photo != null) file.writeBytes(Base64.decode(photo, Base64.DEFAULT))
         return ArticleEntity(
             idArticle = UUID.fromString(data["idArticle"] as? String ?: return null),
-            name = data["name"] as? String,
+            name = data["name"] as String,
             dateCreated = (data["dateCreated"] as? Long) ?: 0L,
             location = (data["location"] as? String)?.let { locationString ->
                 Location(

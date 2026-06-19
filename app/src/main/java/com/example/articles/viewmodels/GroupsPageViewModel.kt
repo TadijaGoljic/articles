@@ -66,6 +66,8 @@ class GroupsPageViewModel @Inject constructor(
                 updateEditDeleteBottomSheetVisibility(visible = true, group = action.group)
             is GroupsPageAction.DismissBottomSheet ->
                 updateEditDeleteBottomSheetVisibility(visible = false, group = null)
+            is GroupsPageAction.ExpandGroup -> updateGroupExpandedStatus(action.group, status = true)
+            is GroupsPageAction.CollapseGroup -> updateGroupExpandedStatus(action.group, status = false)
         }
     }
 
@@ -181,6 +183,14 @@ class GroupsPageViewModel @Inject constructor(
         }
     }
 
+    private fun updateGroupExpandedStatus(group: UIGroup, status: Boolean) {
+        state.update { currentState ->
+            currentState.copy(
+                groups = currentState.groups.map { if (it.id == group.id) it.copy(expanded = status) else it }
+            )
+        }
+    }
+
 }
 
 data class GroupsPageState(
@@ -205,4 +215,6 @@ sealed interface GroupsPageAction {
     data class DeleteGroup(val group: UIGroup) : GroupsPageAction
     data class LongClick(val group: UIGroup) : GroupsPageAction
     data object DismissBottomSheet : GroupsPageAction
+    data class ExpandGroup(val group: UIGroup) : GroupsPageAction
+    data class CollapseGroup(val group: UIGroup) : GroupsPageAction
 }

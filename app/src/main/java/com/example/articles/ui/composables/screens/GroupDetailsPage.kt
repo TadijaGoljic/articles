@@ -55,7 +55,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -77,7 +76,6 @@ import com.example.articles.viewmodels.FilterType
 import com.example.articles.viewmodels.GroupDetailsAction
 import com.example.articles.viewmodels.GroupDetailsViewModel
 import kotlinx.coroutines.launch
-import java.util.logging.Filter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -155,40 +153,6 @@ fun GroupDetailsPage(
         }
     }
 
-    DropdownMenu(
-        expanded = state.filterDropdownMenuVisible,
-        onDismissRequest = {
-            groupDetailsViewModel.handleAction(GroupDetailsAction.HideFilterDropdownMenu)
-        }
-    ) {
-        Column {
-            DropdownMenuItem(
-                text = {
-                    Text(text = stringResource(id = R.string.filters_all))
-                },
-                onClick = {
-                    groupDetailsViewModel.handleAction(GroupDetailsAction.FilterSelected(FilterType.ALL))
-                }
-            )
-            DropdownMenuItem(
-                text = {
-                    Text(text = stringResource(id = R.string.filters_bought))
-                },
-                onClick = {
-                    groupDetailsViewModel.handleAction(GroupDetailsAction.FilterSelected(FilterType.BOUGHT))
-                }
-            )
-            DropdownMenuItem(
-                text = {
-                    Text(text = stringResource(id = R.string.filters_unbought))
-                },
-                onClick = {
-                    groupDetailsViewModel.handleAction(GroupDetailsAction.FilterSelected(FilterType.UNBOUGHT))
-                }
-            )
-        }
-    }
-
     Scaffold { innerPadding ->
         Box(
             modifier = modifier
@@ -212,28 +176,61 @@ fun GroupDetailsPage(
                         .padding(horizontal = 16.dp)
                         .fillMaxWidth()
                 ) {
-                    Button(
-                        onClick = {
-                            groupDetailsViewModel.handleAction(GroupDetailsAction.ShowFilterDropdownMenu)
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            contentColor = MaterialTheme.colorScheme.primary,
-                        ),
-                        shape = RoundedCornerShape(10.dp),
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .width(100.dp)
+                    Box {
+                        Button(
+                            onClick = {
+                                groupDetailsViewModel.handleAction(GroupDetailsAction.ShowFilterDropdownMenu)
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.surface,
+                                contentColor = MaterialTheme.colorScheme.primary,
+                            ),
+                            shape = RoundedCornerShape(10.dp),
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.FilterList,
-                                contentDescription = stringResource(id = R.string.filter),
-                                modifier = Modifier.align(Alignment.CenterStart)
+                            Box(
+                                modifier = Modifier
+                                    .width(100.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.FilterList,
+                                    contentDescription = stringResource(id = R.string.filter),
+                                    modifier = Modifier.align(Alignment.CenterStart)
+                                )
+                                Text(
+                                    text = stringResource(id = R.string.filter),
+                                    modifier = Modifier.align(Alignment.Center)
+                                )
+                            }
+                        }
+                        DropdownMenu(
+                            expanded = state.filterDropdownMenuVisible,
+                            onDismissRequest = {
+                                groupDetailsViewModel.handleAction(GroupDetailsAction.HideFilterDropdownMenu)
+                            }
+                        ) {
+                            DropdownMenuItem(
+                                text = {
+                                    Text(text = stringResource(id = R.string.filters_all))
+                                },
+                                onClick = {
+                                    groupDetailsViewModel.handleAction(GroupDetailsAction.FilterSelected(FilterType.ALL))
+                                }
                             )
-                            Text(
-                                text = stringResource(id = R.string.filter),
-                                modifier = Modifier.align(Alignment.Center)
+                            DropdownMenuItem(
+                                text = {
+                                    Text(text = stringResource(id = R.string.filters_bought))
+                                },
+                                onClick = {
+                                    groupDetailsViewModel.handleAction(GroupDetailsAction.FilterSelected(FilterType.BOUGHT))
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = {
+                                    Text(text = stringResource(id = R.string.filters_unbought))
+                                },
+                                onClick = {
+                                    groupDetailsViewModel.handleAction(GroupDetailsAction.FilterSelected(FilterType.UNBOUGHT))
+                                }
                             )
                         }
                     }
@@ -350,7 +347,7 @@ fun ArticleItem(
         Column {
             Box {
                 Text(
-                    text = article.name.toString(),
+                    text = article.name,
                     textAlign = TextAlign.Center,
                     fontSize = 20.sp,
                     overflow = TextOverflow.Ellipsis,

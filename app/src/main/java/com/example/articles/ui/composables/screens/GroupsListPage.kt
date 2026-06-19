@@ -15,7 +15,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -23,6 +22,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -41,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -153,7 +154,15 @@ fun GroupsListPage(
                             onLongClick = {
                                 groupsPageViewModel.handleAction(GroupsPageAction.LongClick(group))
                             },
-                            onClick = { onGroupClick(group) },
+                            onClick = {
+                                onGroupClick(group)
+                            },
+                            onIconClick = {
+                                groupsPageViewModel.handleAction(
+                                    if (!group.expanded) GroupsPageAction.ExpandGroup(group)
+                                    else GroupsPageAction.CollapseGroup(group)
+                                )
+                            },
                             modifier = Modifier.padding(horizontal = 16.dp)
                         )
                         Spacer(modifier = Modifier.height(8.dp))
@@ -220,6 +229,7 @@ fun GroupsListPage(
 fun GroupItem(
     group: UIGroup,
     onLongClick: () -> Unit,
+    onIconClick: () -> Unit,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -228,12 +238,10 @@ fun GroupItem(
         modifier = modifier
             .fillMaxWidth()
             .clip(shape = RoundedCornerShape(10.dp))
-            .background(color = MaterialTheme.colorScheme.surface)
             .combinedClickable(
                 onLongClick = onLongClick,
                 onClick = onClick
             )
-            .padding(8.dp)
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -241,7 +249,8 @@ fun GroupItem(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 4.dp)
+                    .background(color = MaterialTheme.colorScheme.surface)
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
             ) {
                 Text(
                     text = "${group.name} (${group.articles.size})",
@@ -251,7 +260,7 @@ fun GroupItem(
                     maxLines = 1
                 )
                 IconButton(
-                    onClick = {  },
+                    onClick = onIconClick,
                     modifier = Modifier
                         .size(24.dp)
                         .align(Alignment.CenterEnd),
@@ -265,6 +274,27 @@ fun GroupItem(
                             if (group.expanded) stringResource(id = R.string.collapse)
                             else stringResource(id = R.string.expand),
                     )
+                }
+            }
+            if (group.expanded) {
+                HorizontalDivider(modifier = Modifier.fillMaxWidth())
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
+                ) {
+                    group.articles.forEach { article ->
+                        Text(
+                            text = article.name,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .then(
+                                    if (article.bought) Modifier.background(color = Color.Green.copy(alpha = 0.2f))
+                                    else Modifier
+                                )
+                        )
+                    }
                 }
             }
         }

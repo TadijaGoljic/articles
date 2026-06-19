@@ -12,7 +12,7 @@ import java.util.UUID.randomUUID
 @Parcelize
 data class UIArticle(
     val id: UUID = randomUUID(),
-    val name: String? = "",
+    val name: String = "",
     val description: String? = "",
     val dateCreated: Date = Date(),
     val location: Location? = null,

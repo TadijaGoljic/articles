@@ -20,7 +20,7 @@ import java.util.UUID
 )
 data class ArticleEntity(
     @PrimaryKey val idArticle: UUID = UUID.randomUUID(),
-    val name: String?,
+    val name: String,
     val dateCreated: Long,
     val location: Location?,
     val quantity: Double?,
