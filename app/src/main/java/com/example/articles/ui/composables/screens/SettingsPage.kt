@@ -54,6 +54,7 @@ import com.example.articles.ui.composables.utils.SettingsItem
 import com.example.articles.ui.composables.utils.SettingsItemWithBadge
 import com.example.articles.ui.composables.utils.SettingsItemWithSwitch
 import com.example.articles.ui.composables.utils.Toolbar
+import com.example.articles.ui.composables.utils.UserInfoItem
 import com.example.articles.utils.ScreenSize
 import com.example.articles.viewmodels.SettingsAction
 import com.example.articles.viewmodels.SettingsState
@@ -197,6 +198,7 @@ fun SettingsScreen(
                 color = MaterialTheme.colorScheme.onBackground
             )
             SettingsItems(
+                userEmail = state.userEmail,
                 showSignOutConfirmationDialog = {
                     settingsViewModel.handleAction(SettingsAction.ShowSignOutConfirmationDialog)
                 },
@@ -227,6 +229,7 @@ fun SettingsScreen(
 
 @Composable
 fun SettingsItems(
+    userEmail: String,
     showSignOutConfirmationDialog: () -> Unit,
     showDeleteAccountConfirmationDialog: () -> Unit,
     showChangePasswordDialog: () -> Unit,
@@ -240,6 +243,15 @@ fun SettingsItems(
     Column(
         modifier = modifier
     ) {
+        if (userEmail.isNotEmpty()) {
+            UserInfoItem(
+                email = userEmail,
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
         Text(
             text = stringResource(id = R.string.account),
             color = Color.Gray,

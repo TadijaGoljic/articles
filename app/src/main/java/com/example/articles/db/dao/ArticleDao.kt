@@ -23,6 +23,9 @@ interface ArticleDao {
     @Query("DELETE FROM articles")
     suspend fun deleteAllArticles()
 
+    @Query("DELETE FROM articles WHERE groupId = :groupId")
+    suspend fun deleteArticlesByGroupId(groupId: UUID)
+
     @Query("SELECT * FROM articles WHERE groupId = :groupId")
     fun getArticlesByGroupId(groupId: UUID): Flow<List<ArticleEntity>>
 
@@ -34,5 +37,8 @@ interface ArticleDao {
 
     @Query("SELECT * FROM articles WHERE idArticle = :id")
     fun getArticleById(id: UUID): Flow<ArticleEntity?>
+
+    @Query("SELECT * FROM articles WHERE idArticle = :id LIMIT 1")
+    suspend fun getArticleByIdSuspend(id: UUID): ArticleEntity?
 
 }

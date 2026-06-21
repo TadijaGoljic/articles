@@ -7,6 +7,7 @@ import com.example.articles.models.UIGroup
 import com.example.articles.repositories.ArticleRepository
 import com.example.articles.repositories.GroupRepository
 import com.example.articles.repositories.InvitationRepository
+import com.example.articles.repositories.SharedGroupRepository
 import com.example.articles.utils.TriggerSync
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
@@ -23,6 +24,7 @@ class GroupsPageViewModel @Inject constructor(
     private val groupRepository: GroupRepository,
     private val articleRepository: ArticleRepository,
     private val invitationRepository: InvitationRepository,
+    private val sharedGroupRepository: SharedGroupRepository,
     private val triggerSync: TriggerSync
 ) : ViewModel() {
 
@@ -197,15 +199,19 @@ class GroupsPageViewModel @Inject constructor(
     }
 
     private fun deleteGroup(group: UIGroup) {
-        state.update { currentState ->
-            currentState.copy(
-                showEditDeleteBottonSheet = false,
-            )
-        }
+        state.update { it.copy(showEditDeleteBottonSheet = false) }
         viewModelScope.launch {
-            groupRepository.deleteGroupById(
-                groupId = group.id,
-            )
+            if (group.isShared && group.sharedGroupId != null) {
+                val uid = Firebase.auth.currentUser?.uid ?: return@launch
+                sharedGroupRepository.leaveSharedGroup(group.sharedGroupId, uid)
+                articleRepository.deleteLocalArticlesByGroupId(group.id)
+                articleRepository.deletePersonalFirestoreArticlesByGroupId(group.id)
+                groupRepository.deleteGroupById(group.id)
+            } else {
+                articleRepository.deleteLocalArticlesByGroupId(group.id)
+                articleRepository.deletePersonalFirestoreArticlesByGroupId(group.id)
+                groupRepository.deleteGroupById(group.id)
+            }
         }
     }
 

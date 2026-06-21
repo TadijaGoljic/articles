@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.Badge
@@ -22,9 +23,55 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+
+private val avatarColors = listOf(
+    Color(0xFF5C6BC0), Color(0xFF26A69A), Color(0xFFEF5350),
+    Color(0xFFAB47BC), Color(0xFF42A5F5), Color(0xFFFF7043)
+)
+
+@Composable
+fun UserInfoItem(
+    email: String,
+    modifier: Modifier = Modifier
+) {
+    val initial = email.firstOrNull()?.uppercaseChar() ?: '?'
+    val avatarColor = avatarColors[email.length % avatarColors.size]
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(color = MaterialTheme.colorScheme.surface)
+            .padding(horizontal = 14.dp)
+            .height(56.dp)
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(50))
+                .background(avatarColor)
+        ) {
+            Text(
+                text = initial.toString(),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White
+            )
+        }
+        Text(
+            text = email,
+            fontSize = 16.sp,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(start = 12.dp)
+        )
+    }
+}
 
 enum class Position {
     TOP, MIDDLE, BOTTOM, SINGLE

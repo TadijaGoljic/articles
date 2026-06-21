@@ -1,12 +1,15 @@
 package com.example.articles.repositories
 
 import com.example.articles.db.dao.GroupDao
+import com.example.articles.db.entities.GroupEntity
 import com.example.articles.models.FirestoreModelMapper
 import com.example.articles.models.UIGroup
 import com.example.articles.models.toGroupEntity
 import com.example.articles.models.toUIGroup
 import com.example.articles.utils.GROUPS_COLLECTION
+import com.example.articles.utils.USERS_COLLECTION
 import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
@@ -23,25 +26,28 @@ class GroupRepository @Inject constructor(
 
     private val firestore = Firebase.firestore
 
+    private fun groupsCollection(uid: String) =
+        firestore.collection(USERS_COLLECTION).document(uid).collection(GROUPS_COLLECTION)
+
     suspend fun upsertGroup(group: UIGroup) {
+        val uid = Firebase.auth.currentUser?.uid ?: return
         val groupEntity = group.toGroupEntity()
         groupDao.upsertGroup(groupEntity)
-        firestore.collection(GROUPS_COLLECTION)
+        groupsCollection(uid)
             .document(group.id.toString())
-            .update(firestoreModelMapper.toGroupsFirestoreMap(groupEntity))
+            .set(firestoreModelMapper.toGroupsFirestoreMap(groupEntity))
             .await()
-    }
-
-    suspend fun upsertAllGroups(groups: List<UIGroup>) = groups.forEach { group ->
-        upsertGroup(group)
     }
 
     suspend fun deleteGroupById(groupId: UUID) {
+        val uid = Firebase.auth.currentUser?.uid
         groupDao.deleteGroupById(groupId)
-        firestore.collection(GROUPS_COLLECTION)
-            .document(groupId.toString())
-            .delete()
-            .await()
+        uid?.let {
+            groupsCollection(uid)
+                .document(groupId.toString())
+                .delete()
+                .await()
+        }
     }
 
     fun getAllGroupsNoMapping() = groupDao.getAllGroups()
@@ -52,5 +58,17 @@ class GroupRepository @Inject constructor(
 
     fun getGroupById(groupId: UUID) = groupDao.getGroupById(groupId)
         .mapNotNull { group -> group?.toUIGroup() }
+
+    suspend fun upsertGroupLocal(group: UIGroup) = groupDao.upsertGroup(group.toGroupEntity())
+
+    suspend fun upsertAllGroupsLocal(groups: List<UIGroup>) = groups.forEach { upsertGroupLocal(it) }
+
+    suspend fun deleteGroupLocalById(groupId: UUID) = groupDao.deleteGroupById(groupId)
+
+    suspend fun getGroupBySharedGroupId(sharedGroupId: String): GroupEntity? =
+        groupDao.getGroupBySharedGroupId(sharedGroupId)
+
+    suspend fun getGroupByIdSuspend(groupId: UUID): GroupEntity? =
+        groupDao.getGroupByIdSuspend(groupId)
 
 }

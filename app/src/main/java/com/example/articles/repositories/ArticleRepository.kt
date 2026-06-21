@@ -1,12 +1,18 @@
 package com.example.articles.repositories
 
 import com.example.articles.db.dao.ArticleDao
+import com.example.articles.db.dao.GroupDao
+import com.example.articles.db.entities.ArticleEntity
 import com.example.articles.models.FirestoreModelMapper
 import com.example.articles.models.UIArticle
 import com.example.articles.models.toArticleEntity
 import com.example.articles.models.toUIArticle
 import com.example.articles.utils.ARTICLES_COLLECTION
+import com.example.articles.utils.SHARED_GROUPS_COLLECTION
+import com.example.articles.utils.USERS_COLLECTION
 import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
+import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
@@ -17,32 +23,66 @@ import javax.inject.Singleton
 @Singleton
 class ArticleRepository @Inject constructor(
     private val articleDao: ArticleDao,
+    private val groupDao: GroupDao,
     private val firestoreModelMapper: FirestoreModelMapper
 ) {
 
     private val firestore = Firebase.firestore
+
+    private suspend fun articlesCollection(groupId: UUID): CollectionReference? {
+        val uid = Firebase.auth.currentUser?.uid ?: return null
+        val group = groupDao.getGroupByIdSuspend(groupId)
+        return if (group?.isShared == true && group.sharedGroupId != null) {
+            firestore.collection(SHARED_GROUPS_COLLECTION)
+                .document(group.sharedGroupId)
+                .collection(ARTICLES_COLLECTION)
+        } else {
+            firestore.collection(USERS_COLLECTION).document(uid)
+                .collection(ARTICLES_COLLECTION)
+        }
+    }
 
     fun getAllArticlesNoMapping() = articleDao.getAllArticles()
 
     suspend fun upsertArticle(article: UIArticle) {
         val articleEntity = article.toArticleEntity()
         articleDao.upsertArticle(articleEntity)
-        firestore.collection(ARTICLES_COLLECTION)
-            .document(article.id.toString())
-            .update(firestoreModelMapper.toArticlesFirestoreMap(articleEntity))
-            .await()
-    }
-
-    suspend fun upsertAllArticles(articles: List<UIArticle>) = articles.forEach { article ->
-        upsertArticle(article)
+        articlesCollection(article.groupId)
+            ?.document(article.id.toString())
+            ?.set(firestoreModelMapper.toArticlesFirestoreMap(articleEntity))
+            ?.await()
     }
 
     suspend fun deleteArticleById(idArticle: UUID) {
+        val article = articleDao.getArticleByIdSuspend(idArticle)
         articleDao.deleteArticleById(idArticle)
-        firestore.collection(ARTICLES_COLLECTION)
-            .document(idArticle.toString())
-            .delete()
-            .await()
+        if (article != null) {
+            articlesCollection(article.groupId)
+                ?.document(idArticle.toString())
+                ?.delete()
+                ?.await()
+        }
+    }
+
+    suspend fun upsertAllArticlesLocal(articles: List<ArticleEntity>) =
+        articleDao.upsertAllArticles(articles)
+
+    suspend fun deleteArticleLocalById(idArticle: UUID) = articleDao.deleteArticleById(idArticle)
+
+    suspend fun deleteLocalArticlesByGroupId(groupId: UUID) =
+        articleDao.deleteArticlesByGroupId(groupId)
+
+    suspend fun deletePersonalFirestoreArticlesByGroupId(groupId: UUID) {
+        val uid = Firebase.auth.currentUser?.uid ?: return
+        val snapshot = firestore
+            .collection(USERS_COLLECTION).document(uid)
+            .collection(ARTICLES_COLLECTION)
+            .whereEqualTo("groupId", groupId.toString())
+            .get().await()
+        if (snapshot.documents.isEmpty()) return
+        val batch = firestore.batch()
+        snapshot.documents.forEach { batch.delete(it.reference) }
+        batch.commit().await()
     }
 
     fun getArticlesByGroupId(groupId: UUID) = articleDao.getArticlesByGroupId(groupId).map { list ->

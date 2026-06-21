@@ -45,8 +45,10 @@ class SettingsViewModel @Inject constructor(
     val uiState = state
 
     init {
+        val currentUser = Firebase.auth.currentUser
+        state.update { it.copy(userEmail = currentUser?.email ?: "") }
         viewModelScope.launch {
-            val uid = Firebase.auth.currentUser?.uid ?: ""
+            val uid = currentUser?.uid ?: ""
             invitationRepository.observePendingInvitations(uid).collect { invitations ->
                 state.update { currentState ->
                     currentState.copy(
@@ -247,6 +249,7 @@ class SettingsViewModel @Inject constructor(
 }
 
 data class SettingsState(
+    val userEmail: String = "",
     val signOutOk: Boolean = false,
     val deleteOk: Boolean = false,
     val showSignOutConfirmationDialog: Boolean = false,

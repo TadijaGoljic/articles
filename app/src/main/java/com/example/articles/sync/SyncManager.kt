@@ -14,7 +14,6 @@ import com.example.articles.db.entities.ArticleEntity
 import com.example.articles.db.entities.GroupEntity
 import com.example.articles.models.FirestoreModelMapper
 import com.example.articles.models.UserPreferences
-import com.example.articles.models.toUIArticle
 import com.example.articles.models.toUIGroup
 import com.example.articles.repositories.ArticleRepository
 import com.example.articles.repositories.GroupRepository
@@ -76,9 +75,14 @@ class SyncManager(
         articlesCollection: CollectionReference,
         syncTimestamp: Long,
     ) {
+        val sharedGroupIds = groupRepository.getAllGroupsNoMapping()
+            .map { list -> list.filter { it.isShared }.map { it.idGroup }.toSet() }
+            .first()
         val localArticleChanges = articleRepository
             .getAllArticlesNoMapping()
-            .map { list -> list.filter { it.updatedAt > syncTimestamp } }
+            .map { list ->
+                list.filter { it.updatedAt > syncTimestamp && it.groupId !in sharedGroupIds }
+            }
             .first()
         Log.d(ArticlesApplication.LOG_TAG, "Uploading ${localArticleChanges.size} local article changes")
         uploadLocalArticleChanges(localArticleChanges, articlesCollection)
@@ -91,9 +95,7 @@ class SyncManager(
         }
         Log.d(ArticlesApplication.LOG_TAG, "Fetched ${remoteEntities.size} articles from remote")
         if (remoteEntities.isNotEmpty()) {
-            articleRepository.upsertAllArticles(
-                remoteEntities.map { it.toUIArticle() }
-            )
+            articleRepository.upsertAllArticlesLocal(remoteEntities)
         }
     }
 
@@ -116,7 +118,7 @@ class SyncManager(
         }
         Log.d(ArticlesApplication.LOG_TAG, "Fetched ${remoteEntities.size} groups from remote")
         if (remoteEntities.isNotEmpty()) {
-            groupRepository.upsertAllGroups(
+            groupRepository.upsertAllGroupsLocal(
                 remoteEntities.map { it.toUIGroup() }
             )
         }
@@ -131,7 +133,7 @@ class SyncManager(
             if (article.deleted) {
                 Log.d(ArticlesApplication.LOG_TAG, "Deleting remote article id=$documentId")
                 collection.document(documentId).delete().await()
-                articleRepository.deleteArticleById(article.idArticle)
+                articleRepository.deleteArticleLocalById(article.idArticle)
             } else {
                 Log.d(ArticlesApplication.LOG_TAG, "Uploading article id=$documentId name=${article.name}")
                 collection.document(documentId)
@@ -145,13 +147,12 @@ class SyncManager(
         groups: List<GroupEntity>,
         collection: CollectionReference
     ) {
-        // Shared groups are synced via syncSharedGroups — skip them here
         groups.filter { !it.isShared }.forEach { group ->
             val documentId = group.idGroup.toString()
             if (group.deleted) {
                 Log.d(ArticlesApplication.LOG_TAG, "Deleting remote group id=$documentId")
                 collection.document(documentId).delete().await()
-                groupRepository.deleteGroupById(group.idGroup)
+                groupRepository.deleteGroupLocalById(group.idGroup)
             } else {
                 Log.d(ArticlesApplication.LOG_TAG, "Uploading group id=$documentId name=${group.name}")
                 collection.document(documentId)
@@ -166,13 +167,19 @@ class SyncManager(
         Log.d(ArticlesApplication.LOG_TAG, "Syncing ${sharedGroupIds.size} shared groups")
 
         for (sharedGroupId in sharedGroupIds) {
-            // Upload local article changes for this shared group
+            var existingLocalGroup = groupRepository.getGroupBySharedGroupId(sharedGroupId)
+            if (existingLocalGroup == null) {
+                val (fromUid, fromGroupId) = sharedGroupRepository.getSharedGroupMeta(sharedGroupId)
+                if (uid == fromUid && fromGroupId != null) {
+                    existingLocalGroup = groupRepository.getGroupByIdSuspend(UUID.fromString(fromGroupId))
+                }
+            }
+            val localGroupId = existingLocalGroup?.idGroup ?: UUID.fromString(sharedGroupId)
+
             val localChanges = articleRepository
                 .getAllArticlesNoMapping()
                 .map { list ->
-                    list.filter {
-                        it.groupId == UUID.fromString(sharedGroupId) && it.updatedAt > syncTimestamp
-                    }
+                    list.filter { it.groupId == localGroupId && it.updatedAt > syncTimestamp }
                 }
                 .first()
             if (localChanges.isNotEmpty()) {
@@ -180,11 +187,14 @@ class SyncManager(
                 sharedGroupRepository.uploadSharedGroupChanges(sharedGroupId, localChanges)
             }
 
-            // Pull latest shared group state and upsert locally
             val (groupEntity, articles) = sharedGroupRepository.syncSharedGroup(sharedGroupId)
-            groupRepository.upsertAllGroups(listOf(groupEntity.toUIGroup()))
+            groupRepository.upsertGroupLocal(
+                groupEntity.copy(idGroup = localGroupId, sharedGroupId = sharedGroupId).toUIGroup()
+            )
             if (articles.isNotEmpty()) {
-                articleRepository.upsertAllArticles(articles.map { it.toUIArticle() })
+                articleRepository.upsertAllArticlesLocal(
+                    articles.map { it.copy(groupId = localGroupId) }
+                )
             }
         }
     }

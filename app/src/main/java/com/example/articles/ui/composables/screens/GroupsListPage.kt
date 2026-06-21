@@ -209,6 +209,13 @@ fun GroupsListPage(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(15.dp)
+                        .then(
+                            when (screenSize) {
+                                ScreenSize.NORMAL -> Modifier
+                                ScreenSize.LARGE -> Modifier.padding(horizontal = 40.dp)
+                                ScreenSize.VERY_LARGE -> Modifier.padding(horizontal = 160.dp)
+                            }
+                        )
                         .height(78.dp)
                         .clip(shape = RoundedCornerShape(16.dp))
                 )
@@ -301,8 +308,7 @@ fun GroupItem(
                     .padding(horizontal = 12.dp, vertical = 8.dp)
             ) {
                 Text(
-                    text = "${group.name} (${group.articles.size})" +
-                        if (group.isShared) "  [${stringResource(id = R.string.shared)}]" else "",
+                    text = "${group.name} (${group.articles.size})",
                     fontSize = 24.sp,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.align(Alignment.CenterStart),

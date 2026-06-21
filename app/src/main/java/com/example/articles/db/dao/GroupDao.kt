@@ -24,4 +24,10 @@ interface GroupDao {
     @Query("SELECT * FROM `groups` WHERE idGroup = :idGroup")
     fun getGroupById(idGroup: UUID): Flow<GroupEntity?>
 
+    @Query("SELECT * FROM `groups` WHERE idGroup = :idGroup LIMIT 1")
+    suspend fun getGroupByIdSuspend(idGroup: UUID): GroupEntity?
+
+    @Query("SELECT * FROM `groups` WHERE sharedGroupId = :sharedGroupId")
+    suspend fun getGroupBySharedGroupId(sharedGroupId: String): GroupEntity?
+
 }

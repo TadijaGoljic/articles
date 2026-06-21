@@ -29,11 +29,12 @@ class SharedGroupRepository @Inject constructor(
                 "name" to group.name,
                 "updatedAt" to System.currentTimeMillis(),
                 "deleted" to false,
-                "members" to listOf(fromUid, toUid)
+                "members" to listOf(fromUid, toUid),
+                "fromUid" to fromUid,
+                "fromGroupId" to group.id.toString()
             ))
             .await()
 
-        // Copy articles from user's Firestore collection into the shared group
         val articlesSnapshot = firestore
             .collection("users").document(fromUid)
             .collection("articles")
@@ -104,6 +105,30 @@ class SharedGroupRepository @Inject constructor(
                     .set(firestoreModelMapper.toArticlesFirestoreMap(article))
                     .await()
             }
+        }
+    }
+
+    suspend fun getSharedGroupMeta(sharedGroupId: String): Pair<String?, String?> {
+        val snapshot = firestore
+            .collection(SHARED_GROUPS_COLLECTION).document(sharedGroupId)
+            .get().await()
+        return snapshot.getString("fromUid") to snapshot.getString("fromGroupId")
+    }
+
+    suspend fun leaveSharedGroup(sharedGroupId: String, uid: String) {
+        val docRef = firestore.collection(SHARED_GROUPS_COLLECTION).document(sharedGroupId)
+        val snapshot = docRef.get().await()
+        val data = snapshot.data ?: return
+        val members = (data["members"] as? List<*>)?.filterIsInstance<String>() ?: return
+        val remaining = members.filter { it != uid }
+        if (remaining.isEmpty()) {
+            val articles = docRef.collection(ARTICLES_COLLECTION).get().await()
+            val batch = firestore.batch()
+            articles.documents.forEach { batch.delete(it.reference) }
+            batch.delete(docRef)
+            batch.commit().await()
+        } else {
+            docRef.update("members", remaining).await()
         }
     }
 
