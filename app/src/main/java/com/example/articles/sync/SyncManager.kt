@@ -18,6 +18,7 @@ import com.example.articles.models.toUIArticle
 import com.example.articles.models.toUIGroup
 import com.example.articles.repositories.ArticleRepository
 import com.example.articles.repositories.GroupRepository
+import com.example.articles.repositories.SharedGroupRepository
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.CollectionReference
@@ -36,6 +37,7 @@ class SyncManager(
     private val userPreferences: UserPreferences,
     private val articleRepository: ArticleRepository,
     private val groupRepository: GroupRepository,
+    private val sharedGroupRepository: SharedGroupRepository,
     private val applicationContext: Context,
     private val firestoreModelMapper: FirestoreModelMapper
 ) : CoroutineWorker(context, parameters) {
@@ -58,6 +60,7 @@ class SyncManager(
             Log.d(ArticlesApplication.LOG_TAG, "Sync started, lastSyncTimestamp=$syncTimestamp")
             syncGroups(groupsCollection, syncTimestamp)
             syncArticles(articlesCollection, syncTimestamp)
+            syncSharedGroups(uid, syncTimestamp)
             userPreferences.lastSyncTimestamp = System.currentTimeMillis()
             Log.d(ArticlesApplication.LOG_TAG, "Sync completed successfully")
             Result.success()
@@ -140,7 +143,8 @@ class SyncManager(
         groups: List<GroupEntity>,
         collection: CollectionReference
     ) {
-        groups.forEach { group ->
+        // Shared groups are synced via syncSharedGroups — skip them here
+        groups.filter { !it.isShared }.forEach { group ->
             val documentId = group.idGroup.toString()
             if (group.deleted) {
                 Log.d(ArticlesApplication.LOG_TAG, "Deleting remote group id=$documentId")
@@ -151,6 +155,34 @@ class SyncManager(
                 collection.document(documentId)
                     .set(firestoreModelMapper.toGroupsFirestoreMap(group))
                     .await()
+            }
+        }
+    }
+
+    private suspend fun syncSharedGroups(uid: String, syncTimestamp: Long) {
+        val sharedGroupIds = sharedGroupRepository.getSharedGroupIdsForUser(uid)
+        Log.d(ArticlesApplication.LOG_TAG, "Syncing ${sharedGroupIds.size} shared groups")
+
+        for (sharedGroupId in sharedGroupIds) {
+            // Upload local article changes for this shared group
+            val localChanges = articleRepository
+                .getAllArticlesNoMapping()
+                .map { list ->
+                    list.filter {
+                        it.groupId == UUID.fromString(sharedGroupId) && it.updatedAt > syncTimestamp
+                    }
+                }
+                .first()
+            if (localChanges.isNotEmpty()) {
+                Log.d(ArticlesApplication.LOG_TAG, "Uploading ${localChanges.size} article changes for shared group $sharedGroupId")
+                sharedGroupRepository.uploadSharedGroupChanges(sharedGroupId, localChanges)
+            }
+
+            // Pull latest shared group state and upsert locally
+            val (groupEntity, articles) = sharedGroupRepository.syncSharedGroup(sharedGroupId)
+            groupRepository.upsertAllGroups(listOf(groupEntity.toUIGroup()))
+            if (articles.isNotEmpty()) {
+                articleRepository.upsertAllArticles(articles.map { it.toUIArticle() })
             }
         }
     }

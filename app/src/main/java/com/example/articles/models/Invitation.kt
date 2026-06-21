@@ -1,0 +1,15 @@
+package com.example.articles.models
+
+data class Invitation(
+    val invitationId: String,
+    val fromUid: String,
+    val fromEmail: String,
+    val toEmail: String,
+    val toUid: String,
+    val groupId: String,
+    val groupName: String,
+    val status: InvitationStatus,
+    val createdAt: Long
+)
+
+enum class InvitationStatus { PENDING, ACCEPTED, DECLINED }

@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -93,6 +94,28 @@ fun GroupsListPage(
                 groupsPageViewModel.handleAction(GroupsPageAction.SaveGroup(state.groupToCreateName.text.toString()))
             },
             isConfirmButtonLoading = state.isCreateGroupDialogLoading,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+    }
+
+    if (state.showShareGroupDialog) {
+        ShareGroupDialog(
+            emailState = state.shareGroupEmail,
+            isLoading = state.isShareGroupLoading,
+            errorMessage =
+                if (state.shareGroupError != null) stringResource(id = R.string.user_not_found)
+                else null,
+            onDismiss = {
+                groupsPageViewModel.handleAction(GroupsPageAction.HideShareGroupDialog)
+            },
+            onConfirm = {
+                groupsPageViewModel.handleAction(
+                    GroupsPageAction.ShareGroup(
+                        group = state.groupToShare ?: UIGroup(),
+                        email = state.shareGroupEmail.text.toString()
+                    )
+                )
+            },
             modifier = Modifier.padding(horizontal = 16.dp)
         )
     }
@@ -217,6 +240,18 @@ fun GroupsListPage(
                             },
                             contentDescription = stringResource(id = R.string.delete_group),
                         )
+                        BottomSheetRowItem(
+                            icon = Icons.Default.Share,
+                            text = stringResource(id = R.string.share_group),
+                            onClick = {
+                                coroutineScope
+                                    .launch { sheetState.hide() }
+                                    .invokeOnCompletion {
+                                        groupsPageViewModel.handleAction(GroupsPageAction.ShowShareGroupDialog(group = state.longPressedGroup ?: UIGroup()))
+                                    }
+                            },
+                            contentDescription = stringResource(id = R.string.share_group),
+                        )
                     }
                 }
             }
@@ -253,7 +288,8 @@ fun GroupItem(
                     .padding(horizontal = 12.dp, vertical = 8.dp)
             ) {
                 Text(
-                    text = "${group.name} (${group.articles.size})",
+                    text = "${group.name} (${group.articles.size})" +
+                        if (group.isShared) "  [${stringResource(id = R.string.shared)}]" else "",
                     fontSize = 24.sp,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.align(Alignment.CenterStart),

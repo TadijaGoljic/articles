@@ -1,6 +1,7 @@
 package com.example.articles
 
 import android.Manifest
+import android.app.NotificationManager
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -10,17 +11,26 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.core.app.NotificationCompat
+import androidx.core.content.getSystemService
 import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.example.articles.models.Invitation
+import com.example.articles.models.Location
+import com.example.articles.repositories.InvitationRepository
 import com.example.articles.ui.composables.ArticlesNavigationFlow
 import com.example.articles.ui.theme.ArticlesTheme
-import com.example.articles.models.Location
 import android.util.Log
 import com.example.articles.utils.TriggerSync
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
+import com.google.firebase.firestore.SetOptions
+import com.google.firebase.firestore.firestore
 import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -28,6 +38,7 @@ import javax.inject.Inject
 class ArticlesActivity : ComponentActivity() {
 
     @Inject lateinit var triggerSync: TriggerSync
+    @Inject lateinit var invitationRepository: InvitationRepository
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -36,6 +47,8 @@ class ArticlesActivity : ComponentActivity() {
     companion object {
         private const val GOOGLE_MAPS_PACKAGE_NAME = "com.google.android.apps.maps"
         private const val GOOGLE_MAPS_BASE_URL = "https://www.google.com/maps"
+        private const val NOTIFIED_INVITATIONS_PREFS = "notified_invitations"
+        private const val NOTIFIED_INVITATIONS_KEY = "ids"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,9 +60,23 @@ class ArticlesActivity : ComponentActivity() {
         FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
             Log.d(ArticlesApplication.LOG_TAG, "FCM token: $token")
         }
+        writeUserProfile()
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(state = Lifecycle.State.STARTED) {
                 triggerSync()
+            }
+        }
+        lifecycleScope.launch {
+            lifecycle.repeatOnLifecycle(state = Lifecycle.State.STARTED) {
+                val uid = Firebase.auth.currentUser?.uid ?: return@repeatOnLifecycle
+                invitationRepository.observePendingInvitations(uid).collectLatest { invitations ->
+                    invitations.forEach { invitation ->
+                        if (!isAlreadyNotified(invitation.invitationId)) {
+                            showInvitationNotification(invitation)
+                            markNotified(invitation.invitationId)
+                        }
+                    }
+                }
             }
         }
         setContent {
@@ -57,6 +84,44 @@ class ArticlesActivity : ComponentActivity() {
                 Application()
             }
         }
+    }
+
+    private fun isAlreadyNotified(invitationId: String): Boolean {
+        val prefs = getSharedPreferences(NOTIFIED_INVITATIONS_PREFS, MODE_PRIVATE)
+        return prefs.getStringSet(NOTIFIED_INVITATIONS_KEY, emptySet())?.contains(invitationId) == true
+    }
+
+    private fun markNotified(invitationId: String) {
+        val prefs = getSharedPreferences(NOTIFIED_INVITATIONS_PREFS, MODE_PRIVATE)
+        val existing = prefs.getStringSet(NOTIFIED_INVITATIONS_KEY, emptySet())?.toMutableSet() ?: mutableSetOf()
+        existing.add(invitationId)
+        prefs.edit().putStringSet(NOTIFIED_INVITATIONS_KEY, existing).apply()
+    }
+
+    private fun showInvitationNotification(invitation: Invitation) {
+        val contentText = getString(
+            R.string.new_invitation_notification,
+            invitation.fromEmail,
+            invitation.groupName
+        )
+        val notification = NotificationCompat.Builder(this, ArticlesApplication.INVITATION_CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_dialog_email)
+            .setContentTitle(getString(R.string.invitations))
+            .setContentText(contentText)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
+            .build()
+
+        getSystemService<NotificationManager>()
+            ?.notify(invitation.invitationId.hashCode(), notification)
+    }
+
+    private fun writeUserProfile() {
+        val user = Firebase.auth.currentUser ?: return
+        Firebase.firestore
+            .collection("users").document(user.uid)
+            .collection("profile").document("info")
+            .set(mapOf("email" to user.email, "uid" to user.uid), SetOptions.merge())
     }
 
     private fun openNavigation(location: Location) {

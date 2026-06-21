@@ -48,7 +48,7 @@ class AddNewArticleViewModel @Inject constructor(
             viewModelScope.launch {
                 articleRepository.getArticleById(UUID.fromString(id)).first()?.let { article ->
                     state.value.articleName.edit {
-                        replace(0, length, article.name ?: "")
+                        replace(0, length, article.name)
                     }
                     state.value.articleDescription.edit {
                         replace(0, length, article.description ?: "")

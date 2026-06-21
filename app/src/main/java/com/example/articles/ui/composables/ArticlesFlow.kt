@@ -11,6 +11,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.articles.models.Location
 import com.example.articles.ui.composables.screens.AddNewArticle
+import com.example.articles.ui.composables.screens.InvitationsPage
 import com.example.articles.ui.composables.screens.LocationPicker
 import com.example.articles.ui.composables.screens.SettingsScreen
 import com.example.articles.ui.composables.screens.GroupDetailsPage
@@ -44,6 +45,9 @@ fun ArticlesNavigationFlow(
                     navController.navigate(ArticlesDestinations.GroupDetailsDestination(groupId = group.id.toString()))
                 }
             )
+        }
+        composable<ArticlesDestinations.InvitationsDestination> {
+            InvitationsPage(onBackClick = navController::popBackStack)
         }
         composable<ArticlesDestinations.GroupDetailsDestination> {
             GroupDetailsPage(
@@ -102,7 +106,10 @@ fun ArticlesNavigationFlow(
             SettingsScreen(
                 onSignOut = onSignOut,
                 onBackClick = navController::popBackStack,
-                onAccountDelete = onAccountDelete
+                onAccountDelete = onAccountDelete,
+                onInvitationsClick = {
+                    navController.navigate(ArticlesDestinations.InvitationsDestination)
+                }
             )
         }
     }
@@ -117,4 +124,5 @@ sealed interface ArticlesDestinations {
     @Serializable data class PickLocationDestination(val latitude: Double? = null, val longitude: Double? = null) : ArticlesDestinations
     @Serializable data object SettingsDestination : ArticlesDestinations
     @Serializable data class GroupDetailsDestination(val groupId: String) : ArticlesDestinations
+    @Serializable data object InvitationsDestination : ArticlesDestinations
 }

@@ -7,9 +7,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material3.Badge
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -110,6 +113,61 @@ fun SettingsItemWithSwitch(
             Switch(
                 checked = isChecked,
                 onCheckedChange = onItemClick
+            )
+        }
+        if (position != Position.SINGLE && position != Position.BOTTOM) {
+            HorizontalDivider(modifier = Modifier.fillMaxWidth())
+        }
+    }
+}
+
+@Composable
+fun SettingsItemWithBadge(
+    label: String,
+    onItemClick: () -> Unit,
+    badgeValue: String?,
+    position: Position,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .clip(
+                when (position) {
+                    Position.SINGLE -> RoundedCornerShape(size = 10.dp)
+                    Position.TOP -> RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp)
+                    Position.MIDDLE -> RoundedCornerShape(size = 0.dp)
+                    Position.BOTTOM -> RoundedCornerShape(bottomStart = 10.dp, bottomEnd = 10.dp)
+                }
+            )
+            .background(color = MaterialTheme.colorScheme.surface)
+            .clickable {
+                onItemClick()
+            }
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = modifier
+                .height(height = 48.dp)
+        ) {
+            Text(
+                text = label,
+                fontSize = 20.sp,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            if (badgeValue != null && !badgeValue.equals("0", ignoreCase = true)) {
+                Badge(
+                    modifier = Modifier
+                        .padding(start = 6.dp)
+                        .size(16.dp),
+                ) {
+                    Text(text = badgeValue)
+                }
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = label,
+                tint = MaterialTheme.colorScheme.onBackground
             )
         }
         if (position != Position.SINGLE && position != Position.BOTTOM) {

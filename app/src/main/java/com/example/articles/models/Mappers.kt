@@ -42,12 +42,16 @@ fun GroupEntity.toUIGroup() = UIGroup(
     id = idGroup,
     name = name,
     updatedAt = updatedAt,
-    deleted = deleted
+    deleted = deleted,
+    isShared = isShared,
+    sharedGroupId = sharedGroupId
 )
 
 fun UIGroup.toGroupEntity() = GroupEntity(
     idGroup = id,
     name = name,
     updatedAt = updatedAt,
-    deleted = deleted
+    deleted = deleted,
+    isShared = isShared,
+    sharedGroupId = sharedGroupId
 )

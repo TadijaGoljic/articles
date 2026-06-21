@@ -9,6 +9,7 @@ import com.example.articles.models.FirestoreModelMapper
 import com.example.articles.models.UserPreferences
 import com.example.articles.repositories.ArticleRepository
 import com.example.articles.repositories.GroupRepository
+import com.example.articles.repositories.SharedGroupRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -17,6 +18,7 @@ class SyncManagerFactory(
     private val userPreferences: UserPreferences,
     private val articleRepository: ArticleRepository,
     private val groupRepository: GroupRepository,
+    private val sharedGroupRepository: SharedGroupRepository,
     private val applicationContext: Context,
     private val firestoreModelMapper: FirestoreModelMapper,
 ) : WorkerFactory() {
@@ -33,6 +35,7 @@ class SyncManagerFactory(
                     userPreferences,
                     articleRepository,
                     groupRepository,
+                    sharedGroupRepository,
                     applicationContext,
                     firestoreModelMapper
                 )
@@ -47,6 +50,7 @@ class SyncWorkerFactory @Inject constructor(
     userPreferences: UserPreferences,
     articleRepository: ArticleRepository,
     groupRepository: GroupRepository,
+    sharedGroupRepository: SharedGroupRepository,
     firestoreModelMapper: FirestoreModelMapper,
     @ApplicationContext context: Context
 ) : DelegatingWorkerFactory() {
@@ -56,6 +60,7 @@ class SyncWorkerFactory @Inject constructor(
                 userPreferences = userPreferences,
                 articleRepository = articleRepository,
                 groupRepository = groupRepository,
+                sharedGroupRepository = sharedGroupRepository,
                 applicationContext = context,
                 firestoreModelMapper = firestoreModelMapper
             )

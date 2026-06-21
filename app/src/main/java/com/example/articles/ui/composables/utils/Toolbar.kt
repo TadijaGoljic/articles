@@ -14,10 +14,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.articles.R
 
 @Composable
 fun Toolbar(
@@ -28,7 +26,6 @@ fun Toolbar(
     onLeadingIconClick: (() -> Unit)? = null,
     trailingIcon: ImageVector? = null,
     onTrailingIconClick: (() -> Unit)? = null,
-    trailingIconEnabled: Boolean = true
 ) {
     Box(
         modifier = modifier
@@ -49,7 +46,7 @@ fun Toolbar(
             ) {
                 Icon(
                     imageVector = leadingIcon,
-                    contentDescription = stringResource(id = R.string.back)
+                    contentDescription = null
                 )
             }
         }
@@ -70,11 +67,10 @@ fun Toolbar(
                 colors = IconButtonDefaults.iconButtonColors(
                     contentColor = color
                 ),
-                enabled = trailingIconEnabled
             ) {
                 Icon(
                     imageVector = trailingIcon,
-                    contentDescription = stringResource(id = R.string.add)
+                    contentDescription = null
                 )
             }
         }

@@ -10,6 +10,7 @@ import com.example.articles.db.ArticleDatabase
 import com.example.articles.models.UserPreferences
 import com.example.articles.repositories.ArticleRepository
 import com.example.articles.repositories.GroupRepository
+import com.example.articles.repositories.InvitationRepository
 import com.example.articles.utils.TriggerSync
 import com.google.firebase.Firebase
 import com.google.firebase.auth.EmailAuthProvider
@@ -34,6 +35,7 @@ class SettingsViewModel @Inject constructor(
     private val database: ArticleDatabase,
     private val groupRepository: GroupRepository,
     private val articleRepository: ArticleRepository,
+    private val invitationRepository: InvitationRepository,
     private val userPreferences: UserPreferences,
     private val triggerSync: TriggerSync,
     @ApplicationContext private val context: Context,
@@ -43,10 +45,16 @@ class SettingsViewModel @Inject constructor(
     val uiState = state
 
     init {
-        state.update { currentState ->
-            currentState.copy(
-                syncData = userPreferences.syncDataEnabled
-            )
+        viewModelScope.launch {
+            val uid = Firebase.auth.currentUser?.uid ?: ""
+            invitationRepository.observePendingInvitations(uid).collect { invitations ->
+                state.update { currentState ->
+                    currentState.copy(
+                        badgeValue = invitations.size.toString(),
+                        syncData = userPreferences.syncDataEnabled
+                    )
+                }
+            }
         }
     }
 
@@ -56,16 +64,22 @@ class SettingsViewModel @Inject constructor(
             is SettingsAction.DeleteAccount -> deleteAccount()
             is SettingsAction.ShowChangePasswordDialog ->
                 updateChangePasswordDialogVisibility(visible = true)
+
             is SettingsAction.HideChangePasswordDialog ->
                 updateChangePasswordDialogVisibility(visible = false)
+
             is SettingsAction.ShowSignOutConfirmationDialog ->
                 updateSignOutDialogVisibility(visible = true)
+
             is SettingsAction.HideSignOutConfirmationDialog ->
                 updateSignOutDialogVisibility(visible = false)
+
             is SettingsAction.ShowDeleteAccountConfirmationDialog ->
                 updateDeleteAccountDialogVisibility(visible = true)
+
             is SettingsAction.HideDeleteAccountConfirmationDialog ->
                 updateDeleteAccountDialogVisibility(visible = false)
+
             is SettingsAction.ChangePassword -> changePassword()
             is SettingsAction.ExportGroups -> exportGroups()
             is SettingsAction.ClearExport -> cleanExport()
@@ -159,7 +173,8 @@ class SettingsViewModel @Inject constructor(
             articles.forEach { article ->
                 val quantity = article.quantity
                 val unit = context.getString(article.unit.abbreviation)
-                val quantityStr = if (quantity != null) " (${formatQuantity(quantity)} $unit)" else ""
+                val quantityStr =
+                    if (quantity != null) " (${formatQuantity(quantity)} $unit)" else ""
                 sb.appendLine("• ${article.name}$quantityStr")
                 if (!article.description.isNullOrBlank()) {
                     sb.appendLine("  ${article.description}")
@@ -193,11 +208,21 @@ class SettingsViewModel @Inject constructor(
                                     state.update { it.copy(isLoading = false) }
                                     handleAction(SettingsAction.HideChangePasswordDialog)
                                 } else {
-                                    state.update { it.copy(isLoading = false, errorMessage = task.exception?.message.toString()) }
+                                    state.update {
+                                        it.copy(
+                                            isLoading = false,
+                                            errorMessage = task.exception?.message.toString()
+                                        )
+                                    }
                                 }
                             }
                     } else {
-                        state.update { it.copy(isLoading = false, errorMessage = task.exception?.message.toString()) }
+                        state.update {
+                            it.copy(
+                                isLoading = false,
+                                errorMessage = task.exception?.message.toString()
+                            )
+                        }
                     }
                 }
         }
@@ -235,6 +260,7 @@ data class SettingsState(
     val deleteAccountLoading: Boolean = false,
     val signOutLoading: Boolean = false,
     val syncData: Boolean = true,
+    val badgeValue: String? = null,
     @StringRes val stringResErrorMessage: Int? = null
 )
 

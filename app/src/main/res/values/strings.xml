@@ -82,6 +82,19 @@
     <string name="no_groups_title">No Groups to Show</string>
     <string name="no_groups_message">To Create a Group click on \"+\" icon</string>
 
+    <!-- Sharing & Invitations -->
+    <string name="share_group">Share group</string>
+    <string name="invitations">Invitations</string>
+    <string name="accept">Accept</string>
+    <string name="decline">Decline</string>
+    <string name="user_not_found">User not found</string>
+    <string name="invitation_sent">Invitation sent</string>
+    <string name="enter_email_to_share">Enter email to share with</string>
+    <string name="no_pending_invitations">No pending invitations</string>
+    <string name="invitation_from">Invitation from %1$s to share \"%2$s\"</string>
+    <string name="new_invitation_notification">%1$s wants to share \"%2$s\" with you</string>
+    <string name="shared">Shared</string>
+
     <!-- Units -->
     <string name="unit">Unit</string>
     <string name="quantity">Quantity</string>

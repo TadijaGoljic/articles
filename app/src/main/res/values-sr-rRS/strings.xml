@@ -84,6 +84,19 @@
     <string name="no_groups_title">Нема група за приказивање</string>
     <string name="no_groups_message">За креирање нове групе притисните иконицу \"+\"</string>
 
+    <!-- Sharing & Invitations -->
+    <string name="share_group">Подели групу</string>
+    <string name="invitations">Позивнице</string>
+    <string name="accept">Прихвати</string>
+    <string name="decline">Одбиј</string>
+    <string name="user_not_found">Корисник није пронађен</string>
+    <string name="invitation_sent">Позивница послата</string>
+    <string name="enter_email_to_share">Унесите имеjл за дељење</string>
+    <string name="no_pending_invitations">Нема позивница на чекању</string>
+    <string name="invitation_from">Позивница од %1$s за дељење \"%2$s\"</string>
+    <string name="new_invitation_notification">%1$s жели да подели \"%2$s\" са вама</string>
+    <string name="shared">Дељено</string>
+
     <!-- Units -->
     <string name="unit">Јединица мере</string>
     <string name="quantity">Количина</string>

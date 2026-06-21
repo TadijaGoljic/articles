@@ -6,7 +6,10 @@ import androidx.lifecycle.viewModelScope
 import com.example.articles.models.UIGroup
 import com.example.articles.repositories.ArticleRepository
 import com.example.articles.repositories.GroupRepository
+import com.example.articles.repositories.InvitationRepository
 import com.example.articles.utils.TriggerSync
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -19,6 +22,7 @@ import javax.inject.Inject
 class GroupsPageViewModel @Inject constructor(
     private val groupRepository: GroupRepository,
     private val articleRepository: ArticleRepository,
+    private val invitationRepository: InvitationRepository,
     private val triggerSync: TriggerSync
 ) : ViewModel() {
 
@@ -42,6 +46,12 @@ class GroupsPageViewModel @Inject constructor(
                         groups = groupsWithArticles
                     )
                 }
+            }
+        }
+        viewModelScope.launch {
+            val uid = Firebase.auth.currentUser?.uid ?: return@launch
+            invitationRepository.observePendingInvitations(uid).collectLatest { invitations ->
+                state.update { it.copy(pendingInvitationsCount = invitations.size) }
             }
         }
     }
@@ -68,6 +78,12 @@ class GroupsPageViewModel @Inject constructor(
                 updateEditDeleteBottomSheetVisibility(visible = false, group = null)
             is GroupsPageAction.ExpandGroup -> updateGroupExpandedStatus(action.group, status = true)
             is GroupsPageAction.CollapseGroup -> updateGroupExpandedStatus(action.group, status = false)
+            is GroupsPageAction.ShowShareGroupDialog ->
+                updateShareGroupDialogVisibility(visible = true, group = action.group)
+            is GroupsPageAction.HideShareGroupDialog ->
+                updateShareGroupDialogVisibility(visible = false, group = null)
+            is GroupsPageAction.ShareGroup ->
+                shareGroup(group = action.group, email = action.email)
         }
     }
 
@@ -191,6 +207,38 @@ class GroupsPageViewModel @Inject constructor(
         }
     }
 
+    private fun updateShareGroupDialogVisibility(visible: Boolean, group: UIGroup?) {
+        state.update { currentState ->
+            currentState.copy(
+                showShareGroupDialog = visible,
+                shareGroupEmail = TextFieldState(),
+                shareGroupError = null,
+                groupToShare = group,
+                showEditDeleteBottonSheet = false
+            )
+        }
+    }
+
+    private fun shareGroup(group: UIGroup, email: String) {
+        val currentUser = Firebase.auth.currentUser ?: return
+        state.update { it.copy(isShareGroupLoading = true, shareGroupError = null) }
+        viewModelScope.launch {
+            val toUid = invitationRepository.lookupUidByEmail(email)
+            if (toUid == null) {
+                state.update { it.copy(isShareGroupLoading = false, shareGroupError = "user_not_found") }
+                return@launch
+            }
+            invitationRepository.sendInvitation(
+                fromUid = currentUser.uid,
+                fromEmail = currentUser.email ?: "",
+                toEmail = email,
+                toUid = toUid,
+                group = group
+            )
+            state.update { it.copy(isShareGroupLoading = false, showShareGroupDialog = false) }
+        }
+    }
+
 }
 
 data class GroupsPageState(
@@ -203,6 +251,12 @@ data class GroupsPageState(
     val longPressedGroup: UIGroup? = null,
     val isEditDialogLoading: Boolean = false,
     val showEditDeleteBottonSheet: Boolean = false,
+    val showShareGroupDialog: Boolean = false,
+    val shareGroupEmail: TextFieldState = TextFieldState(),
+    val isShareGroupLoading: Boolean = false,
+    val shareGroupError: String? = null,
+    val groupToShare: UIGroup? = null,
+    val pendingInvitationsCount: Int = 0,
 )
 
 sealed interface GroupsPageAction {
@@ -217,4 +271,7 @@ sealed interface GroupsPageAction {
     data object DismissBottomSheet : GroupsPageAction
     data class ExpandGroup(val group: UIGroup) : GroupsPageAction
     data class CollapseGroup(val group: UIGroup) : GroupsPageAction
+    data class ShowShareGroupDialog(val group: UIGroup) : GroupsPageAction
+    data object HideShareGroupDialog : GroupsPageAction
+    data class ShareGroup(val group: UIGroup, val email: String) : GroupsPageAction
 }

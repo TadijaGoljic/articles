@@ -51,6 +51,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.articles.R
 import com.example.articles.ui.composables.utils.Position
 import com.example.articles.ui.composables.utils.SettingsItem
+import com.example.articles.ui.composables.utils.SettingsItemWithBadge
 import com.example.articles.ui.composables.utils.SettingsItemWithSwitch
 import com.example.articles.ui.composables.utils.Toolbar
 import com.example.articles.utils.ScreenSize
@@ -64,6 +65,7 @@ fun SettingsScreen(
     onSignOut: () -> Unit,
     onAccountDelete: () -> Unit,
     onBackClick: () -> Unit,
+    onInvitationsClick: () -> Unit,
     modifier: Modifier = Modifier,
     settingsViewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -79,12 +81,7 @@ fun SettingsScreen(
                 type = "text/plain"
                 putExtra(Intent.EXTRA_TEXT, content)
             }
-            context.startActivity(
-                Intent.createChooser(
-                    intent,
-                    context.getString(R.string.export_data)
-                )
-            )
+            context.startActivity(Intent.createChooser(intent, context.getString(R.string.export_data)))
             settingsViewModel.handleAction(SettingsAction.ClearExport)
         }
     }
@@ -220,6 +217,8 @@ fun SettingsScreen(
                 onSyncDataClick = { status ->
                     settingsViewModel.handleAction(SettingsAction.UpdateSyncDataStatus(status))
                 },
+                onInvitationsClick = onInvitationsClick,
+                badgeValue = state.badgeValue,
                 isSyncDataChecked = state.syncData
             )
         }
@@ -231,8 +230,10 @@ fun SettingsItems(
     showSignOutConfirmationDialog: () -> Unit,
     showDeleteAccountConfirmationDialog: () -> Unit,
     showChangePasswordDialog: () -> Unit,
+    onInvitationsClick: () -> Unit,
     onSyncDataClick: (Boolean) -> Unit,
     onExportGroups: () -> Unit,
+    badgeValue: String?,
     isSyncDataChecked: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -276,10 +277,17 @@ fun SettingsItems(
                 .padding(bottom = 2.dp)
         )
         Spacer(modifier = Modifier.height(4.dp))
+        SettingsItemWithBadge(
+            label = stringResource(id = R.string.invitations),
+            onItemClick = onInvitationsClick,
+            badgeValue = badgeValue,
+            position = Position.TOP,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
         SettingsItem(
             label = stringResource(id = R.string.export_data),
             onItemClick = onExportGroups,
-            position = Position.TOP,
+            position = Position.MIDDLE,
             modifier = Modifier.padding(horizontal = 16.dp)
         )
         SettingsItemWithSwitch(

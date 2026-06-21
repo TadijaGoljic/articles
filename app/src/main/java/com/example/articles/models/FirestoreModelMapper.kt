@@ -90,14 +90,45 @@ class FirestoreModelMapper @Inject constructor(
         "name" to groupEntity.name,
         "updatedAt" to groupEntity.updatedAt,
         "syncedAt" to System.currentTimeMillis(),
-        "deleted" to groupEntity.deleted
+        "deleted" to groupEntity.deleted,
+        "isShared" to groupEntity.isShared,
+        "sharedGroupId" to groupEntity.sharedGroupId
     )
 
     fun toGroupEntity(snapshot: DocumentSnapshot) = GroupEntity(
         idGroup = (snapshot["idGroup"] as? String)?.let { UUID.fromString(it) } ?: UUID.randomUUID(),
         name = snapshot["name"] as? String ?: "",
         updatedAt = snapshot["updatedAt"] as? Long ?: 0L,
-        deleted = snapshot["deleted"] as? Boolean ?: false
+        deleted = snapshot["deleted"] as? Boolean ?: false,
+        isShared = snapshot["isShared"] as? Boolean ?: false,
+        sharedGroupId = snapshot["sharedGroupId"] as? String
     )
+
+    fun toInvitationFirestoreMap(invitation: Invitation) = mapOf(
+        "invitationId" to invitation.invitationId,
+        "fromUid" to invitation.fromUid,
+        "fromEmail" to invitation.fromEmail,
+        "toEmail" to invitation.toEmail,
+        "toUid" to invitation.toUid,
+        "groupId" to invitation.groupId,
+        "groupName" to invitation.groupName,
+        "status" to invitation.status.name,
+        "createdAt" to invitation.createdAt
+    )
+
+    fun toInvitation(snapshot: DocumentSnapshot): Invitation? {
+        val data = snapshot.data ?: return null
+        return Invitation(
+            invitationId = data["invitationId"] as? String ?: return null,
+            fromUid = data["fromUid"] as? String ?: return null,
+            fromEmail = data["fromEmail"] as? String ?: return null,
+            toEmail = data["toEmail"] as? String ?: return null,
+            toUid = data["toUid"] as? String ?: return null,
+            groupId = data["groupId"] as? String ?: return null,
+            groupName = data["groupName"] as? String ?: return null,
+            status = InvitationStatus.valueOf(data["status"] as? String ?: return null),
+            createdAt = data["createdAt"] as? Long ?: 0L
+        )
+    }
 
 }

@@ -17,6 +17,7 @@ object DatabaseModule {
     @Singleton
     fun providesDatabase(@ApplicationContext context: Context) =
         Room.databaseBuilder(context, ArticleDatabase::class.java, ArticleDatabase.DATABASE_NAME)
+            .addMigrations(ArticleDatabase.MIGRATION_1_2)
             .fallbackToDestructiveMigration(true)
             .build()
 
