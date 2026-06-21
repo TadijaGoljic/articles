@@ -53,6 +53,7 @@ import com.example.articles.models.UIGroup
 import com.example.articles.ui.composables.utils.BottomSheetRowItem
 import com.example.articles.ui.composables.utils.OneTextFieldDialog
 import com.example.articles.ui.composables.utils.Toolbar
+import com.example.articles.utils.ScreenSize
 import com.example.articles.viewmodels.GroupsPageAction
 import com.example.articles.viewmodels.GroupsPageViewModel
 import kotlinx.coroutines.launch
@@ -75,21 +76,26 @@ fun GroupsListPage(
 
     val sheetState = rememberModalBottomSheetState()
     val coroutineScope = rememberCoroutineScope()
+    val screenSize = ScreenSize.getScreenSize()
 
     if (state.showAddNewGroupDialog) {
+        val groupAlreadyExists = state.groupToCreateName.text.toString().uppercase() in groupNames
+        val invalidGroupName =
+            state.groupToCreateName.text.toString().length !in 1..16 ||
+            state.groupToCreateName.text.isBlank()
         OneTextFieldDialog(
             title = stringResource(id = R.string.create_group),
             onDismissRequest = {
                 groupsPageViewModel.handleAction(GroupsPageAction.HideAddNewGroupDialog)
             },
             textFieldState = state.groupToCreateName,
-            isError = state.groupToCreateName.text.toString().uppercase() in groupNames,
-            errorMessage = stringResource(id = R.string.group_already_exists),
+            isError = state.groupToCreateName.text.isNotEmpty() && (groupAlreadyExists || invalidGroupName),
+            errorMessage =
+                if (groupAlreadyExists) stringResource(id = R.string.group_already_exists)
+                else stringResource(id = R.string.invalid_group_name),
             dismissButtonText = stringResource(id = R.string.cancel),
             confirmButtonText = stringResource(id = R.string.save),
-            confirmButtonEnabled =
-                state.groupToCreateName.text.isNotEmpty() &&
-                state.groupToCreateName.text.toString().uppercase() !in groupNames,
+            confirmButtonEnabled = !groupAlreadyExists && !invalidGroupName,
             onConfirmButtonClick = {
                 groupsPageViewModel.handleAction(GroupsPageAction.SaveGroup(state.groupToCreateName.text.toString()))
             },
@@ -167,10 +173,17 @@ fun GroupsListPage(
             Toolbar(
                 title = stringResource(id = R.string.your_groups),
                 leadingIcon = Icons.Default.Settings,
-                onLeadingIconClick = onSettingsClick
+                onLeadingIconClick = onSettingsClick,
+                leadingIconBadge = state.pendingInvitationsCount.toString(),
             )
             if (state.groups.isNotEmpty()) {
-                LazyColumn {
+                LazyColumn(
+                    modifier = when (screenSize) {
+                        ScreenSize.NORMAL -> Modifier
+                        ScreenSize.LARGE -> Modifier.padding(horizontal = 40.dp)
+                        ScreenSize.VERY_LARGE -> Modifier.padding(horizontal = 160.dp)
+                    }
+                ) {
                     items(state.groups) { group ->
                         GroupItem(
                             group = group,

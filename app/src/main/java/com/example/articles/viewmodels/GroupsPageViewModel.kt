@@ -60,28 +60,47 @@ class GroupsPageViewModel @Inject constructor(
         when (action) {
             is GroupsPageAction.ShowAddNewGroupDialog ->
                 updateAddNewGroupDialogVisibility(visible = true)
+
             is GroupsPageAction.HideAddNewGroupDialog ->
                 updateAddNewGroupDialogVisibility(visible = false)
+
             is GroupsPageAction.SaveGroup ->
                 saveGroup(name = action.name)
+
             is GroupsPageAction.ShowEditGroupDialog ->
                 updateEditGroupDialogVisibility(visible = true, group = action.group)
+
             is GroupsPageAction.HideEditGroupDialog ->
                 updateEditGroupDialogVisibility(visible = false, group = null)
+
             is GroupsPageAction.EditGroup ->
                 editGroup(group = action.group, name = action.name)
+
             is GroupsPageAction.DeleteGroup ->
                 deleteGroup(group = action.group)
+
             is GroupsPageAction.LongClick ->
                 updateEditDeleteBottomSheetVisibility(visible = true, group = action.group)
+
             is GroupsPageAction.DismissBottomSheet ->
                 updateEditDeleteBottomSheetVisibility(visible = false, group = null)
-            is GroupsPageAction.ExpandGroup -> updateGroupExpandedStatus(action.group, status = true)
-            is GroupsPageAction.CollapseGroup -> updateGroupExpandedStatus(action.group, status = false)
+
+            is GroupsPageAction.ExpandGroup -> updateGroupExpandedStatus(
+                action.group,
+                status = true
+            )
+
+            is GroupsPageAction.CollapseGroup -> updateGroupExpandedStatus(
+                action.group,
+                status = false
+            )
+
             is GroupsPageAction.ShowShareGroupDialog ->
                 updateShareGroupDialogVisibility(visible = true, group = action.group)
+
             is GroupsPageAction.HideShareGroupDialog ->
                 updateShareGroupDialogVisibility(visible = false, group = null)
+
             is GroupsPageAction.ShareGroup ->
                 shareGroup(group = action.group, email = action.email)
         }
@@ -225,7 +244,12 @@ class GroupsPageViewModel @Inject constructor(
         viewModelScope.launch {
             val toUid = invitationRepository.lookupUidByEmail(email)
             if (toUid == null) {
-                state.update { it.copy(isShareGroupLoading = false, shareGroupError = "user_not_found") }
+                state.update {
+                    it.copy(
+                        isShareGroupLoading = false,
+                        shareGroupError = "user_not_found"
+                    )
+                }
                 return@launch
             }
             invitationRepository.sendInvitation(

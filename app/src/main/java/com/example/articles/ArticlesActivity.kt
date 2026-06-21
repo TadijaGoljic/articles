@@ -33,6 +33,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import androidx.core.content.edit
 
 @AndroidEntryPoint
 class ArticlesActivity : ComponentActivity() {
@@ -95,7 +96,7 @@ class ArticlesActivity : ComponentActivity() {
         val prefs = getSharedPreferences(NOTIFIED_INVITATIONS_PREFS, MODE_PRIVATE)
         val existing = prefs.getStringSet(NOTIFIED_INVITATIONS_KEY, emptySet())?.toMutableSet() ?: mutableSetOf()
         existing.add(invitationId)
-        prefs.edit().putStringSet(NOTIFIED_INVITATIONS_KEY, existing).apply()
+        prefs.edit { putStringSet(NOTIFIED_INVITATIONS_KEY, existing) }
     }
 
     private fun showInvitationNotification(invitation: Invitation) {

@@ -72,6 +72,7 @@ import com.example.articles.models.UIArticle
 import com.example.articles.models.UIGroup
 import com.example.articles.ui.composables.utils.BottomSheetRowItem
 import com.example.articles.ui.composables.utils.Toolbar
+import com.example.articles.utils.ScreenSize
 import com.example.articles.viewmodels.FilterType
 import com.example.articles.viewmodels.GroupDetailsAction
 import com.example.articles.viewmodels.GroupDetailsViewModel
@@ -92,6 +93,7 @@ fun GroupDetailsPage(
     val state by groupDetailsViewModel.uiState.collectAsStateWithLifecycle()
     val coroutineScope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState()
+    val screenSize = ScreenSize.getScreenSize()
 
     if (state.showEditDeleteBottonSheet) {
         ModalBottomSheet(
@@ -256,7 +258,15 @@ fun GroupDetailsPage(
                 Spacer(modifier = Modifier.height(8.dp))
                 if (state.articles.isNotEmpty()) {
                     LazyColumn(
-                        modifier = Modifier.padding(bottom = 60.dp)
+                        modifier = Modifier
+                            .padding(bottom = 60.dp)
+                            .then(
+                                when (screenSize) {
+                                    ScreenSize.NORMAL -> Modifier
+                                    ScreenSize.LARGE -> Modifier.padding(horizontal = 40.dp)
+                                    ScreenSize.VERY_LARGE -> Modifier.padding(horizontal = 160.dp)
+                                }
+                            )
                     ) {
                         items(state.articles) { article ->
                             ArticleItem(

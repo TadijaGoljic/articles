@@ -79,6 +79,7 @@
     <string name="your_groups">Your groups</string>
     <string name="enter_group_name">Enter group name</string>
     <string name="group_already_exists">Group already exists</string>
+    <string name="invalid_group_name">Group name must be between 1 and 16 characters</string>
     <string name="no_groups_title">No Groups to Show</string>
     <string name="no_groups_message">To Create a Group click on \"+\" icon</string>
 

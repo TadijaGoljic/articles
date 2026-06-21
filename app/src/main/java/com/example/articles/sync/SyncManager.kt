@@ -19,6 +19,9 @@ import com.example.articles.models.toUIGroup
 import com.example.articles.repositories.ArticleRepository
 import com.example.articles.repositories.GroupRepository
 import com.example.articles.repositories.SharedGroupRepository
+import com.example.articles.utils.ARTICLES_COLLECTION
+import com.example.articles.utils.GROUPS_COLLECTION
+import com.example.articles.utils.USERS_COLLECTION
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.CollectionReference
@@ -38,7 +41,6 @@ class SyncManager(
     private val articleRepository: ArticleRepository,
     private val groupRepository: GroupRepository,
     private val sharedGroupRepository: SharedGroupRepository,
-    private val applicationContext: Context,
     private val firestoreModelMapper: FirestoreModelMapper
 ) : CoroutineWorker(context, parameters) {
 
@@ -48,13 +50,13 @@ class SyncManager(
     override suspend fun doWork(): Result {
         val uid = auth.currentUser?.uid ?: return Result.failure()
         val groupsCollection = firestore
-            .collection(USERS_COLLECTION_NAME)
+            .collection(USERS_COLLECTION)
             .document(uid)
-            .collection(GROUPS_COLLECTION_NAME)
+            .collection(GROUPS_COLLECTION)
         val articlesCollection = firestore
-            .collection(USERS_COLLECTION_NAME)
+            .collection(USERS_COLLECTION)
             .document(uid)
-            .collection(ARTICLES_COLLECTION_NAME)
+            .collection(ARTICLES_COLLECTION)
         return try {
             val syncTimestamp = userPreferences.lastSyncTimestamp
             Log.d(ArticlesApplication.LOG_TAG, "Sync started, lastSyncTimestamp=$syncTimestamp")
@@ -85,7 +87,7 @@ class SyncManager(
             .get()
             .await()
         val remoteEntities = remoteSnapshot.documents.mapNotNull {
-            firestoreModelMapper.toArticleEntity(it, applicationContext)
+            firestoreModelMapper.toArticleEntity(it)
         }
         Log.d(ArticlesApplication.LOG_TAG, "Fetched ${remoteEntities.size} articles from remote")
         if (remoteEntities.isNotEmpty()) {
@@ -133,7 +135,7 @@ class SyncManager(
             } else {
                 Log.d(ArticlesApplication.LOG_TAG, "Uploading article id=$documentId name=${article.name}")
                 collection.document(documentId)
-                    .set(firestoreModelMapper.toArticlesFirestoreMap(article, applicationContext))
+                    .set(firestoreModelMapper.toArticlesFirestoreMap(article))
                     .await()
             }
         }
@@ -189,9 +191,6 @@ class SyncManager(
 
     companion object {
         const val NAME = "SyncManager"
-        const val USERS_COLLECTION_NAME = "users"
-        const val ARTICLES_COLLECTION_NAME = "articles"
-        const val GROUPS_COLLECTION_NAME = "groups"
         fun sync() = OneTimeWorkRequestBuilder<SyncManager>()
             .setConstraints(Constraints
                 .Builder()

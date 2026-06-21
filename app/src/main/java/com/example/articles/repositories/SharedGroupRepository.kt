@@ -1,13 +1,13 @@
 package com.example.articles.repositories
 
-import android.content.Context
 import com.example.articles.db.entities.ArticleEntity
 import com.example.articles.db.entities.GroupEntity
 import com.example.articles.models.FirestoreModelMapper
 import com.example.articles.models.UIGroup
+import com.example.articles.utils.ARTICLES_COLLECTION
+import com.example.articles.utils.SHARED_GROUPS_COLLECTION
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.tasks.await
 import java.util.UUID
 import javax.inject.Inject
@@ -15,16 +15,10 @@ import javax.inject.Singleton
 
 @Singleton
 class SharedGroupRepository @Inject constructor(
-    private val firestoreModelMapper: FirestoreModelMapper,
-    @ApplicationContext private val context: Context
+    private val firestoreModelMapper: FirestoreModelMapper
 ) {
 
     private val firestore = Firebase.firestore
-
-    companion object {
-        const val SHARED_GROUPS_COLLECTION = "sharedGroups"
-        const val ARTICLES_COLLECTION = "articles"
-    }
 
     suspend fun createSharedGroup(group: UIGroup, fromUid: String, toUid: String): String {
         val sharedGroupId = UUID.randomUUID().toString()
@@ -52,9 +46,9 @@ class SharedGroupRepository @Inject constructor(
             .collection(ARTICLES_COLLECTION)
 
         articlesSnapshot.documents.forEach { doc ->
-            val articleEntity = firestoreModelMapper.toArticleEntity(doc, context) ?: return@forEach
+            val articleEntity = firestoreModelMapper.toArticleEntity(doc) ?: return@forEach
             sharedArticlesCollection.document(articleEntity.idArticle.toString())
-                .set(firestoreModelMapper.toArticlesFirestoreMap(articleEntity, context))
+                .set(firestoreModelMapper.toArticlesFirestoreMap(articleEntity))
                 .await()
         }
 
@@ -85,7 +79,7 @@ class SharedGroupRepository @Inject constructor(
             .await()
 
         val articles = articlesSnapshot.documents.mapNotNull { doc ->
-            firestoreModelMapper.toArticleEntity(doc, context)?.copy(
+            firestoreModelMapper.toArticleEntity(doc)?.copy(
                 groupId = UUID.fromString(sharedGroupId)
             )
         }
@@ -107,7 +101,7 @@ class SharedGroupRepository @Inject constructor(
                 collection.document(documentId).delete().await()
             } else {
                 collection.document(documentId)
-                    .set(firestoreModelMapper.toArticlesFirestoreMap(article, context))
+                    .set(firestoreModelMapper.toArticlesFirestoreMap(article))
                     .await()
             }
         }

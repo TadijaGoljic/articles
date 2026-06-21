@@ -12,6 +12,7 @@ import com.example.articles.utils.FileManager.Companion.IMAGE_PREFIX
 import com.example.articles.utils.FileManager.Companion.IMAGE_SUFFIX
 import com.example.articles.utils.resizeImage
 import com.google.firebase.firestore.DocumentSnapshot
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.util.UUID
 import javax.inject.Inject
@@ -19,10 +20,11 @@ import javax.inject.Singleton
 
 @Singleton
 class FirestoreModelMapper @Inject constructor(
-    private val fileManager: FileManager
+    private val fileManager: FileManager,
+    @ApplicationContext private val context: Context
 ) {
 
-    fun toArticlesFirestoreMap(articleEntity: ArticleEntity, context: Context): Map<String, Any?> {
+    fun toArticlesFirestoreMap(articleEntity: ArticleEntity): Map<String, Any?> {
         val file = articleEntity.photoUri?.let { uri ->
             fileManager.getFileFromUri(context, uri.toUri())
         }
@@ -57,7 +59,7 @@ class FirestoreModelMapper @Inject constructor(
         )
     }
 
-    fun toArticleEntity(snapshot: DocumentSnapshot, context: Context): ArticleEntity? {
+    fun toArticleEntity(snapshot: DocumentSnapshot): ArticleEntity? {
         val data = snapshot.data ?: return null
         val file = File(context.cacheDir, "$IMAGE_PREFIX${System.currentTimeMillis()}$IMAGE_SUFFIX")
         val photo = data["photo"] as? String

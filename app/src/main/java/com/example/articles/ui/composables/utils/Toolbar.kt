@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -24,6 +26,7 @@ fun Toolbar(
     color: Color = MaterialTheme.colorScheme.onBackground,
     leadingIcon: ImageVector? = null,
     onLeadingIconClick: (() -> Unit)? = null,
+    leadingIconBadge: String? = null,
     trailingIcon: ImageVector? = null,
     onTrailingIconClick: (() -> Unit)? = null,
 ) {
@@ -32,23 +35,14 @@ fun Toolbar(
             .fillMaxWidth()
             .padding(20.dp)
     ) {
-        if (leadingIcon != null) {
-            IconButton(
-                onClick = {
-                    onLeadingIconClick?.invoke()
-                },
-                modifier = Modifier
-                    .size(24.dp)
-                    .align(Alignment.CenterStart),
-                colors = IconButtonDefaults.iconButtonColors(
-                    contentColor = color
-                )
-            ) {
-                Icon(
-                    imageVector = leadingIcon,
-                    contentDescription = null
-                )
-            }
+        leadingIcon?.let {
+            ToolbarIcon(
+                icon = it,
+                modifier = Modifier.align(Alignment.CenterStart),
+                color = color,
+                badge = leadingIconBadge.takeIf { value -> !value.equals("0", ignoreCase = true) },
+                onClick = onLeadingIconClick
+            )
         }
         Text(
             text = title,
@@ -56,23 +50,55 @@ fun Toolbar(
             fontSize = 25.sp,
             color = color
         )
-        if (trailingIcon != null) {
-            IconButton(
-                onClick = {
-                    onTrailingIconClick?.invoke()
-                },
-                modifier = Modifier
-                    .size(24.dp)
-                    .align(Alignment.CenterEnd),
-                colors = IconButtonDefaults.iconButtonColors(
-                    contentColor = color
-                ),
+        trailingIcon?.let {
+            ToolbarIcon(
+                icon = it,
+                modifier = Modifier.align(Alignment.CenterEnd),
+                color = color,
+                onClick = onTrailingIconClick
+            )
+        }
+    }
+}
+
+@Composable
+private fun ToolbarIcon(
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+    color: Color,
+    badge: String? = null,
+    onClick: (() -> Unit)? = null,
+) {
+    val content = @Composable {
+        IconButton(
+            onClick = { onClick?.invoke() },
+            modifier = Modifier.size(24.dp),
+            colors = IconButtonDefaults.iconButtonColors(
+                contentColor = color
+            )
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null
+            )
+        }
+    }
+
+    Box(
+        modifier = modifier
+    ) {
+        if (badge != null) {
+            BadgedBox(
+                badge = {
+                    Badge {
+                        Text(badge)
+                    }
+                }
             ) {
-                Icon(
-                    imageVector = trailingIcon,
-                    contentDescription = null
-                )
+                content()
             }
+        } else {
+            content()
         }
     }
 }

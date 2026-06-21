@@ -81,6 +81,7 @@
     <string name="your_groups">Вaше групе</string>
     <string name="enter_group_name">Унесите име групе</string>
     <string name="group_already_exists">Група већ постоји</string>
+    <string name="invalid_group_name">Назив групе мора имати између 1 и 16 карактера</string>
     <string name="no_groups_title">Нема група за приказивање</string>
     <string name="no_groups_message">За креирање нове групе притисните иконицу \"+\"</string>
 

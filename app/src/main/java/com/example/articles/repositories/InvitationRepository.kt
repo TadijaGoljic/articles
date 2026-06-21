@@ -4,6 +4,8 @@ import com.example.articles.models.FirestoreModelMapper
 import com.example.articles.models.Invitation
 import com.example.articles.models.InvitationStatus
 import com.example.articles.models.UIGroup
+import com.example.articles.utils.INVITATIONS_COLLECTION
+import com.example.articles.utils.USERS_COLLECTION
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.channels.awaitClose
@@ -21,11 +23,6 @@ class InvitationRepository @Inject constructor(
 ) {
 
     private val firestore = Firebase.firestore
-
-    companion object {
-        private const val INVITATIONS_COLLECTION = "invitations"
-        private const val USERS_COLLECTION = "users"
-    }
 
     suspend fun lookupUidByEmail(email: String): String? {
         val snapshot = firestore
@@ -88,7 +85,6 @@ class InvitationRepository @Inject constructor(
                 toUid = invitation.toUid
             )
 
-            // Mark invitation accepted with the sharedGroupId
             firestore.collection(INVITATIONS_COLLECTION)
                 .document(invitation.invitationId)
                 .update(mapOf(
@@ -97,7 +93,6 @@ class InvitationRepository @Inject constructor(
                 ))
                 .await()
 
-            // Update User A's group in Firestore so their next sync marks it shared
             firestore.collection(USERS_COLLECTION)
                 .document(invitation.fromUid)
                 .collection("groups")

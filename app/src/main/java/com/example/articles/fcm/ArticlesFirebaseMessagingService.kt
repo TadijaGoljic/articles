@@ -2,9 +2,9 @@ package com.example.articles.fcm
 
 import android.util.Log
 import com.example.articles.ArticlesApplication.Companion.LOG_TAG
-import com.example.articles.sync.SyncManager
 import android.provider.Settings
 import com.example.articles.utils.TriggerSync
+import com.example.articles.utils.USERS_COLLECTION
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.SetOptions
@@ -27,7 +27,7 @@ class ArticlesFirebaseMessagingService : FirebaseMessagingService() {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
         val deviceId = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
         Firebase.firestore
-            .collection(SyncManager.USERS_COLLECTION_NAME)
+            .collection(USERS_COLLECTION)
             .document(uid)
             .set(mapOf("fcmTokens" to mapOf(deviceId to token)), SetOptions.merge())
             .addOnFailureListener { e ->

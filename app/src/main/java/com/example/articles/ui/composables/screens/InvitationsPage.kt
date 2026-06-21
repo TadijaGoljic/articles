@@ -39,6 +39,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import androidx.compose.ui.platform.LocalLocale
+import com.example.articles.utils.ScreenSize
 
 @Composable
 fun InvitationsPage(
@@ -47,6 +48,7 @@ fun InvitationsPage(
     viewModel: InvitationsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val screenSize = ScreenSize.getScreenSize()
 
     Scaffold(
         modifier = modifier
@@ -61,7 +63,15 @@ fun InvitationsPage(
             )
             if (state.invitations.isEmpty() && !state.isLoading) {
                 Column(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .then(
+                            when (screenSize) {
+                                ScreenSize.NORMAL -> Modifier
+                                ScreenSize.LARGE -> Modifier.padding(horizontal = 40.dp)
+                                ScreenSize.VERY_LARGE -> Modifier.padding(horizontal = 160.dp)
+                            }
+                        ),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
@@ -72,7 +82,13 @@ fun InvitationsPage(
                     )
                 }
             } else {
-                LazyColumn {
+                LazyColumn(
+                    modifier = when (screenSize) {
+                        ScreenSize.NORMAL -> Modifier
+                        ScreenSize.LARGE -> Modifier.padding(horizontal = 40.dp)
+                        ScreenSize.VERY_LARGE -> Modifier.padding(horizontal = 160.dp)
+                    }
+                ) {
                     items(state.invitations) { invitation ->
                         InvitationCard(
                             invitation = invitation,
