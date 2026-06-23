@@ -3,8 +3,10 @@ package com.example.articles.utils
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import android.net.Uri
 import androidx.core.graphics.scale
+import androidx.exifinterface.media.ExifInterface
 import java.io.ByteArrayOutputStream
 import java.io.FileInputStream
 import androidx.core.net.toUri
@@ -24,18 +26,36 @@ fun copyUriToUri(sourceUri: Uri, destinationUri: Uri, context: Context): Uri? {
 }
 
 fun resizeImage(context: Context, uri: Uri): ByteArray {
-    val inputStream = if (uri.scheme == "file" || uri.scheme == null) {
-        uri.path?.let { FileInputStream(it) }
-    } else {
-        context.contentResolver.openInputStream(uri)
+    val openStream = {
+        if (uri.scheme == "file" || uri.scheme == null) uri.path?.let { FileInputStream(it) }
+        else context.contentResolver.openInputStream(uri)
     }
-    val originalBitmap = BitmapFactory.decodeStream(inputStream)
-    inputStream?.close()
-    val width = (originalBitmap.width * 0.9).toInt()
-    val height = (originalBitmap.height * 0.9).toInt()
-    val resizedBitmap = originalBitmap.scale(width, height)
+
+    val originalBitmap = openStream()?.use { BitmapFactory.decodeStream(it) }
+        ?: return ByteArray(0)
+
+    val rotation = openStream()?.use { stream ->
+        val exif = ExifInterface(stream)
+        when (exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)) {
+            ExifInterface.ORIENTATION_ROTATE_90 -> 90f
+            ExifInterface.ORIENTATION_ROTATE_180 -> 180f
+            ExifInterface.ORIENTATION_ROTATE_270 -> 270f
+            else -> 0f
+        }
+    } ?: 0f
+
+    val source = if (rotation != 0f) {
+        Bitmap.createBitmap(originalBitmap, 0, 0, originalBitmap.width, originalBitmap.height,
+            Matrix().apply { postRotate(rotation) }, true)
+    } else {
+        originalBitmap
+    }
+
+    val width = (source.width * 0.9).toInt()
+    val height = (source.height * 0.9).toInt()
+    val resized = source.scale(width, height)
     val outputStream = ByteArrayOutputStream()
-    resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
+    resized.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
     return outputStream.toByteArray()
 }
 

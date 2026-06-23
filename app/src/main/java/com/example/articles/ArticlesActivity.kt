@@ -58,9 +58,6 @@ class ArticlesActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
-        FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
-            Log.d(ArticlesApplication.LOG_TAG, "FCM token: $token")
-        }
         writeUserProfile()
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(state = Lifecycle.State.STARTED) {

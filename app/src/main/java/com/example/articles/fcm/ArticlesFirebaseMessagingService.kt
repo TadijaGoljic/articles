@@ -22,6 +22,7 @@ class ArticlesFirebaseMessagingService : FirebaseMessagingService() {
         triggerSync()
     }
 
+    @Suppress("OVERRIDE_DEPRECATION")
     override fun onNewToken(token: String) {
         Log.d(LOG_TAG, "FCM token refreshed: $token")
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
