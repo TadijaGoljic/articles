@@ -4,10 +4,10 @@
     <selectionStates>
       <SelectionState runConfigName="articles">
         <option name="selectionMode" value="DIALOG" />
-        <DropdownSelection timestamp="2026-05-17T12:28:26.737423Z">
+        <DropdownSelection timestamp="2026-06-23T19:08:36.870244Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="PhysicalDevice" identifier="serial=R58N7259BWV" />
+              <DeviceId pluginId="LocalEmulator" identifier="path=/Users/tadija/.android/avd/Medium_Phone.avd" />
             </handle>
           </Target>
         </DropdownSelection>
@@ -20,12 +20,7 @@
             </Target>
             <Target type="DEFAULT_BOOT">
               <handle>
-                <DeviceId pluginId="LocalEmulator" identifier="path=/Users/tadija/.android/avd/Medium_Tablet.avd" />
-              </handle>
-            </Target>
-            <Target type="DEFAULT_BOOT">
-              <handle>
-                <DeviceId pluginId="LocalEmulator" identifier="path=/Users/tadija/.android/avd/Pixel_10_Pro.avd" />
+                <DeviceId pluginId="PhysicalDevice" identifier="serial=R58N7259BWV" />
               </handle>
             </Target>
           </targets>

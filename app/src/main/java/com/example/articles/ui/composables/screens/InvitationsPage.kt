@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -24,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -37,7 +37,6 @@ import com.example.articles.viewmodels.InvitationsAction
 import com.example.articles.viewmodels.InvitationsViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
 import androidx.compose.ui.platform.LocalLocale
 import com.example.articles.utils.ScreenSize
 
@@ -62,25 +61,20 @@ fun InvitationsPage(
                 onLeadingIconClick = onBackClick
             )
             if (state.invitations.isEmpty() && !state.isLoading) {
-                Column(
+                NoInvitations(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .fillMaxWidth()
+                        .padding(15.dp)
                         .then(
                             when (screenSize) {
                                 ScreenSize.NORMAL -> Modifier
                                 ScreenSize.LARGE -> Modifier.padding(horizontal = 40.dp)
                                 ScreenSize.VERY_LARGE -> Modifier.padding(horizontal = 160.dp)
                             }
-                        ),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = stringResource(id = R.string.no_pending_invitations),
-                        color = Color.Gray,
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                }
+                        )
+                        .height(78.dp)
+                        .clip(shape = RoundedCornerShape(16.dp))
+                )
             } else {
                 LazyColumn(
                     modifier = when (screenSize) {
@@ -157,6 +151,27 @@ private fun InvitationCard(
                     Text(text = stringResource(id = R.string.accept))
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun NoInvitations(
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+    ) {
+        Column(
+            modifier = Modifier.padding(10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = stringResource(id = R.string.no_pending_invitations),
+                color = Color.Gray,
+                style = MaterialTheme.typography.titleMedium
+            )
         }
     }
 }

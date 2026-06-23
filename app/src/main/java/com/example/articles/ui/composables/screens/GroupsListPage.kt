@@ -79,23 +79,19 @@ fun GroupsListPage(
     val screenSize = ScreenSize.getScreenSize()
 
     if (state.showAddNewGroupDialog) {
-        val groupAlreadyExists = state.groupToCreateName.text.toString().uppercase() in groupNames
-        val invalidGroupName =
-            state.groupToCreateName.text.toString().length !in 1..16 ||
-            state.groupToCreateName.text.isBlank()
         OneTextFieldDialog(
             title = stringResource(id = R.string.create_group),
             onDismissRequest = {
                 groupsPageViewModel.handleAction(GroupsPageAction.HideAddNewGroupDialog)
             },
             textFieldState = state.groupToCreateName,
-            isError = state.groupToCreateName.text.isNotEmpty() && (groupAlreadyExists || invalidGroupName),
+            isError = state.isGroupCreationError,
             errorMessage =
-                if (groupAlreadyExists) stringResource(id = R.string.group_already_exists)
-                else stringResource(id = R.string.invalid_group_name),
+                if (state.groupCreationErrorResource != null) stringResource(id = state.groupCreationErrorResource!!)
+                else "",
             dismissButtonText = stringResource(id = R.string.cancel),
             confirmButtonText = stringResource(id = R.string.save),
-            confirmButtonEnabled = !groupAlreadyExists && !invalidGroupName,
+            confirmButtonEnabled = state.groupToCreateName.text.isNotEmpty(),
             onConfirmButtonClick = {
                 groupsPageViewModel.handleAction(GroupsPageAction.SaveGroup(state.groupToCreateName.text.toString()))
             },
@@ -105,23 +101,23 @@ fun GroupsListPage(
     }
 
     if (state.showShareGroupDialog) {
-        ShareGroupDialog(
-            emailState = state.shareGroupEmail,
-            isLoading = state.isShareGroupLoading,
-            errorMessage =
-                if (state.shareGroupError != null) stringResource(id = R.string.user_not_found)
-                else null,
-            onDismiss = {
+        OneTextFieldDialog(
+            title = stringResource(id = R.string.share_group),
+            onDismissRequest = {
                 groupsPageViewModel.handleAction(GroupsPageAction.HideShareGroupDialog)
             },
-            onConfirm = {
-                groupsPageViewModel.handleAction(
-                    GroupsPageAction.ShareGroup(
-                        group = state.groupToShare ?: UIGroup(),
-                        email = state.shareGroupEmail.text.toString()
-                    )
-                )
+            textFieldState = state.shareGroupEmail,
+            isError = state.isShareGroupError,
+            errorMessage =
+                if (state.groupSharingErrorResource != null) stringResource(id = state.groupSharingErrorResource!!)
+                else "",
+            dismissButtonText = stringResource(id = R.string.cancel),
+            confirmButtonText = stringResource(id = R.string.share_group),
+            confirmButtonEnabled = state.shareGroupEmail.text.isNotEmpty(),
+            onConfirmButtonClick = {
+                groupsPageViewModel.handleAction(GroupsPageAction.ShareGroup(state.shareGroupEmail.text.toString()))
             },
+            isConfirmButtonLoading = state.isCreateGroupDialogLoading,
             modifier = Modifier.padding(horizontal = 16.dp)
         )
     }
@@ -140,7 +136,7 @@ fun GroupsListPage(
             errorMessage = stringResource(id = R.string.group_already_exists),
             dismissButtonText = stringResource(id = R.string.cancel),
             confirmButtonText = stringResource(id = R.string.save),
-            confirmButtonEnabled = state.groupToEditName.text.isNotEmpty() && !isDuplicateInEdit,
+            confirmButtonEnabled = state.groupToEditName.text.isNotEmpty(),
             onConfirmButtonClick = {
                 groupsPageViewModel.handleAction(GroupsPageAction.EditGroup(state.longPressedGroup ?: UIGroup(), state.groupToEditName.text.toString()))
             },

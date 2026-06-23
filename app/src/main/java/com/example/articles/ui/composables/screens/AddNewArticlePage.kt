@@ -474,7 +474,8 @@ fun DataRow(
                 Text(
                     text = labelText,
                     overflow = TextOverflow.Visible,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 TextButton(
                     onClick = onButtonClick

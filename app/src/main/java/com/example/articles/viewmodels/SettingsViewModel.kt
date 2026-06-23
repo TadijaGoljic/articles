@@ -1,8 +1,10 @@
 package com.example.articles.viewmodels
 
 import android.content.Context
+import android.net.Uri
 import androidx.annotation.StringRes
 import androidx.compose.foundation.text.input.TextFieldState
+import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.articles.R
@@ -18,16 +20,21 @@ import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
+import org.json.JSONObject
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 import javax.inject.Inject
 
 @HiltViewModel
@@ -161,34 +168,65 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    private fun exportGroups() = viewModelScope.launch {
+    private fun exportGroups() = viewModelScope.launch(Dispatchers.IO) {
         val groups = groupRepository.getAllGroups().first().filter { !it.deleted }
-        val sb = StringBuilder()
         val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        sb.appendLine("Articles Export")
-        sb.appendLine("Exported: $date")
+
+        val groupsArray = JSONArray()
         groups.forEach { group ->
-            sb.appendLine()
-            sb.appendLine("== ${group.name} ==")
             val articles = articleRepository.getArticlesByGroupId(group.id).first()
                 .filter { !it.deleted }
+            val articlesArray = JSONArray()
             articles.forEach { article ->
-                val quantity = article.quantity
-                val unit = context.getString(article.unit.abbreviation)
-                val quantityStr =
-                    if (quantity != null) " (${formatQuantity(quantity)} $unit)" else ""
-                sb.appendLine("• ${article.name}$quantityStr")
-                if (!article.description.isNullOrBlank()) {
-                    sb.appendLine("  ${article.description}")
-                }
+                articlesArray.put(JSONObject().apply {
+                    put("id", article.id.toString())
+                    put("name", article.name)
+                    article.quantity?.let { put("quantity", it) }
+                    put("unit", context.getString(article.unit.abbreviation))
+                    article.description?.takeIf { it.isNotBlank() }?.let { put("description", it) }
+                    article.websiteLink?.takeIf { it.isNotBlank() }?.let { put("websiteLink", it) }
+                    article.pricePerUnit?.let { put("pricePerUnit", it) }
+                    put("bought", article.bought)
+                    if (article.photoUri != null) put("photoFile", "photos/${article.id}.jpg")
+                })
+            }
+            groupsArray.put(JSONObject().apply {
+                put("id", group.id.toString())
+                put("name", group.name)
+                put("articles", articlesArray)
+            })
+        }
+        val json = JSONObject().apply {
+            put("exportDate", date)
+            put("groups", groupsArray)
+        }
+
+        val zipFile = File(context.cacheDir, "articles_export_$date.zip")
+        ZipOutputStream(zipFile.outputStream().buffered()).use { zip ->
+            zip.putNextEntry(ZipEntry("data.json"))
+            zip.write(json.toString(2).toByteArray())
+            zip.closeEntry()
+
+            groups.forEach { group ->
+                articleRepository.getArticlesByGroupId(group.id).first()
+                    .filter { !it.deleted && it.photoUri != null }
+                    .forEach { article ->
+                        runCatching {
+                            val input = context.contentResolver
+                                .openInputStream(Uri.parse(article.photoUri)) ?: return@runCatching
+                            zip.putNextEntry(ZipEntry("photos/${article.id}.jpg"))
+                            input.use { it.copyTo(zip) }
+                            zip.closeEntry()
+                        }
+                    }
             }
         }
-        state.update { it.copy(exportContent = sb.toString()) }
-    }
 
-    private fun formatQuantity(quantity: Double): String =
-        if (quantity == quantity.toLong().toDouble()) quantity.toLong().toString()
-        else quantity.toString()
+        val uri = FileProvider.getUriForFile(
+            context, "${context.packageName}.provider", zipFile
+        )
+        state.update { it.copy(exportUri = uri) }
+    }
 
     private fun changePassword() {
         if (state.value.newPassword.text.isEmpty() || state.value.oldPassword.text.isEmpty()) {
@@ -232,7 +270,7 @@ class SettingsViewModel @Inject constructor(
 
     private fun cleanExport() {
         state.update { currentsState ->
-            currentsState.copy(exportContent = null)
+            currentsState.copy(exportUri = null)
         }
     }
 
@@ -259,7 +297,7 @@ data class SettingsState(
     val errorMessage: String? = null,
     val oldPassword: TextFieldState = TextFieldState(""),
     val newPassword: TextFieldState = TextFieldState(""),
-    val exportContent: String? = null,
+    val exportUri: Uri? = null,
     val deleteAccountLoading: Boolean = false,
     val signOutLoading: Boolean = false,
     val syncData: Boolean = true,

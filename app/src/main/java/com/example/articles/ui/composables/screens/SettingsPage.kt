@@ -76,11 +76,12 @@ fun SettingsScreen(
     val screenSize = ScreenSize.getScreenSize()
     val context = LocalContext.current
 
-    LaunchedEffect(state.exportContent) {
-        state.exportContent?.let { content ->
+    LaunchedEffect(state.exportUri) {
+        state.exportUri?.let { uri ->
             val intent = Intent(Intent.ACTION_SEND).apply {
-                type = "text/plain"
-                putExtra(Intent.EXTRA_TEXT, content)
+                type = "application/zip"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             context.startActivity(Intent.createChooser(intent, context.getString(R.string.export_data)))
             settingsViewModel.handleAction(SettingsAction.ClearExport)

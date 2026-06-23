@@ -1,8 +1,10 @@
 package com.example.articles.viewmodels
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.articles.R
 import com.example.articles.models.UIGroup
 import com.example.articles.repositories.ArticleRepository
 import com.example.articles.repositories.GroupRepository
@@ -104,7 +106,10 @@ class GroupsPageViewModel @Inject constructor(
                 updateShareGroupDialogVisibility(visible = false, group = null)
 
             is GroupsPageAction.ShareGroup ->
-                shareGroup(group = action.group, email = action.email)
+                shareGroup(
+                    group = state.value.longPressedGroup ?: UIGroup(),
+                    email = action.email
+                )
         }
     }
 
@@ -121,12 +126,15 @@ class GroupsPageViewModel @Inject constructor(
         state.update { currentState ->
             currentState.copy(
                 isCreateGroupDialogLoading = true,
+                isGroupCreationError = false,
             )
         }
         if (name.isEmpty() || name.uppercase() in state.value.groups.map { it.name.uppercase() }) {
             state.update { currentState ->
                 currentState.copy(
                     isCreateGroupDialogLoading = false,
+                    isGroupCreationError = true,
+                    groupCreationErrorResource = R.string.group_already_exists
                 )
             }
             return
@@ -140,6 +148,7 @@ class GroupsPageViewModel @Inject constructor(
                         isCreateGroupDialogLoading = false,
                         groupToCreateName = TextFieldState(),
                         showAddNewGroupDialog = false,
+                        isGroupCreationError = false,
                     )
                 }
             }
@@ -237,8 +246,6 @@ class GroupsPageViewModel @Inject constructor(
             currentState.copy(
                 showShareGroupDialog = visible,
                 shareGroupEmail = TextFieldState(),
-                shareGroupError = null,
-                groupToShare = group,
                 showEditDeleteBottonSheet = false
             )
         }
@@ -246,14 +253,21 @@ class GroupsPageViewModel @Inject constructor(
 
     private fun shareGroup(group: UIGroup, email: String) {
         val currentUser = Firebase.auth.currentUser ?: return
-        state.update { it.copy(isShareGroupLoading = true, shareGroupError = null) }
+        state.update { currentState ->
+            currentState.copy(
+                isShareGroupLoading = true,
+                shareGroupEmail = TextFieldState(),
+                isShareGroupError = false,
+            )
+        }
         viewModelScope.launch {
             val toUid = invitationRepository.lookupUidByEmail(email)
             if (toUid == null) {
-                state.update {
-                    it.copy(
+                state.update { currentState ->
+                    currentState.copy(
                         isShareGroupLoading = false,
-                        shareGroupError = "user_not_found"
+                        groupSharingErrorResource = R.string.user_not_found,
+                        isShareGroupError = true,
                     )
                 }
                 return@launch
@@ -265,7 +279,14 @@ class GroupsPageViewModel @Inject constructor(
                 toUid = toUid,
                 group = group
             )
-            state.update { it.copy(isShareGroupLoading = false, showShareGroupDialog = false) }
+            state.update { currentState ->
+                currentState.copy(
+                    isShareGroupLoading = false,
+                    showShareGroupDialog = false,
+                    shareGroupEmail = TextFieldState(),
+                    isShareGroupError = false,
+                )
+            }
         }
     }
 
@@ -273,20 +294,22 @@ class GroupsPageViewModel @Inject constructor(
 
 data class GroupsPageState(
     val groups: List<UIGroup> = emptyList(),
-    val showAddNewGroupDialog: Boolean = false,
-    val groupToCreateName: TextFieldState = TextFieldState(),
-    val isCreateGroupDialogLoading: Boolean = false,
-    val showEditGroupDialog: Boolean = false,
     val groupToEditName: TextFieldState = TextFieldState(),
-    val longPressedGroup: UIGroup? = null,
-    val isEditDialogLoading: Boolean = false,
-    val showEditDeleteBottonSheet: Boolean = false,
-    val showShareGroupDialog: Boolean = false,
     val shareGroupEmail: TextFieldState = TextFieldState(),
+    val groupToCreateName: TextFieldState = TextFieldState(),
+    val showEditGroupDialog: Boolean = false,
+    val showShareGroupDialog: Boolean = false,
+    val showAddNewGroupDialog: Boolean = false,
+    val showEditDeleteBottonSheet: Boolean = false,
+    val isShareGroupError: Boolean = false,
     val isShareGroupLoading: Boolean = false,
-    val shareGroupError: String? = null,
-    val groupToShare: UIGroup? = null,
+    val isEditDialogLoading: Boolean = false,
+    val isGroupCreationError: Boolean = false,
+    val isCreateGroupDialogLoading: Boolean = false,
+    val longPressedGroup: UIGroup? = null,
     val pendingInvitationsCount: Int = 0,
+    @StringRes val groupSharingErrorResource: Int? = null,
+    @StringRes val groupCreationErrorResource: Int? = null,
 )
 
 sealed interface GroupsPageAction {
@@ -303,5 +326,5 @@ sealed interface GroupsPageAction {
     data class CollapseGroup(val group: UIGroup) : GroupsPageAction
     data class ShowShareGroupDialog(val group: UIGroup) : GroupsPageAction
     data object HideShareGroupDialog : GroupsPageAction
-    data class ShareGroup(val group: UIGroup, val email: String) : GroupsPageAction
+    data class ShareGroup(val email: String) : GroupsPageAction
 }

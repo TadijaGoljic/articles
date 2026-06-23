@@ -46,6 +46,7 @@ fun OneTextFieldDialog(
     LaunchedEffect(Unit) {
         groupToCreateNameFocusRequester.requestFocus()
     }
+
     Dialog(
         onDismissRequest = onDismissRequest
     ) {
@@ -62,10 +63,12 @@ fun OneTextFieldDialog(
                 )
                 OutlinedTextField(
                     state = textFieldState,
-                    label = { Text(text = stringResource(id = R.string.enter_group_name)) },
-                    supportingText = if (isError) {
-                        { Text(text = errorMessage) }
-                    } else null,
+                    label = {
+                        Text(text = stringResource(id = R.string.enter_group_name))
+                    },
+                    supportingText = {
+                        if (isError) Text(text = errorMessage)
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
