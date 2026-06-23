@@ -135,7 +135,7 @@ class GroupDetailsViewModel @Inject constructor(
     private fun hideFilterDropdownMenu() {
         state.update { currentState ->
             currentState.copy(
-                filterDropdownMenuVisible = true
+                filterDropdownMenuVisible = false
             )
         }
     }

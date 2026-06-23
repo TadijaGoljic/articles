@@ -97,14 +97,9 @@ class SharedGroupRepository @Inject constructor(
             .collection(ARTICLES_COLLECTION)
 
         articles.forEach { article ->
-            val documentId = article.idArticle.toString()
-            if (article.deleted) {
-                collection.document(documentId).delete().await()
-            } else {
-                collection.document(documentId)
-                    .set(firestoreModelMapper.toArticlesFirestoreMap(article))
-                    .await()
-            }
+            collection.document(article.idArticle.toString())
+                .set(firestoreModelMapper.toArticlesFirestoreMap(article))
+                .await()
         }
     }
 

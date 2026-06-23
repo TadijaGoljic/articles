@@ -130,16 +130,10 @@ class SyncManager(
     ) {
         articles.forEach { article ->
             val documentId = article.idArticle.toString()
-            if (article.deleted) {
-                Log.d(ArticlesApplication.LOG_TAG, "Deleting remote article id=$documentId")
-                collection.document(documentId).delete().await()
-                articleRepository.deleteArticleLocalById(article.idArticle)
-            } else {
-                Log.d(ArticlesApplication.LOG_TAG, "Uploading article id=$documentId name=${article.name}")
-                collection.document(documentId)
-                    .set(firestoreModelMapper.toArticlesFirestoreMap(article))
-                    .await()
-            }
+            Log.d(ArticlesApplication.LOG_TAG, "Uploading article id=$documentId name=${article.name} deleted=${article.deleted}")
+            collection.document(documentId)
+                .set(firestoreModelMapper.toArticlesFirestoreMap(article))
+                .await()
         }
     }
 
@@ -149,16 +143,10 @@ class SyncManager(
     ) {
         groups.filter { !it.isShared }.forEach { group ->
             val documentId = group.idGroup.toString()
-            if (group.deleted) {
-                Log.d(ArticlesApplication.LOG_TAG, "Deleting remote group id=$documentId")
-                collection.document(documentId).delete().await()
-                groupRepository.deleteGroupLocalById(group.idGroup)
-            } else {
-                Log.d(ArticlesApplication.LOG_TAG, "Uploading group id=$documentId name=${group.name}")
-                collection.document(documentId)
-                    .set(firestoreModelMapper.toGroupsFirestoreMap(group))
-                    .await()
-            }
+            Log.d(ArticlesApplication.LOG_TAG, "Uploading group id=$documentId name=${group.name} deleted=${group.deleted}")
+            collection.document(documentId)
+                .set(firestoreModelMapper.toGroupsFirestoreMap(group))
+                .await()
         }
     }
 

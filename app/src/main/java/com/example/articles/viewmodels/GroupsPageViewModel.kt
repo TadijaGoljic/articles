@@ -213,12 +213,10 @@ class GroupsPageViewModel @Inject constructor(
             if (group.isShared && group.sharedGroupId != null) {
                 val uid = Firebase.auth.currentUser?.uid ?: return@launch
                 sharedGroupRepository.leaveSharedGroup(group.sharedGroupId, uid)
-                articleRepository.deleteLocalArticlesByGroupId(group.id)
-                articleRepository.deletePersonalFirestoreArticlesByGroupId(group.id)
-                groupRepository.deleteGroupById(group.id)
+                articleRepository.hardDeleteLocalArticlesByGroupId(group.id)
+                groupRepository.deleteGroupLocalById(group.id)
             } else {
-                articleRepository.deleteLocalArticlesByGroupId(group.id)
-                articleRepository.deletePersonalFirestoreArticlesByGroupId(group.id)
+                articleRepository.softDeleteArticlesByGroupId(group.id)
                 groupRepository.deleteGroupById(group.id)
             }
         }

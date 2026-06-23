@@ -33,16 +33,18 @@ class ArticleRepository @Inject constructor(
         val uid = Firebase.auth.currentUser?.uid ?: return null
         val group = groupDao.getGroupByIdSuspend(groupId)
         return if (group?.isShared == true && group.sharedGroupId != null) {
-            firestore.collection(SHARED_GROUPS_COLLECTION)
+            firestore
+                .collection(SHARED_GROUPS_COLLECTION)
                 .document(group.sharedGroupId)
                 .collection(ARTICLES_COLLECTION)
         } else {
-            firestore.collection(USERS_COLLECTION).document(uid)
+            firestore.collection(USERS_COLLECTION)
+                .document(uid)
                 .collection(ARTICLES_COLLECTION)
         }
     }
 
-    fun getAllArticlesNoMapping() = articleDao.getAllArticles()
+    fun getAllArticlesNoMapping() = articleDao.getAllArticlesRaw()
 
     suspend fun upsertArticle(article: UIArticle) {
         val articleEntity = article.toArticleEntity()
@@ -54,35 +56,46 @@ class ArticleRepository @Inject constructor(
     }
 
     suspend fun deleteArticleById(idArticle: UUID) {
-        val article = articleDao.getArticleByIdSuspend(idArticle)
-        articleDao.deleteArticleById(idArticle)
-        if (article != null) {
-            articlesCollection(article.groupId)
-                ?.document(idArticle.toString())
-                ?.delete()
-                ?.await()
-        }
+        val article = articleDao.getArticleByIdSuspend(idArticle) ?: return
+        val deleted = article.copy(deleted = true, updatedAt = System.currentTimeMillis())
+        articleDao.upsertArticle(deleted)
+        articlesCollection(article.groupId)
+            ?.document(idArticle.toString())
+            ?.set(firestoreModelMapper.toArticlesFirestoreMap(deleted))
+            ?.await()
     }
 
     suspend fun upsertAllArticlesLocal(articles: List<ArticleEntity>) =
         articleDao.upsertAllArticles(articles)
 
-    suspend fun deleteArticleLocalById(idArticle: UUID) = articleDao.deleteArticleById(idArticle)
-
-    suspend fun deleteLocalArticlesByGroupId(groupId: UUID) =
+    suspend fun hardDeleteLocalArticlesByGroupId(groupId: UUID) =
         articleDao.deleteArticlesByGroupId(groupId)
 
-    suspend fun deletePersonalFirestoreArticlesByGroupId(groupId: UUID) {
+    suspend fun softDeleteArticlesByGroupId(groupId: UUID) {
         val uid = Firebase.auth.currentUser?.uid ?: return
-        val snapshot = firestore
-            .collection(USERS_COLLECTION).document(uid)
-            .collection(ARTICLES_COLLECTION)
-            .whereEqualTo("groupId", groupId.toString())
-            .get().await()
-        if (snapshot.documents.isEmpty()) return
-        val batch = firestore.batch()
-        snapshot.documents.forEach { batch.delete(it.reference) }
-        batch.commit().await()
+        val now = System.currentTimeMillis()
+        val articles = articleDao.getArticlesByGroupIdSuspend(groupId)
+        val deleted = articles.map {
+            it.copy(
+                deleted = true,
+                updatedAt = now
+            )
+        }
+        articleDao.upsertAllArticles(deleted)
+        if (deleted.isNotEmpty()) {
+            val collection = firestore
+                .collection(USERS_COLLECTION)
+                .document(uid)
+                .collection(ARTICLES_COLLECTION)
+            val batch = firestore.batch()
+            deleted.forEach { article ->
+                batch.set(
+                    collection.document(article.idArticle.toString()),
+                    firestoreModelMapper.toArticlesFirestoreMap(article)
+                )
+            }
+            batch.commit().await()
+        }
     }
 
     fun getArticlesByGroupId(groupId: UUID) = articleDao.getArticlesByGroupId(groupId).map { list ->

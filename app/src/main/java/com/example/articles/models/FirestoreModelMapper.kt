@@ -61,11 +61,12 @@ class FirestoreModelMapper @Inject constructor(
 
     fun toArticleEntity(snapshot: DocumentSnapshot): ArticleEntity? {
         val data = snapshot.data ?: return null
-        val file = File(context.cacheDir, "$IMAGE_PREFIX${System.currentTimeMillis()}$IMAGE_SUFFIX")
+        val articleId = data["idArticle"] as? String ?: return null
+        val file = File(context.cacheDir, "$IMAGE_PREFIX$articleId$IMAGE_SUFFIX")
         val photo = data["photo"] as? String
         if (photo != null) file.writeBytes(Base64.decode(photo, Base64.DEFAULT))
         return ArticleEntity(
-            idArticle = UUID.fromString(data["idArticle"] as? String ?: return null),
+            idArticle = UUID.fromString(articleId),
             name = data["name"] as String,
             dateCreated = (data["dateCreated"] as? Long) ?: 0L,
             location = (data["location"] as? String)?.let { locationString ->

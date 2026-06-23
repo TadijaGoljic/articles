@@ -46,9 +46,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.fastAll
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.articles.R
+import com.example.articles.models.UIArticle
 import com.example.articles.models.UIGroup
 import com.example.articles.ui.composables.utils.BottomSheetRowItem
 import com.example.articles.ui.composables.utils.OneTextFieldDialog
@@ -300,7 +302,11 @@ fun GroupItem(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(color = MaterialTheme.colorScheme.surface)
+                    .background(
+                        color =
+                            if (group.articles.allBought()) Color.Green.copy(alpha = 0.2f)
+                            else MaterialTheme.colorScheme.surface
+                    )
                     .padding(horizontal = 12.dp, vertical = 8.dp)
             ) {
                 Text(
@@ -335,16 +341,20 @@ fun GroupItem(
                         .background(color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
                 ) {
                     group.articles.forEach { article ->
-                        Text(
-                            text = article.name,
-                            textAlign = TextAlign.Center,
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .height(32.dp)
                                 .then(
                                     if (article.bought) Modifier.background(color = Color.Green.copy(alpha = 0.2f))
                                     else Modifier
                                 )
-                        )
+                        ) {
+                            Text(
+                                text = article.name,
+                                modifier = Modifier.align(Alignment.Center),
+                            )
+                        }
                     }
                 }
             }
@@ -378,3 +388,5 @@ fun NoGroups(
         }
     }
 }
+
+private fun List<UIArticle>.allBought() = isNotEmpty() and all { it.bought }

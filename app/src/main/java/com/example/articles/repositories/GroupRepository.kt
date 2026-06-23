@@ -40,17 +40,17 @@ class GroupRepository @Inject constructor(
     }
 
     suspend fun deleteGroupById(groupId: UUID) {
-        val uid = Firebase.auth.currentUser?.uid
-        groupDao.deleteGroupById(groupId)
-        uid?.let {
-            groupsCollection(uid)
-                .document(groupId.toString())
-                .delete()
-                .await()
-        }
+        val uid = Firebase.auth.currentUser?.uid ?: return
+        val group = groupDao.getGroupByIdSuspend(groupId) ?: return
+        val deleted = group.copy(deleted = true, updatedAt = System.currentTimeMillis())
+        groupDao.upsertGroup(deleted)
+        groupsCollection(uid)
+            .document(groupId.toString())
+            .set(firestoreModelMapper.toGroupsFirestoreMap(deleted))
+            .await()
     }
 
-    fun getAllGroupsNoMapping() = groupDao.getAllGroups()
+    fun getAllGroupsNoMapping() = groupDao.getAllGroupsRaw()
 
     fun getAllGroups() = groupDao.getAllGroups().map { list ->
         list.map { group -> group.toUIGroup() }

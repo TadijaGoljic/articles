@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -189,18 +190,18 @@ fun GroupDetailsPage(
                             ),
                             shape = RoundedCornerShape(10.dp),
                         ) {
-                            Box(
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
-                                    .width(100.dp)
+                                    .width(50.dp)
                             ) {
+                                Text(
+                                    text = stringResource(id = R.string.filter),
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
                                 Icon(
                                     imageVector = Icons.Default.FilterList,
                                     contentDescription = stringResource(id = R.string.filter),
-                                    modifier = Modifier.align(Alignment.CenterStart)
-                                )
-                                Text(
-                                    text = stringResource(id = R.string.filter),
-                                    modifier = Modifier.align(Alignment.Center)
                                 )
                             }
                         }
