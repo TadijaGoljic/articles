@@ -66,7 +66,6 @@ fun SettingsScreen(
     onSignOut: () -> Unit,
     onAccountDelete: () -> Unit,
     onBackClick: () -> Unit,
-    onInvitationsClick: () -> Unit,
     modifier: Modifier = Modifier,
     settingsViewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -220,8 +219,6 @@ fun SettingsScreen(
                 onSyncDataClick = { status ->
                     settingsViewModel.handleAction(SettingsAction.UpdateSyncDataStatus(status))
                 },
-                onInvitationsClick = onInvitationsClick,
-                badgeValue = state.badgeValue,
                 isSyncDataChecked = state.syncData
             )
         }
@@ -234,10 +231,8 @@ fun SettingsItems(
     showSignOutConfirmationDialog: () -> Unit,
     showDeleteAccountConfirmationDialog: () -> Unit,
     showChangePasswordDialog: () -> Unit,
-    onInvitationsClick: () -> Unit,
     onSyncDataClick: (Boolean) -> Unit,
     onExportGroups: () -> Unit,
-    badgeValue: String?,
     isSyncDataChecked: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -290,13 +285,6 @@ fun SettingsItems(
                 .padding(bottom = 2.dp)
         )
         Spacer(modifier = Modifier.height(4.dp))
-        SettingsItemWithBadge(
-            label = stringResource(id = R.string.invitations),
-            onItemClick = onInvitationsClick,
-            badgeValue = badgeValue,
-            position = Position.TOP,
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
         SettingsItem(
             label = stringResource(id = R.string.export_data),
             onItemClick = onExportGroups,

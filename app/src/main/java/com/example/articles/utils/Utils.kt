@@ -67,3 +67,7 @@ fun String.isValidUri(): Boolean {
         false
     }
 }
+
+fun Double.isInteger() = this % 1 == 0.0
+
+fun Double.tryToInt() = if (isInteger()) toInt() else this

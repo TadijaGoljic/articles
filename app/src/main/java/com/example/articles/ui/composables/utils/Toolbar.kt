@@ -26,7 +26,7 @@ fun Toolbar(
     color: Color = MaterialTheme.colorScheme.onBackground,
     leadingIcon: ImageVector? = null,
     onLeadingIconClick: (() -> Unit)? = null,
-    leadingIconBadge: String? = null,
+    trailingIconBadge: String? = null,
     trailingIcon: ImageVector? = null,
     onTrailingIconClick: (() -> Unit)? = null,
 ) {
@@ -40,7 +40,6 @@ fun Toolbar(
                 icon = it,
                 modifier = Modifier.align(Alignment.CenterStart),
                 color = color,
-                badge = leadingIconBadge.takeIf { value -> !value.equals("0", ignoreCase = true) },
                 onClick = onLeadingIconClick
             )
         }
@@ -55,6 +54,7 @@ fun Toolbar(
                 icon = it,
                 modifier = Modifier.align(Alignment.CenterEnd),
                 color = color,
+                badge = trailingIconBadge.takeIf { value -> !value.equals("0", ignoreCase = true) },
                 onClick = onTrailingIconClick
             )
         }

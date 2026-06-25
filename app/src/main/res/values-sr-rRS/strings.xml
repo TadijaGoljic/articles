@@ -60,7 +60,8 @@
     <string name="no_articles_title">Нема артикала за приказивање</string>
     <string name="no_articles_message">Још увек немати артикле у овој групи. За додавање новог артикла притисните дугме на дну екрана.</string>
     <string name="article_description">Опис</string>
-    <string name="price_per_unit">Цена по јединици мере</string>
+    <string name="price">Цена</string>
+    <string name="total">Укупно</string>
     <string name="website_link">Вебсајт линк</string>
     <string name="invalid_website_link">Линк није важећег формара</string>
     <string name="mark_as_bought">Означи као купљено</string>

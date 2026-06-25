@@ -3,7 +3,6 @@ package com.example.articles.models
 import android.os.Parcelable
 import androidx.annotation.StringRes
 import com.example.articles.R
-import com.example.articles.models.Location
 import kotlinx.parcelize.Parcelize
 import java.util.Date
 import java.util.UUID
@@ -23,7 +22,7 @@ data class UIArticle(
     val groupId: UUID = randomUUID(),
     val updatedAt: Long = System.currentTimeMillis(),
     val websiteLink: String? = null,
-    val pricePerUnit: Double? = null,
+    val price: Double? = null,
     val bought: Boolean = false,
     val expanded: Boolean = true,
 ) : Parcelable

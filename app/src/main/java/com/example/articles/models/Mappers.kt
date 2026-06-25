@@ -17,7 +17,7 @@ fun ArticleEntity.toUIArticle() = UIArticle(
     description = description,
     updatedAt = updatedAt,
     websiteLink = websiteLink,
-    pricePerUnit = pricePerUnit,
+    price = price,
     bought = bought
 )
 
@@ -34,7 +34,7 @@ fun UIArticle.toArticleEntity() = ArticleEntity(
     groupId = groupId,
     description = description,
     websiteLink = websiteLink,
-    pricePerUnit = pricePerUnit,
+    price = price,
     bought = bought
 )
 

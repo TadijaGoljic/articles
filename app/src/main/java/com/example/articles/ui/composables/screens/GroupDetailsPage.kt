@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -359,11 +358,12 @@ fun ArticleItem(
             Box {
                 Text(
                     text = article.name,
-                    textAlign = TextAlign.Center,
+                    textAlign = TextAlign.Start,
                     fontSize = 20.sp,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier
                         .fillMaxWidth()
+                        .padding(start = 12.dp)
                         .align(Alignment.Center)
                 )
                 IconButton(
@@ -394,7 +394,7 @@ fun ArticleItem(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .weight(3f)
+                                .weight(2f)
                         ) {
                             if (!article.description.isNullOrBlank()) {
                                 Row(
@@ -430,8 +430,8 @@ fun ArticleItem(
                                     ) {
                                         Text(text = stringResource(id = R.string.quantity) + " :")
                                         Text(text = stringResource(id = R.string.unit) + " :")
-                                        if (article.pricePerUnit != null) {
-                                            Text(text = stringResource(id = R.string.price_per_unit) + " :")
+                                        if (article.price != null) {
+                                            Text(text = stringResource(id = R.string.price) + " :")
                                         }
                                     }
                                     Column(
@@ -442,9 +442,8 @@ fun ArticleItem(
                                             text = article.unit.toString().first().uppercase()
                                                     + article.unit.toString().drop(1).lowercase()
                                         )
-                                        if (article.pricePerUnit != null) {
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                            Text(text = article.pricePerUnit.toString())
+                                        if (article.price != null) {
+                                            Text(text = article.price.toString())
                                         }
                                     }
                                 }

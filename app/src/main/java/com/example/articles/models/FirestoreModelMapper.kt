@@ -2,9 +2,7 @@ package com.example.articles.models
 
 import android.content.Context
 import android.util.Base64
-import android.util.Log
 import androidx.core.net.toUri
-import com.example.articles.ArticlesApplication
 import com.example.articles.db.entities.ArticleEntity
 import com.example.articles.db.entities.GroupEntity
 import com.example.articles.utils.FileManager
@@ -54,7 +52,7 @@ class FirestoreModelMapper @Inject constructor(
             "groupId" to articleEntity.groupId.toString(),
             "description" to articleEntity.description,
             "websiteLink" to articleEntity.websiteLink,
-            "pricePerUnit" to articleEntity.pricePerUnit,
+            "price" to articleEntity.price,
             "bought" to articleEntity.bought
         )
     }
@@ -83,7 +81,7 @@ class FirestoreModelMapper @Inject constructor(
             groupId = UUID.fromString(data["groupId"] as? String) ?: UUID.randomUUID(),
             description = data["description"] as? String,
             websiteLink = data["websiteLink"] as? String,
-            pricePerUnit = data["pricePerUnit"] as? Double,
+            price = data["price"] as? Double,
             bought = data["bought"] as? Boolean ?: false
         )
     }

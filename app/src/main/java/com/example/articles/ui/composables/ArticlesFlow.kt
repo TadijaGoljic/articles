@@ -1,14 +1,17 @@
 package com.example.articles.ui.composables
 
+import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navDeepLink
 import com.example.articles.models.Location
 import com.example.articles.ui.composables.screens.AddNewArticle
 import com.example.articles.ui.composables.screens.InvitationsPage
@@ -18,6 +21,7 @@ import com.example.articles.ui.composables.screens.GroupDetailsPage
 import com.example.articles.ui.composables.screens.GroupsListPage
 import com.example.articles.viewmodels.AddNewArticleAction
 import com.example.articles.viewmodels.AddNewArticleViewModel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
 
 @Composable
@@ -26,10 +30,17 @@ fun ArticlesNavigationFlow(
     onAccountDelete: () -> Unit,
     onOpenNavigation: (Location) -> Unit,
     onOpenLink: (String) -> Unit,
+    newIntentFlow: Flow<Intent>,
     modifier: Modifier = Modifier
 ) {
 
     val navController = rememberNavController()
+
+    LaunchedEffect(Unit) {
+        newIntentFlow.collect { intent ->
+            navController.handleDeepLink(intent)
+        }
+    }
 
     NavHost(
         navController = navController,
@@ -43,10 +54,15 @@ fun ArticlesNavigationFlow(
                 },
                 onGroupClick = { group ->
                     navController.navigate(ArticlesDestinations.GroupDetailsDestination(groupId = group.id.toString()))
+                },
+                onInvitationsClick = {
+                    navController.navigate(ArticlesDestinations.InvitationsDestination)
                 }
             )
         }
-        composable<ArticlesDestinations.InvitationsDestination> {
+        composable<ArticlesDestinations.InvitationsDestination>(
+            deepLinks = listOf(navDeepLink { uriPattern = INVITATIONS_DEEP_LINK })
+        ) {
             InvitationsPage(onBackClick = navController::popBackStack)
         }
         composable<ArticlesDestinations.GroupDetailsDestination> {
@@ -106,10 +122,7 @@ fun ArticlesNavigationFlow(
             SettingsScreen(
                 onSignOut = onSignOut,
                 onBackClick = navController::popBackStack,
-                onAccountDelete = onAccountDelete,
-                onInvitationsClick = {
-                    navController.navigate(ArticlesDestinations.InvitationsDestination)
-                }
+                onAccountDelete = onAccountDelete
             )
         }
     }
@@ -117,6 +130,7 @@ fun ArticlesNavigationFlow(
 }
 
 private const val KEY_LOCATION = "KEY_LOCATION"
+const val INVITATIONS_DEEP_LINK = "articles://invitations"
 
 sealed interface ArticlesDestinations {
     @Serializable data object GroupsListDestination : ArticlesDestinations

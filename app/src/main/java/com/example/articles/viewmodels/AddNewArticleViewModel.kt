@@ -1,6 +1,5 @@
 package com.example.articles.viewmodels
 
-import android.content.Context
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -8,7 +7,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import android.net.Uri
 import android.util.Log
-import androidx.compose.ui.text.TextRange
 import com.example.articles.ArticlesApplication.Companion.LOG_TAG
 import com.example.articles.models.ArticleUnit
 import com.example.articles.models.Location
@@ -20,7 +18,6 @@ import com.example.articles.ui.composables.ArticlesDestinations
 import com.example.articles.utils.TriggerSync
 import com.example.articles.utils.isValidUri
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
@@ -56,8 +53,8 @@ class AddNewArticleViewModel @Inject constructor(
                     state.value.articleQuantity.edit {
                         replace(0, length, article.quantity?.toString() ?: "")
                     }
-                    state.value.articlePricePerUnit.edit {
-                        replace(0, length, article.pricePerUnit?.toString() ?: "")
+                    state.value.price.edit {
+                        replace(0, length, article.price?.toString() ?: "")
                     }
                     state.value.articleWebsiteLink.edit {
                         replace(0, length, article.websiteLink ?: "")
@@ -98,7 +95,7 @@ class AddNewArticleViewModel @Inject constructor(
         val articleName = state.value.articleName.text.toString()
         val articleDescription = state.value.articleDescription.text.toString()
         val articleQuantity = state.value.articleQuantity.text.toString().toDoubleOrNull()
-        val articlePricePerUnit = state.value.articlePricePerUnit.text.toString().toDoubleOrNull()
+        val articlePrice = state.value.price.text.toString().toDoubleOrNull()
         val articleWebsiteLink = state.value.articleWebsiteLink.text.toString()
         if (articleName.isBlank()) {
             state.update { currentState ->
@@ -123,7 +120,7 @@ class AddNewArticleViewModel @Inject constructor(
             name = articleName,
             description = articleDescription,
             quantity = articleQuantity,
-            pricePerUnit = articlePricePerUnit,
+            price = articlePrice,
             websiteLink = articleWebsiteLink,
         )
         viewModelScope.launch {
@@ -212,7 +209,7 @@ data class AddNewArticleState(
     val articleName: TextFieldState = TextFieldState(),
     val articleDescription: TextFieldState = TextFieldState(),
     val articleQuantity: TextFieldState = TextFieldState(),
-    val articlePricePerUnit: TextFieldState = TextFieldState(),
+    val price: TextFieldState = TextFieldState(),
     val articleWebsiteLink: TextFieldState = TextFieldState(),
     val unitsDropdownMenuVisible: Boolean = false,
     val isLoading: Boolean = false,

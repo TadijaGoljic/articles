@@ -363,12 +363,12 @@ fun AddNewArticleItem(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
-                    state = state.articlePricePerUnit,
+                    state = state.price,
                     placeholder = {
-                        Text(text = stringResource(id = R.string.price_per_unit))
+                        Text(text = stringResource(id = R.string.price))
                     },
                     label = {
-                        Text(text = stringResource(id = R.string.price_per_unit))
+                        Text(text = stringResource(id = R.string.price))
                     },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.weight(1f)

@@ -185,7 +185,7 @@ class SettingsViewModel @Inject constructor(
                     put("unit", context.getString(article.unit.abbreviation))
                     article.description?.takeIf { it.isNotBlank() }?.let { put("description", it) }
                     article.websiteLink?.takeIf { it.isNotBlank() }?.let { put("websiteLink", it) }
-                    article.pricePerUnit?.let { put("pricePerUnit", it) }
+                    article.price?.let { put("price", it) }
                     put("bought", article.bought)
                     if (article.photoUri != null) put("photoFile", "photos/${article.id}.jpg")
                 })

@@ -59,7 +59,8 @@
     <string name="no_articles_title">No Articles to Show</string>
     <string name="no_articles_message">You have no articles in this group. To Add them, click on button below.</string>
     <string name="article_description">Description</string>
-    <string name="price_per_unit">Price per unit</string>
+    <string name="price">Price</string>
+    <string name="total">Total</string>
     <string name="website_link">Website link</string>
     <string name="invalid_website_link">Invalid link format</string>
     <string name="mark_as_bought">Mark as bought</string>

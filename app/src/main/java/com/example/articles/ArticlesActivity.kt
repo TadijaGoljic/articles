@@ -2,7 +2,9 @@ package com.example.articles
 
 import android.Manifest
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -12,6 +14,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.core.app.NotificationCompat
+import androidx.core.app.TaskStackBuilder
+import androidx.core.content.edit
 import androidx.core.content.getSystemService
 import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
@@ -21,25 +25,31 @@ import com.example.articles.models.Invitation
 import com.example.articles.models.Location
 import com.example.articles.repositories.InvitationRepository
 import com.example.articles.ui.composables.ArticlesNavigationFlow
+import com.example.articles.ui.composables.INVITATIONS_DEEP_LINK
 import com.example.articles.ui.theme.ArticlesTheme
-import android.util.Log
 import com.example.articles.utils.TriggerSync
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.firestore
-import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import androidx.core.content.edit
 
 @AndroidEntryPoint
 class ArticlesActivity : ComponentActivity() {
 
     @Inject lateinit var triggerSync: TriggerSync
     @Inject lateinit var invitationRepository: InvitationRepository
+
+    private val newIntentFlow = MutableSharedFlow<Intent>(extraBufferCapacity = 1)
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        newIntentFlow.tryEmit(intent)
+    }
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -102,11 +112,17 @@ class ArticlesActivity : ComponentActivity() {
             invitation.fromEmail,
             invitation.groupName
         )
+        val deepLinkIntent = Intent(Intent.ACTION_VIEW, Uri.parse(INVITATIONS_DEEP_LINK), this, ArticlesActivity::class.java)
+        val pendingIntent = TaskStackBuilder.create(this).run {
+            addNextIntentWithParentStack(deepLinkIntent)
+            getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        }
         val notification = NotificationCompat.Builder(this, ArticlesApplication.INVITATION_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_email)
             .setContentTitle(getString(R.string.invitations))
             .setContentText(contentText)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .build()
 
@@ -155,6 +171,7 @@ class ArticlesActivity : ComponentActivity() {
             onAccountDelete = ::onAccountDelete,
             onOpenNavigation = ::openNavigation,
             onOpenLink = ::openLink,
+            newIntentFlow = newIntentFlow,
             modifier = modifier
         )
     }

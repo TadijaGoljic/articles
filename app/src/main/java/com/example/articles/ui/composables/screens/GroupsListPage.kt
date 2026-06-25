@@ -1,5 +1,10 @@
 package com.example.articles.ui.composables.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,6 +24,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -42,11 +48,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.util.fastAll
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.articles.R
@@ -56,6 +61,7 @@ import com.example.articles.ui.composables.utils.BottomSheetRowItem
 import com.example.articles.ui.composables.utils.OneTextFieldDialog
 import com.example.articles.ui.composables.utils.Toolbar
 import com.example.articles.utils.ScreenSize
+import com.example.articles.utils.tryToInt
 import com.example.articles.viewmodels.GroupsPageAction
 import com.example.articles.viewmodels.GroupsPageViewModel
 import kotlinx.coroutines.launch
@@ -65,6 +71,7 @@ import kotlinx.coroutines.launch
 fun GroupsListPage(
     onGroupClick: (UIGroup) -> Unit,
     onSettingsClick: () -> Unit,
+    onInvitationsClick: () -> Unit,
     modifier: Modifier = Modifier,
     groupsPageViewModel: GroupsPageViewModel = hiltViewModel()
 ) {
@@ -172,7 +179,9 @@ fun GroupsListPage(
                 title = stringResource(id = R.string.your_groups),
                 leadingIcon = Icons.Default.Settings,
                 onLeadingIconClick = onSettingsClick,
-                leadingIconBadge = state.pendingInvitationsCount.toString(),
+                trailingIcon = Icons.Default.Mail,
+                onTrailingIconClick = onInvitationsClick,
+                trailingIconBadge = state.pendingInvitationsCount.toString(),
             )
             if (state.groups.isNotEmpty()) {
                 LazyColumn(
@@ -333,27 +342,67 @@ fun GroupItem(
                     )
                 }
             }
-            if (group.expanded) {
-                HorizontalDivider(modifier = Modifier.fillMaxWidth())
+            AnimatedVisibility(
+                visible = group.expanded,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    group.articles.forEach { article ->
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(32.dp)
-                                .then(
-                                    if (article.bought) Modifier.background(color = Color.Green.copy(alpha = 0.2f))
-                                    else Modifier
+                    HorizontalDivider(modifier = Modifier.fillMaxWidth())
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                    ) {
+                        group.articles.forEach { article ->
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(32.dp)
+                                    .background(color = MaterialTheme.colorScheme.surface.copy(alpha = 0.75f))
+                                    .padding(horizontal = 12.dp)
+                                    .then(
+                                        if (article.bought) Modifier.background(color = Color.Green.copy(alpha = 0.2f))
+                                        else Modifier
+                                    )
+                            ) {
+                                Text(
+                                    text = article.name + (article.quantity?.tryToInt() ?: ""),
+                                    modifier = Modifier.align(Alignment.CenterStart),
                                 )
-                        ) {
-                            Text(
-                                text = article.name,
-                                modifier = Modifier.align(Alignment.Center),
+                                Text(
+                                    text = (article.price?.tryToInt() ?: "").toString(),
+                                    modifier = Modifier.align(Alignment.CenterEnd),
+                                )
+                            }
+                        }
+                        if (group.articles.any { it.price != null }) {
+                            HorizontalDivider(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 8.dp)
                             )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(32.dp)
+                                    .background(color = MaterialTheme.colorScheme.surface.copy(alpha = 0.75f))
+                                    .padding(horizontal = 12.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(id = R.string.total),
+                                    modifier = Modifier.align(Alignment.CenterStart),
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = group.articles.sumOf { it.price ?: 0.0 }.tryToInt().toString(),
+                                    modifier = Modifier.align(Alignment.CenterEnd),
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
                         }
                     }
                 }
