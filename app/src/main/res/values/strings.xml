@@ -137,6 +137,11 @@
 
     <!-- Settings -->
     <string name="export_data">Export data</string>
+    <string name="import_data">Import data</string>
     <string name="data">Data</string>
+    <string name="confirm_import">Importing will add or update groups and articles in this backup file. Continue?</string>
+    <string name="import_successful">Data imported successfully.</string>
+    <string name="import_failed">Import failed: %1$s</string>
+    <string name="invalid_backup_file">Invalid backup file.</string>
 
 </resources>

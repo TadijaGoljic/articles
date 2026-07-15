@@ -368,7 +368,7 @@ fun GroupItem(
                                     .padding(horizontal = 12.dp)
                             ) {
                                 Text(
-                                    text = article.name + (article.quantity?.tryToInt() ?: ""),
+                                    text = article.name,
                                     modifier = Modifier.align(Alignment.CenterStart),
                                 )
                                 Text(
@@ -388,6 +388,10 @@ fun GroupItem(
                                     .fillMaxWidth()
                                     .height(32.dp)
                                     .background(color = MaterialTheme.colorScheme.surface.copy(alpha = 0.75f))
+                                    .then(
+                                        if (group.articles.allBought()) Modifier.background(color = Color.Green.copy(alpha = 0.2f))
+                                        else Modifier
+                                    )
                                     .padding(horizontal = 12.dp)
                             ) {
                                 Text(

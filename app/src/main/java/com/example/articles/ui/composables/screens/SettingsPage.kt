@@ -1,6 +1,8 @@
 package com.example.articles.ui.composables.screens
 
 import android.annotation.SuppressLint
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -32,7 +34,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
@@ -74,6 +78,13 @@ fun SettingsScreen(
     val newPasswordFocusRequester = remember { FocusRequester() }
     val screenSize = ScreenSize.getScreenSize()
     val context = LocalContext.current
+    var showImportConfirmationDialog by remember { mutableStateOf(false) }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let { settingsViewModel.handleAction(SettingsAction.ImportGroups(it)) }
+    }
 
     LaunchedEffect(state.exportUri) {
         state.exportUri?.let { uri ->
@@ -184,6 +195,73 @@ fun SettingsScreen(
         }
     }
 
+    if (showImportConfirmationDialog) {
+        AlertDialog(
+            onDismissRequest = { showImportConfirmationDialog = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showImportConfirmationDialog = false
+                        importLauncher.launch("application/zip")
+                    }
+                ) {
+                    Text(text = stringResource(id = R.string.ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showImportConfirmationDialog = false }) {
+                    Text(text = stringResource(id = R.string.cancel))
+                }
+            },
+            title = {
+                Text(text = stringResource(id = R.string.import_data))
+            },
+            text = {
+                Text(text = stringResource(id = R.string.confirm_import))
+            },
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    }
+
+    if (state.importLoading) {
+        Dialog(onDismissRequest = {}) {
+            Surface(
+                modifier = Modifier.clip(shape = RoundedCornerShape(10.dp))
+            ) {
+                CircularProgressIndicator(
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(24.dp)
+                )
+            }
+        }
+    }
+
+    if (state.importSuccess || state.importError != null) {
+        AlertDialog(
+            onDismissRequest = { settingsViewModel.handleAction(SettingsAction.ClearImportResult) },
+            confirmButton = {
+                TextButton(
+                    onClick = { settingsViewModel.handleAction(SettingsAction.ClearImportResult) }
+                ) {
+                    Text(text = stringResource(id = R.string.ok))
+                }
+            },
+            title = {
+                Text(text = stringResource(id = R.string.import_data))
+            },
+            text = {
+                Text(
+                    text = if (state.importSuccess) {
+                        stringResource(id = R.string.import_successful)
+                    } else {
+                        stringResource(id = R.string.import_failed, state.importError.orEmpty())
+                    }
+                )
+            },
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    }
+
     Scaffold { innerPadding ->
         Column(
             modifier = modifier
@@ -211,6 +289,7 @@ fun SettingsScreen(
                 onExportGroups = {
                     settingsViewModel.handleAction(SettingsAction.ExportGroups)
                 },
+                onImportGroups = { showImportConfirmationDialog = true },
                 modifier = when (screenSize) {
                     ScreenSize.NORMAL -> Modifier
                     ScreenSize.LARGE -> Modifier.padding(horizontal = 40.dp)
@@ -233,6 +312,7 @@ fun SettingsItems(
     showChangePasswordDialog: () -> Unit,
     onSyncDataClick: (Boolean) -> Unit,
     onExportGroups: () -> Unit,
+    onImportGroups: () -> Unit,
     isSyncDataChecked: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -288,6 +368,12 @@ fun SettingsItems(
         SettingsItem(
             label = stringResource(id = R.string.export_data),
             onItemClick = onExportGroups,
+            position = Position.TOP,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+        SettingsItem(
+            label = stringResource(id = R.string.import_data),
+            onItemClick = onImportGroups,
             position = Position.MIDDLE,
             modifier = Modifier.padding(horizontal = 16.dp)
         )

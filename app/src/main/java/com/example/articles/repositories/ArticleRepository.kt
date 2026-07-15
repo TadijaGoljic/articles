@@ -68,6 +68,9 @@ class ArticleRepository @Inject constructor(
     suspend fun upsertAllArticlesLocal(articles: List<ArticleEntity>) =
         articleDao.upsertAllArticles(articles)
 
+    suspend fun getArticleByIdSuspend(id: UUID): ArticleEntity? =
+        articleDao.getArticleByIdSuspend(id)
+
     suspend fun hardDeleteLocalArticlesByGroupId(groupId: UUID) =
         articleDao.deleteArticlesByGroupId(groupId)
 

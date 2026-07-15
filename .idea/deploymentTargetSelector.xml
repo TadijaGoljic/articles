@@ -4,10 +4,10 @@
     <selectionStates>
       <SelectionState runConfigName="articles">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-06-23T19:08:36.870244Z">
+        <DropdownSelection timestamp="2026-07-14T11:47:41.869062Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=/Users/tadija/.android/avd/Medium_Phone.avd" />
+              <DeviceId pluginId="PhysicalDevice" identifier="serial=RFCW422QKBB" />
             </handle>
           </Target>
         </DropdownSelection>

@@ -9,10 +9,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.articles.R
 import com.example.articles.db.ArticleDatabase
+import com.example.articles.models.ArticleUnit
+import com.example.articles.models.UIArticle
+import com.example.articles.models.UIGroup
 import com.example.articles.models.UserPreferences
 import com.example.articles.repositories.ArticleRepository
 import com.example.articles.repositories.GroupRepository
 import com.example.articles.repositories.InvitationRepository
+import com.example.articles.utils.FileManager
 import com.example.articles.utils.TriggerSync
 import com.google.firebase.Firebase
 import com.google.firebase.auth.EmailAuthProvider
@@ -33,7 +37,9 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.UUID
 import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 import javax.inject.Inject
 
@@ -45,6 +51,7 @@ class SettingsViewModel @Inject constructor(
     private val invitationRepository: InvitationRepository,
     private val userPreferences: UserPreferences,
     private val triggerSync: TriggerSync,
+    private val fileManager: FileManager,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
@@ -92,6 +99,8 @@ class SettingsViewModel @Inject constructor(
             is SettingsAction.ChangePassword -> changePassword()
             is SettingsAction.ExportGroups -> exportGroups()
             is SettingsAction.ClearExport -> cleanExport()
+            is SettingsAction.ImportGroups -> importGroups(action.uri)
+            is SettingsAction.ClearImportResult -> clearImportResult()
             is SettingsAction.UpdateSyncDataStatus ->
                 updateSyncDataStatus(syncData = action.syncData)
         }
@@ -228,6 +237,107 @@ class SettingsViewModel @Inject constructor(
         state.update { it.copy(exportUri = uri) }
     }
 
+    private fun importGroups(uri: Uri) = viewModelScope.launch(Dispatchers.IO) {
+        state.update { currentState ->
+            currentState.copy(
+                importLoading = true,
+                importError = null,
+                importSuccess = false
+            )
+        }
+
+        val result = runCatching {
+            var json: JSONObject? = null
+            val photos = mutableMapOf<String, ByteArray>()
+
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                ZipInputStream(input.buffered()).use { zip ->
+                    var entry = zip.nextEntry
+                    while (entry != null) {
+                        when {
+                            entry.name == "data.json" ->
+                                json = JSONObject(zip.readBytes().decodeToString())
+
+                            entry.name.startsWith("photos/") ->
+                                photos[entry.name.removePrefix("photos/")] = zip.readBytes()
+                        }
+                        zip.closeEntry()
+                        entry = zip.nextEntry
+                    }
+                }
+            } ?: error(context.getString(R.string.invalid_backup_file))
+
+            val data = json ?: error(context.getString(R.string.invalid_backup_file))
+            val groupsArray = data.getJSONArray("groups")
+            for (i in 0 until groupsArray.length()) {
+                val groupJson = groupsArray.getJSONObject(i)
+                val groupId = UUID.fromString(groupJson.getString("id"))
+                val groupAlreadyExistsLocally = groupRepository.getGroupByIdSuspend(groupId) != null
+
+                val articlesArray = groupJson.getJSONArray("articles")
+                val articlesToImport = (0 until articlesArray.length())
+                    .map { articlesArray.getJSONObject(it) }
+                    .filter { articleJson ->
+                        val existing = articleRepository.getArticleByIdSuspend(
+                            UUID.fromString(articleJson.getString("id"))
+                        )
+                        existing == null || existing.groupId == groupId
+                    }
+
+                if (!groupAlreadyExistsLocally && articlesToImport.isEmpty()) continue
+
+                groupRepository.upsertGroup(
+                    UIGroup(
+                        id = groupId,
+                        name = groupJson.getString("name")
+                    )
+                )
+
+                articlesToImport.forEach { articleJson ->
+                    val unitAbbreviation = articleJson.getString("unit")
+                    val unit = ArticleUnit.entries.firstOrNull {
+                        context.getString(it.abbreviation) == unitAbbreviation
+                    } ?: ArticleUnit.default
+
+                    val photoBytes = articleJson.optString("photoFile").takeIf { it.isNotBlank() }
+                        ?.let { photos[it.removePrefix("photos/")] }
+                    val photoUri = photoBytes?.let { bytes ->
+                        val destUri = fileManager.photoUri()
+                        context.contentResolver.openOutputStream(destUri)?.use { it.write(bytes) }
+                        destUri.toString()
+                    }
+
+                    articleRepository.upsertArticle(
+                        UIArticle(
+                            id = UUID.fromString(articleJson.getString("id")),
+                            name = articleJson.getString("name"),
+                            quantity = if (articleJson.has("quantity")) articleJson.getDouble("quantity") else null,
+                            unit = unit,
+                            description = articleJson.optString("description").takeIf { it.isNotBlank() },
+                            websiteLink = articleJson.optString("websiteLink").takeIf { it.isNotBlank() },
+                            price = if (articleJson.has("price")) articleJson.getDouble("price") else null,
+                            bought = articleJson.optBoolean("bought", false),
+                            photoUri = photoUri,
+                            groupId = groupId
+                        )
+                    )
+                }
+            }
+        }
+
+        state.update {
+            it.copy(
+                importLoading = false,
+                importSuccess = result.isSuccess,
+                importError = result.exceptionOrNull()?.let { e -> e.message ?: e.toString() }
+            )
+        }
+    }
+
+    private fun clearImportResult() {
+        state.update { it.copy(importSuccess = false, importError = null) }
+    }
+
     private fun changePassword() {
         if (state.value.newPassword.text.isEmpty() || state.value.oldPassword.text.isEmpty()) {
             state.update { it.copy(stringResErrorMessage = R.string.fields_empty_error) }
@@ -302,6 +412,9 @@ data class SettingsState(
     val signOutLoading: Boolean = false,
     val syncData: Boolean = true,
     val badgeValue: String? = null,
+    val importLoading: Boolean = false,
+    val importSuccess: Boolean = false,
+    val importError: String? = null,
     @StringRes val stringResErrorMessage: Int? = null
 )
 
@@ -317,5 +430,7 @@ sealed interface SettingsAction {
     data object ChangePassword : SettingsAction
     data object ExportGroups : SettingsAction
     data object ClearExport : SettingsAction
+    data class ImportGroups(val uri: Uri) : SettingsAction
+    data object ClearImportResult : SettingsAction
     data class UpdateSyncDataStatus(val syncData: Boolean) : SettingsAction
 }

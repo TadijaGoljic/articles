@@ -12,4 +12,8 @@ data class Invitation(
     val createdAt: Long
 )
 
-enum class InvitationStatus { PENDING, ACCEPTED, DECLINED }
+enum class InvitationStatus {
+    PENDING,
+    ACCEPTED,
+    DECLINED
+}

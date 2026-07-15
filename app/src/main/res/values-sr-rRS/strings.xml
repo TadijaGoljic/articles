@@ -139,6 +139,11 @@
 
     <!-- Settings -->
     <string name="export_data">Извези податке</string>
+    <string name="import_data">Увези податке</string>
     <string name="data">Подаци</string>
+    <string name="confirm_import">Увожењем ће се додати или ажурирати групе и артикли из овог фајла. Наставити?</string>
+    <string name="import_successful">Подаци су успешно увезени.</string>
+    <string name="import_failed">Увоз није успео: %1$s</string>
+    <string name="invalid_backup_file">Неисправан фајл резервне копије.</string>
 
 </resources>
