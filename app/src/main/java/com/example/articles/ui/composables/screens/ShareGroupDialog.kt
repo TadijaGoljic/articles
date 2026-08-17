@@ -9,17 +9,26 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -30,16 +39,20 @@ import com.example.articles.R
 import com.example.articles.ui.composables.utils.ProgressButton
 import com.example.articles.ui.composables.utils.Toolbar
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShareGroupDialog(
     emailState: TextFieldState,
     isLoading: Boolean,
     errorMessage: String?,
+    recentRecipients: List<String> = emptyList(),
+    onRecentRecipientClick: (String) -> Unit = {},
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val focusRequester = remember { FocusRequester() }
+    var isRecentsMenuExpanded by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
@@ -55,17 +68,54 @@ fun ShareGroupDialog(
                 modifier = Modifier.padding(bottom = 16.dp)
             ) {
                 Toolbar(title = stringResource(id = R.string.share_group))
-                OutlinedTextField(
-                    state = emailState,
-                    label = { Text(text = stringResource(id = R.string.enter_email_to_share)) },
-                    supportingText = errorMessage?.let { { Text(text = it) } },
-                    isError = errorMessage != null,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                val query = emailState.text.toString()
+                val filteredRecipients = remember(recentRecipients, query) {
+                    if (query.isBlank()) recentRecipients
+                    else recentRecipients.filter { it.contains(query, ignoreCase = true) }
+                }
+                ExposedDropdownMenuBox(
+                    expanded = isRecentsMenuExpanded && filteredRecipients.isNotEmpty(),
+                    onExpandedChange = { isRecentsMenuExpanded = it && filteredRecipients.isNotEmpty() },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
-                        .focusRequester(focusRequester)
-                )
+                ) {
+                    OutlinedTextField(
+                        state = emailState,
+                        label = { Text(text = stringResource(id = R.string.enter_email_to_share)) },
+                        supportingText = errorMessage?.let { { Text(text = it) } },
+                        isError = errorMessage != null,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        trailingIcon = {
+                            if (recentRecipients.isNotEmpty()) {
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = isRecentsMenuExpanded)
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .focusRequester(focusRequester)
+                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable)
+                            .onFocusChanged { focusState ->
+                                if (focusState.isFocused && filteredRecipients.isNotEmpty()) {
+                                    isRecentsMenuExpanded = true
+                                }
+                            }
+                    )
+                    ExposedDropdownMenu(
+                        expanded = isRecentsMenuExpanded && filteredRecipients.isNotEmpty(),
+                        onDismissRequest = { isRecentsMenuExpanded = false }
+                    ) {
+                        filteredRecipients.forEach { email ->
+                            DropdownMenuItem(
+                                text = { Text(text = email) },
+                                onClick = {
+                                    onRecentRecipientClick(email)
+                                    isRecentsMenuExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(top = 16.dp)

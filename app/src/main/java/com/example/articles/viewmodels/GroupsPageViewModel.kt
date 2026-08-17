@@ -110,6 +110,9 @@ class GroupsPageViewModel @Inject constructor(
                     group = state.value.longPressedGroup ?: UIGroup(),
                     email = action.email
                 )
+
+            is GroupsPageAction.SelectRecentShareRecipient ->
+                selectRecentShareRecipient(email = action.email)
         }
     }
 
@@ -244,7 +247,23 @@ class GroupsPageViewModel @Inject constructor(
             currentState.copy(
                 showShareGroupDialog = visible,
                 shareGroupEmail = TextFieldState(),
-                showEditDeleteBottonSheet = false
+                showEditDeleteBottonSheet = false,
+                recentShareRecipients = emptyList()
+            )
+        }
+        if (!visible) return
+        val uid = Firebase.auth.currentUser?.uid ?: return
+        viewModelScope.launch {
+            val recents = invitationRepository.getRecentShareRecipients(uid)
+            state.update { it.copy(recentShareRecipients = recents) }
+        }
+    }
+
+    private fun selectRecentShareRecipient(email: String) {
+        state.update { currentState ->
+            currentState.copy(
+                shareGroupEmail = TextFieldState(email),
+                isShareGroupError = false
             )
         }
     }
@@ -306,6 +325,7 @@ data class GroupsPageState(
     val isCreateGroupDialogLoading: Boolean = false,
     val longPressedGroup: UIGroup? = null,
     val pendingInvitationsCount: Int = 0,
+    val recentShareRecipients: List<String> = emptyList(),
     @StringRes val groupSharingErrorResource: Int? = null,
     @StringRes val groupCreationErrorResource: Int? = null,
 )
@@ -325,4 +345,5 @@ sealed interface GroupsPageAction {
     data class ShowShareGroupDialog(val group: UIGroup) : GroupsPageAction
     data object HideShareGroupDialog : GroupsPageAction
     data class ShareGroup(val email: String) : GroupsPageAction
+    data class SelectRecentShareRecipient(val email: String) : GroupsPageAction
 }

@@ -35,6 +35,19 @@ class InvitationRepository @Inject constructor(
         return snapshot.documents.firstOrNull()?.getString("uid")
     }
 
+    suspend fun getRecentShareRecipients(fromUid: String, limit: Int = 6): List<String> {
+        val snapshot = firestore.collection(INVITATIONS_COLLECTION)
+            .whereEqualTo("fromUid", fromUid)
+            .get()
+            .await()
+        return snapshot.documents
+            .mapNotNull { firestoreModelMapper.toInvitation(it) }
+            .sortedByDescending { it.createdAt }
+            .map { it.toEmail }
+            .distinct()
+            .take(limit)
+    }
+
     suspend fun sendInvitation(
         fromUid: String,
         fromEmail: String,

@@ -110,23 +110,22 @@ fun GroupsListPage(
     }
 
     if (state.showShareGroupDialog) {
-        OneTextFieldDialog(
-            title = stringResource(id = R.string.share_group),
-            onDismissRequest = {
-                groupsPageViewModel.handleAction(GroupsPageAction.HideShareGroupDialog)
-            },
-            textFieldState = state.shareGroupEmail,
-            isError = state.isShareGroupError,
+        ShareGroupDialog(
+            emailState = state.shareGroupEmail,
+            isLoading = state.isShareGroupLoading,
             errorMessage =
                 if (state.groupSharingErrorResource != null) stringResource(id = state.groupSharingErrorResource!!)
-                else "",
-            dismissButtonText = stringResource(id = R.string.cancel),
-            confirmButtonText = stringResource(id = R.string.share_group),
-            confirmButtonEnabled = state.shareGroupEmail.text.isNotEmpty(),
-            onConfirmButtonClick = {
+                else null,
+            recentRecipients = state.recentShareRecipients,
+            onRecentRecipientClick = { email ->
+                groupsPageViewModel.handleAction(GroupsPageAction.SelectRecentShareRecipient(email))
+            },
+            onDismiss = {
+                groupsPageViewModel.handleAction(GroupsPageAction.HideShareGroupDialog)
+            },
+            onConfirm = {
                 groupsPageViewModel.handleAction(GroupsPageAction.ShareGroup(state.shareGroupEmail.text.toString()))
             },
-            isConfirmButtonLoading = state.isCreateGroupDialogLoading,
             modifier = Modifier.padding(horizontal = 16.dp)
         )
     }
