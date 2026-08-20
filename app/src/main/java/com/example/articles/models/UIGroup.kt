@@ -14,4 +14,5 @@ data class UIGroup(
     val deleted: Boolean = false,
     val isShared: Boolean = false,
     val sharedGroupId: String? = null,
+    val ownerUid: String? = null,
 ): Parcelable

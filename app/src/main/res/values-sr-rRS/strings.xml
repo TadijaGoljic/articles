@@ -43,6 +43,7 @@
     <string name="selected_location">Изабрана локација</string>
     <string name="tap_on_the_map">Додирните било где на мапи како бисме изабрали локацију</string>
     <string name="cancel">Поништи</string>
+    <string name="close">Затвори</string>
     <string name="select_location">Изаберите локацију</string>
     <string name="location">Локација</string>
     <string name="photo">Фотографија</string>
@@ -98,6 +99,8 @@
     <string name="invitation_from">Позивница од %1$s за дељење \"%2$s\"</string>
     <string name="new_invitation_notification">%1$s жели да подели \"%2$s\" са вама</string>
     <string name="shared">Дељено</string>
+    <string name="group_members">Дели се са</string>
+    <string name="remove_member">Уклони члана</string>
 
     <!-- Units -->
     <string name="unit">Јединица мере</string>

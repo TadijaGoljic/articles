@@ -6,10 +6,12 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -24,6 +27,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
@@ -57,7 +61,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.articles.R
 import com.example.articles.models.UIArticle
 import com.example.articles.models.UIGroup
+import com.example.articles.models.isGroupOwner
+import com.example.articles.repositories.GroupMember
 import com.example.articles.ui.composables.utils.BottomSheetRowItem
+import com.example.articles.ui.composables.utils.EmailAvatar
 import com.example.articles.ui.composables.utils.OneTextFieldDialog
 import com.example.articles.ui.composables.utils.Toolbar
 import com.example.articles.utils.ScreenSize
@@ -130,6 +137,22 @@ fun GroupsListPage(
         )
     }
 
+    if (state.showGroupMembersDialog) {
+        val longPressedSharedGroupId = state.longPressedGroup?.sharedGroupId
+        GroupMembersDialog(
+            members = state.groupMembers[longPressedSharedGroupId].orEmpty(),
+            isLoading = longPressedSharedGroupId in state.loadingGroupMembersFor,
+            currentUid = state.currentUid,
+            onRemoveMember = { member ->
+                groupsPageViewModel.handleAction(GroupsPageAction.RemoveGroupMember(member))
+            },
+            onDismiss = {
+                groupsPageViewModel.handleAction(GroupsPageAction.HideGroupMembersDialog)
+            },
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+    }
+
     if (state.showEditGroupDialog) {
         val editNameUpper = state.groupToEditName.text.toString().uppercase()
         val originalNameUpper = state.longPressedGroup?.name?.uppercase()
@@ -193,6 +216,7 @@ fun GroupsListPage(
                     items(state.groups) { group ->
                         GroupItem(
                             group = group,
+                            members = state.groupMembers[group.sharedGroupId].orEmpty(),
                             onLongClick = {
                                 groupsPageViewModel.handleAction(GroupsPageAction.LongClick(group))
                             },
@@ -278,6 +302,24 @@ fun GroupsListPage(
                             },
                             contentDescription = stringResource(id = R.string.share_group),
                         )
+                        val longPressedGroup = state.longPressedGroup
+                        if (longPressedGroup != null &&
+                            longPressedGroup.isShared &&
+                            isGroupOwner(longPressedGroup, state.currentUid)
+                        ) {
+                            BottomSheetRowItem(
+                                icon = Icons.Default.Group,
+                                text = stringResource(id = R.string.group_members),
+                                onClick = {
+                                    coroutineScope
+                                        .launch { sheetState.hide() }
+                                        .invokeOnCompletion {
+                                            groupsPageViewModel.handleAction(GroupsPageAction.ShowGroupMembersDialog(group = longPressedGroup))
+                                        }
+                                },
+                                contentDescription = stringResource(id = R.string.group_members),
+                            )
+                        }
                     }
                 }
             }
@@ -292,7 +334,8 @@ fun GroupItem(
     onLongClick: () -> Unit,
     onIconClick: () -> Unit,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    members: List<GroupMember> = emptyList()
 ) {
 
     Box(
@@ -324,21 +367,30 @@ fun GroupItem(
                     modifier = Modifier.align(Alignment.CenterStart),
                     maxLines = 1
                 )
-                IconButton(
-                    onClick = onIconClick,
-                    modifier = Modifier
-                        .size(24.dp)
-                        .align(Alignment.CenterEnd),
-                    enabled = group.articles.isNotEmpty()
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.align(Alignment.CenterEnd)
                 ) {
-                    Icon(
-                        imageVector =
-                            if (group.expanded) Icons.Default.KeyboardArrowUp
-                            else Icons.Default.KeyboardArrowDown,
-                        contentDescription =
-                            if (group.expanded) stringResource(id = R.string.collapse)
-                            else stringResource(id = R.string.expand),
-                    )
+                    if (members.isNotEmpty()) {
+                        GroupMembersAvatars(
+                            members = members,
+                            modifier = Modifier.padding(end = 4.dp)
+                        )
+                    }
+                    IconButton(
+                        onClick = onIconClick,
+                        modifier = Modifier.size(24.dp),
+                        enabled = group.articles.isNotEmpty()
+                    ) {
+                        Icon(
+                            imageVector =
+                                if (group.expanded) Icons.Default.KeyboardArrowUp
+                                else Icons.Default.KeyboardArrowDown,
+                            contentDescription =
+                                if (group.expanded) stringResource(id = R.string.collapse)
+                                else stringResource(id = R.string.expand),
+                        )
+                    }
                 }
             }
             AnimatedVisibility(
@@ -413,6 +465,41 @@ fun GroupItem(
         }
     }
 
+}
+
+@Composable
+private fun GroupMembersAvatars(
+    members: List<GroupMember>,
+    modifier: Modifier = Modifier,
+    maxVisible: Int = 3
+) {
+    val shown = members.take(maxVisible)
+    val overflow = members.size - shown.size
+    Row(
+        horizontalArrangement = Arrangement.spacedBy((-8).dp),
+        modifier = modifier
+    ) {
+        shown.forEach { member ->
+            EmailAvatar(
+                email = member.email,
+                size = 22.dp,
+                fontSize = 10.sp,
+                modifier = Modifier.border(1.5.dp, MaterialTheme.colorScheme.surface, CircleShape)
+            )
+        }
+        if (overflow > 0) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(22.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.outline)
+                    .border(1.5.dp, MaterialTheme.colorScheme.surface, CircleShape)
+            ) {
+                Text(text = "+$overflow", fontSize = 9.sp, color = Color.White)
+            }
+        }
+    }
 }
 
 @Composable

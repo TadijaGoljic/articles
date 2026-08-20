@@ -25,6 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -35,13 +37,36 @@ private val avatarColors = listOf(
 )
 
 @Composable
-fun UserInfoItem(
+fun EmailAvatar(
     email: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    size: Dp = 36.dp,
+    fontSize: TextUnit = 16.sp
 ) {
     val initial = email.firstOrNull()?.uppercaseChar() ?: '?'
     val avatarColor = avatarColors[email.length % avatarColors.size]
 
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .size(size)
+            .clip(RoundedCornerShape(50))
+            .background(avatarColor)
+    ) {
+        Text(
+            text = initial.toString(),
+            fontSize = fontSize,
+            fontWeight = FontWeight.SemiBold,
+            color = Color.White
+        )
+    }
+}
+
+@Composable
+fun UserInfoItem(
+    email: String,
+    modifier: Modifier = Modifier
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
@@ -50,20 +75,7 @@ fun UserInfoItem(
             .padding(horizontal = 14.dp)
             .height(56.dp)
     ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .size(36.dp)
-                .clip(RoundedCornerShape(50))
-                .background(avatarColor)
-        ) {
-            Text(
-                text = initial.toString(),
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.White
-            )
-        }
+        EmailAvatar(email = email)
         Text(
             text = email,
             fontSize = 16.sp,

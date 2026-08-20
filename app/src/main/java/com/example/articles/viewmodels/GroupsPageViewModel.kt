@@ -6,7 +6,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.articles.R
 import com.example.articles.models.UIGroup
+import com.example.articles.models.isGroupOwner
 import com.example.articles.repositories.ArticleRepository
+import com.example.articles.repositories.GroupMember
 import com.example.articles.repositories.GroupRepository
 import com.example.articles.repositories.InvitationRepository
 import com.example.articles.repositories.SharedGroupRepository
@@ -50,6 +52,12 @@ class GroupsPageViewModel @Inject constructor(
                         groups = groupsWithArticles
                     )
                 }
+                val currentUid = Firebase.auth.currentUser?.uid
+                groupsWithArticles
+                    .filter { it.isShared && it.sharedGroupId != null && isGroupOwner(it, currentUid) }
+                    .mapNotNull { it.sharedGroupId }
+                    .distinct()
+                    .forEach { sharedGroupId -> refreshGroupMembers(sharedGroupId) }
             }
         }
         viewModelScope.launch {
@@ -58,6 +66,7 @@ class GroupsPageViewModel @Inject constructor(
                 state.update { it.copy(pendingInvitationsCount = invitations.size) }
             }
         }
+        state.update { it.copy(currentUid = Firebase.auth.currentUser?.uid) }
     }
 
     fun handleAction(action: GroupsPageAction) {
@@ -113,6 +122,15 @@ class GroupsPageViewModel @Inject constructor(
 
             is GroupsPageAction.SelectRecentShareRecipient ->
                 selectRecentShareRecipient(email = action.email)
+
+            is GroupsPageAction.ShowGroupMembersDialog ->
+                showGroupMembersDialog(group = action.group)
+
+            is GroupsPageAction.HideGroupMembersDialog ->
+                state.update { it.copy(showGroupMembersDialog = false) }
+
+            is GroupsPageAction.RemoveGroupMember ->
+                removeGroupMember(member = action.member)
         }
     }
 
@@ -215,7 +233,11 @@ class GroupsPageViewModel @Inject constructor(
         viewModelScope.launch {
             if (group.isShared && group.sharedGroupId != null) {
                 val uid = Firebase.auth.currentUser?.uid ?: return@launch
-                sharedGroupRepository.leaveSharedGroup(group.sharedGroupId, uid)
+                if (isGroupOwner(group, uid)) {
+                    sharedGroupRepository.markSharedGroupDeleted(group.sharedGroupId)
+                } else {
+                    sharedGroupRepository.leaveSharedGroup(group.sharedGroupId, uid)
+                }
                 articleRepository.hardDeleteLocalArticlesByGroupId(group.id)
                 groupRepository.deleteGroupLocalById(group.id)
             } else {
@@ -256,6 +278,44 @@ class GroupsPageViewModel @Inject constructor(
         viewModelScope.launch {
             val recents = invitationRepository.getRecentShareRecipients(uid)
             state.update { it.copy(recentShareRecipients = recents) }
+        }
+    }
+
+    private fun showGroupMembersDialog(group: UIGroup) {
+        state.update { currentState ->
+            currentState.copy(
+                showGroupMembersDialog = true,
+                showEditDeleteBottonSheet = false,
+                longPressedGroup = group
+            )
+        }
+        group.sharedGroupId?.let { refreshGroupMembers(it) }
+    }
+
+    private fun refreshGroupMembers(sharedGroupId: String) {
+        if (sharedGroupId in state.value.loadingGroupMembersFor) return
+        state.update { it.copy(loadingGroupMembersFor = it.loadingGroupMembersFor + sharedGroupId) }
+        viewModelScope.launch {
+            val members = sharedGroupRepository.getMembers(sharedGroupId)
+            state.update { currentState ->
+                currentState.copy(
+                    groupMembers = currentState.groupMembers + (sharedGroupId to members),
+                    loadingGroupMembersFor = currentState.loadingGroupMembersFor - sharedGroupId
+                )
+            }
+        }
+    }
+
+    private fun removeGroupMember(member: GroupMember) {
+        val sharedGroupId = state.value.longPressedGroup?.sharedGroupId ?: return
+        state.update { currentState ->
+            currentState.copy(
+                groupMembers = currentState.groupMembers +
+                    (sharedGroupId to currentState.groupMembers[sharedGroupId].orEmpty().filter { it.uid != member.uid })
+            )
+        }
+        viewModelScope.launch {
+            sharedGroupRepository.removeMember(sharedGroupId, member.uid)
         }
     }
 
@@ -326,6 +386,10 @@ data class GroupsPageState(
     val longPressedGroup: UIGroup? = null,
     val pendingInvitationsCount: Int = 0,
     val recentShareRecipients: List<String> = emptyList(),
+    val currentUid: String? = null,
+    val showGroupMembersDialog: Boolean = false,
+    val groupMembers: Map<String, List<GroupMember>> = emptyMap(),
+    val loadingGroupMembersFor: Set<String> = emptySet(),
     @StringRes val groupSharingErrorResource: Int? = null,
     @StringRes val groupCreationErrorResource: Int? = null,
 )
@@ -346,4 +410,7 @@ sealed interface GroupsPageAction {
     data object HideShareGroupDialog : GroupsPageAction
     data class ShareGroup(val email: String) : GroupsPageAction
     data class SelectRecentShareRecipient(val email: String) : GroupsPageAction
+    data class ShowGroupMembersDialog(val group: UIGroup) : GroupsPageAction
+    data object HideGroupMembersDialog : GroupsPageAction
+    data class RemoveGroupMember(val member: GroupMember) : GroupsPageAction
 }

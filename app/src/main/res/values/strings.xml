@@ -42,6 +42,7 @@
     <string name="selected_location">Selected location</string>
     <string name="tap_on_the_map">Tap anywhere on the map to select a location</string>
     <string name="cancel">Cancel</string>
+    <string name="close">Close</string>
     <string name="select_location">Select location</string>
     <string name="location">Location</string>
     <string name="photo">Photo</string>
@@ -96,6 +97,8 @@
     <string name="invitation_from">Invitation from %1$s to share \"%2$s\"</string>
     <string name="new_invitation_notification">%1$s wants to share \"%2$s\" with you</string>
     <string name="shared">Shared</string>
+    <string name="group_members">Shared with</string>
+    <string name="remove_member">Remove member</string>
 
     <!-- Units -->
     <string name="unit">Unit</string>

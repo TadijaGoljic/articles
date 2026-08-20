@@ -6,6 +6,7 @@ import com.example.articles.models.FirestoreModelMapper
 import com.example.articles.models.UIGroup
 import com.example.articles.utils.ARTICLES_COLLECTION
 import com.example.articles.utils.SHARED_GROUPS_COLLECTION
+import com.example.articles.utils.USERS_COLLECTION
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.tasks.await
@@ -69,7 +70,8 @@ class SharedGroupRepository @Inject constructor(
             updatedAt = data["updatedAt"] as? Long ?: 0L,
             deleted = data["deleted"] as? Boolean ?: false,
             isShared = true,
-            sharedGroupId = sharedGroupId
+            sharedGroupId = sharedGroupId,
+            ownerUid = data["fromUid"] as? String
         )
 
         val articlesSnapshot = firestore
@@ -136,4 +138,33 @@ class SharedGroupRepository @Inject constructor(
         return snapshot.documents.mapNotNull { it.getString("sharedGroupId") }
     }
 
+    suspend fun getMembers(sharedGroupId: String): List<GroupMember> {
+        val snapshot = firestore
+            .collection(SHARED_GROUPS_COLLECTION).document(sharedGroupId)
+            .get().await()
+        val memberUids = (snapshot.get("members") as? List<*>)?.filterIsInstance<String>() ?: emptyList()
+        return memberUids.mapNotNull { uid ->
+            val profile = firestore.collection(USERS_COLLECTION).document(uid)
+                .collection("profile").document("info")
+                .get().await()
+            val email = profile.getString("email") ?: return@mapNotNull null
+            GroupMember(uid = uid, email = email)
+        }
+    }
+
+    suspend fun removeMember(sharedGroupId: String, memberUid: String) {
+        val docRef = firestore.collection(SHARED_GROUPS_COLLECTION).document(sharedGroupId)
+        val snapshot = docRef.get().await()
+        val members = (snapshot.get("members") as? List<*>)?.filterIsInstance<String>() ?: return
+        docRef.update("members", members - memberUid).await()
+    }
+
+    suspend fun markSharedGroupDeleted(sharedGroupId: String) {
+        firestore.collection(SHARED_GROUPS_COLLECTION).document(sharedGroupId)
+            .update(mapOf("deleted" to true, "updatedAt" to System.currentTimeMillis()))
+            .await()
+    }
+
 }
+
+data class GroupMember(val uid: String, val email: String)

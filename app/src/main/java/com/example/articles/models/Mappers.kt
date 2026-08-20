@@ -44,7 +44,8 @@ fun GroupEntity.toUIGroup() = UIGroup(
     updatedAt = updatedAt,
     deleted = deleted,
     isShared = isShared,
-    sharedGroupId = sharedGroupId
+    sharedGroupId = sharedGroupId,
+    ownerUid = ownerUid
 )
 
 fun UIGroup.toGroupEntity() = GroupEntity(
@@ -53,5 +54,9 @@ fun UIGroup.toGroupEntity() = GroupEntity(
     updatedAt = updatedAt,
     deleted = deleted,
     isShared = isShared,
-    sharedGroupId = sharedGroupId
+    sharedGroupId = sharedGroupId,
+    ownerUid = ownerUid
 )
+
+fun isGroupOwner(group: UIGroup, currentUid: String?) =
+    !group.isShared || group.ownerUid == null || group.ownerUid == currentUid

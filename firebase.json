@@ -4,21 +4,8 @@
   },
   "functions": [
     {
-      "codebase": "articles",
-      "disallowLegacyRuntimeConfig": true,
-      "ignore": [
-        "venv",
-        ".git",
-        "firebase-debug.log",
-        "firebase-debug.*.log",
-        "*.local"
-      ],
-      "source": "listenets",
-      "runtime": "python314"
-    },
-    {
       "source": "articles",
-      "codebase": "listeners",
+      "codebase": "articles",
       "disallowLegacyRuntimeConfig": true,
       "ignore": [
         "node_modules",

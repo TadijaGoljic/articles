@@ -55,7 +55,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.articles.R
 import com.example.articles.ui.composables.utils.Position
 import com.example.articles.ui.composables.utils.SettingsItem
-import com.example.articles.ui.composables.utils.SettingsItemWithBadge
 import com.example.articles.ui.composables.utils.SettingsItemWithSwitch
 import com.example.articles.ui.composables.utils.Toolbar
 import com.example.articles.ui.composables.utils.UserInfoItem

@@ -154,6 +154,8 @@ class SyncManager(
         val sharedGroupIds = sharedGroupRepository.getSharedGroupIdsForUser(uid)
         Log.d(ArticlesApplication.LOG_TAG, "Syncing ${sharedGroupIds.size} shared groups")
 
+        removeOrphanedSharedGroups(sharedGroupIds.toSet())
+
         for (sharedGroupId in sharedGroupIds) {
             var existingLocalGroup = groupRepository.getGroupBySharedGroupId(sharedGroupId)
             if (existingLocalGroup == null) {
@@ -184,6 +186,18 @@ class SyncManager(
                     articles.map { it.copy(groupId = localGroupId) }
                 )
             }
+        }
+    }
+
+    private suspend fun removeOrphanedSharedGroups(remoteSharedGroupIds: Set<String>) {
+        val localSharedGroups = groupRepository.getAllGroupsNoMapping()
+            .map { list -> list.filter { it.isShared && it.sharedGroupId != null } }
+            .first()
+        val orphaned = localSharedGroups.filter { it.sharedGroupId !in remoteSharedGroupIds }
+        orphaned.forEach { group ->
+            Log.d(ArticlesApplication.LOG_TAG, "Removing orphaned shared group id=${group.idGroup} (no longer a member)")
+            articleRepository.hardDeleteLocalArticlesByGroupId(group.idGroup)
+            groupRepository.deleteGroupLocalById(group.idGroup)
         }
     }
 

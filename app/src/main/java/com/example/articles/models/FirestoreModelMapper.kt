@@ -93,7 +93,8 @@ class FirestoreModelMapper @Inject constructor(
         "syncedAt" to System.currentTimeMillis(),
         "deleted" to groupEntity.deleted,
         "isShared" to groupEntity.isShared,
-        "sharedGroupId" to groupEntity.sharedGroupId
+        "sharedGroupId" to groupEntity.sharedGroupId,
+        "ownerUid" to groupEntity.ownerUid
     )
 
     fun toGroupEntity(snapshot: DocumentSnapshot) = GroupEntity(
@@ -102,7 +103,8 @@ class FirestoreModelMapper @Inject constructor(
         updatedAt = snapshot["updatedAt"] as? Long ?: 0L,
         deleted = snapshot["deleted"] as? Boolean ?: false,
         isShared = snapshot["isShared"] as? Boolean ?: false,
-        sharedGroupId = snapshot["sharedGroupId"] as? String
+        sharedGroupId = snapshot["sharedGroupId"] as? String,
+        ownerUid = snapshot["ownerUid"] as? String
     )
 
     fun toInvitationFirestoreMap(invitation: Invitation) = mapOf(
