@@ -144,6 +144,13 @@ class SettingsViewModel @Inject constructor(
                             deleteOk = true
                         )
                     }
+                } else {
+                    state.update { currentState ->
+                        currentState.copy(
+                            deleteAccountLoading = false,
+                            errorMessage = task.exception?.message.toString()
+                        )
+                    }
                 }
             }
     }

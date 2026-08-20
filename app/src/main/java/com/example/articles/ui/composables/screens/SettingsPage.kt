@@ -167,7 +167,16 @@ fun SettingsScreen(
                 Text(text = stringResource(id = R.string.delete_account))
             },
             text = {
-                Text(text = stringResource(id = R.string.confirm_delete_account))
+                Column {
+                    Text(text = stringResource(id = R.string.confirm_delete_account))
+                    state.errorMessage?.let { message ->
+                        Text(
+                            text = message,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
+                }
             },
             containerColor = MaterialTheme.colorScheme.surface
         )

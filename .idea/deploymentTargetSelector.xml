@@ -3,11 +3,11 @@
   <component name="deploymentTargetSelector">
     <selectionStates>
       <SelectionState runConfigName="articles">
-        <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-08-17T14:09:45.667666600Z">
+        <option name="selectionMode" value="DIALOG" />
+        <DropdownSelection timestamp="2026-08-20T12:06:21.732280Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="Wireless" identifier="serviceName=adb-R58N7259BWV-yCimPq" />
+              <DeviceId pluginId="PhysicalDevice" identifier="serial=RFCW422QKBB" />
             </handle>
           </Target>
         </DropdownSelection>
@@ -15,12 +15,12 @@
           <targets>
             <Target type="DEFAULT_BOOT">
               <handle>
-                <DeviceId pluginId="LocalEmulator" identifier="path=/Users/tadija/.android/avd/Medium_Phone.avd" />
+                <DeviceId pluginId="PhysicalDevice" identifier="serial=RFCW422QKBB" />
               </handle>
             </Target>
             <Target type="DEFAULT_BOOT">
               <handle>
-                <DeviceId pluginId="PhysicalDevice" identifier="serial=R58N7259BWV" />
+                <DeviceId pluginId="PhysicalDevice" identifier="serial=RF8M20GDX1B" />
               </handle>
             </Target>
           </targets>

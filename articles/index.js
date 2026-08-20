@@ -1,6 +1,6 @@
 const {setGlobalOptions} = require("firebase-functions");
 const {onRequest} = require("firebase-functions/https");
-const {onDocumentWritten} = require("firebase-functions/v2/firestore");
+const {onDocumentWritten, onDocumentDeleted} = require("firebase-functions/v2/firestore");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 
@@ -29,6 +29,23 @@ exports.onGroupChanged = onDocumentWritten(
   "users/{uid}/groups/{groupId}",
   async (event) => {
     await notifyDevices(event.params.uid);
+  }
+);
+
+exports.onUserDeleted = onDocumentDeleted(
+  "users/{uid}",
+  async (event) => {
+    const fcmTokens = event.data?.data()?.fcmTokens;
+    if (!fcmTokens) return;
+
+    const tokens = Object.values(fcmTokens).filter(Boolean);
+    if (tokens.length === 0) return;
+
+    await admin.messaging().sendEachForMulticast({
+      tokens,
+      android: { priority: "high" },
+      data: { type: "forceSignOut" },
+    });
   }
 );
 
