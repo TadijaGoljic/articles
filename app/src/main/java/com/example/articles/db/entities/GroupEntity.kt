@@ -9,7 +9,6 @@ data class GroupEntity(
     @PrimaryKey val idGroup: UUID = UUID.randomUUID(),
     val name: String,
     val updatedAt: Long,
-    val deleted: Boolean,
     val isShared: Boolean = false,
     val sharedGroupId: String? = null,
     val ownerUid: String? = null

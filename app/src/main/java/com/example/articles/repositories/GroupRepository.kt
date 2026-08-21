@@ -44,16 +44,14 @@ class GroupRepository @Inject constructor(
 
     suspend fun deleteGroupById(groupId: UUID) {
         val uid = Firebase.auth.currentUser?.uid ?: return
-        val group = groupDao.getGroupByIdSuspend(groupId) ?: return
-        val deleted = group.copy(deleted = true, updatedAt = System.currentTimeMillis())
-        groupDao.upsertGroup(deleted)
+        groupDao.deleteGroupById(groupId)
         groupsCollection(uid)
             .document(groupId.toString())
-            .set(firestoreModelMapper.toGroupsFirestoreMap(deleted))
+            .delete()
             .await()
     }
 
-    fun getAllGroupsNoMapping() = groupDao.getAllGroupsRaw()
+    fun getAllGroupsNoMapping() = groupDao.getAllGroups()
 
     fun getAllGroups() = groupDao.getAllGroups().map { list ->
         list.map { group -> group.toUIGroup() }
@@ -67,6 +65,8 @@ class GroupRepository @Inject constructor(
     suspend fun upsertAllGroupsLocal(groups: List<UIGroup>) = groups.forEach { upsertGroupLocal(it) }
 
     suspend fun deleteGroupLocalById(groupId: UUID) = groupDao.deleteGroupById(groupId)
+
+    suspend fun hardDeleteLocalGroupsByIds(ids: List<UUID>) = groupDao.deleteGroupsByIds(ids)
 
     suspend fun getGroupBySharedGroupId(sharedGroupId: String): GroupEntity? =
         groupDao.getGroupBySharedGroupId(sharedGroupId)

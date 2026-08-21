@@ -61,7 +61,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.articles.R
 import com.example.articles.models.UIArticle
 import com.example.articles.models.UIGroup
-import com.example.articles.models.isGroupOwner
 import com.example.articles.repositories.GroupMember
 import com.example.articles.ui.composables.utils.BottomSheetRowItem
 import com.example.articles.ui.composables.utils.EmailAvatar
@@ -305,7 +304,7 @@ fun GroupsListPage(
                         val longPressedGroup = state.longPressedGroup
                         if (longPressedGroup != null &&
                             longPressedGroup.isShared &&
-                            isGroupOwner(longPressedGroup, state.currentUid)
+                            longPressedGroup.isGroupOwner(state.currentUid)
                         ) {
                             BottomSheetRowItem(
                                 icon = Icons.Default.Group,

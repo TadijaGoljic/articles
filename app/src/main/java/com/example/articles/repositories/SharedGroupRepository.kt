@@ -32,7 +32,6 @@ class SharedGroupRepository @Inject constructor(
                     "sharedGroupId" to sharedGroupId,
                     "name" to group.name,
                     "updatedAt" to System.currentTimeMillis(),
-                    "deleted" to false,
                     "members" to listOf(fromUid, toUid),
                     "fromUid" to fromUid,
                     "fromGroupId" to group.id.toString()
@@ -74,7 +73,6 @@ class SharedGroupRepository @Inject constructor(
             idGroup = UUID.fromString(sharedGroupId),
             name = data["name"] as? String ?: "",
             updatedAt = data["updatedAt"] as? Long ?: 0L,
-            deleted = data["deleted"] as? Boolean ?: false,
             isShared = true,
             sharedGroupId = sharedGroupId,
             ownerUid = data["fromUid"] as? String
@@ -88,7 +86,10 @@ class SharedGroupRepository @Inject constructor(
             .get()
             .await()
 
-        val articles = articlesSnapshot.documents.mapNotNull { doc ->
+        val (tombstoned, live) = articlesSnapshot.documents.partition { it.getBoolean("deleted") == true }
+        tombstoned.forEach { it.reference.delete() }
+
+        val articles = live.mapNotNull { doc ->
             firestoreModelMapper.toArticleEntity(doc)?.copy(
                 groupId = UUID.fromString(sharedGroupId)
             )
@@ -155,7 +156,12 @@ class SharedGroupRepository @Inject constructor(
             .whereArrayContains("members", uid)
             .get()
             .await()
-        return snapshot.documents.mapNotNull { it.getString("sharedGroupId") }
+        val (tombstoned, live) = snapshot.documents.partition { it.getBoolean("deleted") == true }
+        tombstoned.forEach { doc ->
+            val sharedGroupId = doc.getString("sharedGroupId") ?: doc.id
+            deleteSharedGroup(sharedGroupId)
+        }
+        return live.mapNotNull { it.getString("sharedGroupId") }
     }
 
     suspend fun getMembers(sharedGroupId: String): List<GroupMember> {
@@ -191,17 +197,18 @@ class SharedGroupRepository @Inject constructor(
             .await()
     }
 
-    suspend fun markSharedGroupDeleted(sharedGroupId: String) {
-        firestore
+    suspend fun deleteSharedGroup(sharedGroupId: String) {
+        val docRef = firestore
             .collection(SHARED_GROUPS_COLLECTION)
             .document(sharedGroupId)
-            .update(
-                mapOf(
-                    "deleted" to true,
-                    "updatedAt" to System.currentTimeMillis()
-                )
-            )
+        val articles = docRef
+            .collection(ARTICLES_COLLECTION)
+            .get()
             .await()
+        val batch = firestore.batch()
+        articles.documents.forEach { batch.delete(it.reference) }
+        batch.delete(docRef)
+        batch.commit().await()
     }
 
 }

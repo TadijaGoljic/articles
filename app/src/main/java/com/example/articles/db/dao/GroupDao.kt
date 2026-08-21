@@ -15,16 +15,16 @@ interface GroupDao {
     @Query("DELETE FROM `groups` WHERE idGroup = :idGroup")
     suspend fun deleteGroupById(idGroup: UUID)
 
+    @Query("DELETE FROM `groups` WHERE idGroup IN (:ids)")
+    suspend fun deleteGroupsByIds(ids: List<UUID>)
+
     @Query("DELETE FROM `groups`")
     suspend fun deleteAllGroups()
 
-    @Query("SELECT * FROM `groups` WHERE deleted = 0")
+    @Query("SELECT * FROM `groups`")
     fun getAllGroups(): Flow<List<GroupEntity>>
 
-    @Query("SELECT * FROM `groups`")
-    fun getAllGroupsRaw(): Flow<List<GroupEntity>>
-
-    @Query("SELECT * FROM `groups` WHERE idGroup = :idGroup AND deleted = 0")
+    @Query("SELECT * FROM `groups` WHERE idGroup = :idGroup")
     fun getGroupById(idGroup: UUID): Flow<GroupEntity?>
 
     @Query("SELECT * FROM `groups` WHERE idGroup = :idGroup LIMIT 1")

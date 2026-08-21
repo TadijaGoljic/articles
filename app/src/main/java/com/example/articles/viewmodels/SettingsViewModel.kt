@@ -185,13 +185,12 @@ class SettingsViewModel @Inject constructor(
     }
 
     private fun exportGroups() = viewModelScope.launch(Dispatchers.IO) {
-        val groups = groupRepository.getAllGroups().first().filter { !it.deleted }
+        val groups = groupRepository.getAllGroups().first()
         val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
 
         val groupsArray = JSONArray()
         groups.forEach { group ->
             val articles = articleRepository.getArticlesByGroupId(group.id).first()
-                .filter { !it.deleted }
             val articlesArray = JSONArray()
             articles.forEach { article ->
                 articlesArray.put(JSONObject().apply {
@@ -225,7 +224,7 @@ class SettingsViewModel @Inject constructor(
 
             groups.forEach { group ->
                 articleRepository.getArticlesByGroupId(group.id).first()
-                    .filter { !it.deleted && it.photoUri != null }
+                    .filter { it.photoUri != null }
                     .forEach { article ->
                         runCatching {
                             val input = context.contentResolver

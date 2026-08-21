@@ -26,7 +26,6 @@ data class ArticleEntity(
     val quantity: Double?,
     val unit: ArticleUnit,
     val photoUri: String?,
-    val deleted: Boolean,
     val description: String?,
     val updatedAt: Long,
     val groupId: UUID,

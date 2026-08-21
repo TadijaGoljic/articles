@@ -44,7 +44,7 @@ class ArticleRepository @Inject constructor(
         }
     }
 
-    fun getAllArticlesNoMapping() = articleDao.getAllArticlesRaw()
+    fun getAllArticlesNoMapping() = articleDao.getAllArticles()
 
     suspend fun upsertArticle(article: UIArticle) {
         val articleEntity = article.toArticleEntity()
@@ -57,11 +57,10 @@ class ArticleRepository @Inject constructor(
 
     suspend fun deleteArticleById(idArticle: UUID) {
         val article = articleDao.getArticleByIdSuspend(idArticle) ?: return
-        val deleted = article.copy(deleted = true, updatedAt = System.currentTimeMillis())
-        articleDao.upsertArticle(deleted)
+        articleDao.deleteArticleById(idArticle)
         articlesCollection(article.groupId)
             ?.document(idArticle.toString())
-            ?.set(firestoreModelMapper.toArticlesFirestoreMap(deleted))
+            ?.delete()
             ?.await()
     }
 
@@ -71,31 +70,27 @@ class ArticleRepository @Inject constructor(
     suspend fun getArticleByIdSuspend(id: UUID): ArticleEntity? =
         articleDao.getArticleByIdSuspend(id)
 
+    suspend fun getArticlesByGroupIdSuspend(groupId: UUID): List<ArticleEntity> =
+        articleDao.getArticlesByGroupIdSuspend(groupId)
+
     suspend fun hardDeleteLocalArticlesByGroupId(groupId: UUID) =
         articleDao.deleteArticlesByGroupId(groupId)
 
-    suspend fun softDeleteArticlesByGroupId(groupId: UUID) {
+    suspend fun hardDeleteLocalArticlesByIds(ids: List<UUID>) =
+        articleDao.deleteArticlesByIds(ids)
+
+    suspend fun deleteArticlesByGroupId(groupId: UUID) {
         val uid = Firebase.auth.currentUser?.uid ?: return
-        val now = System.currentTimeMillis()
         val articles = articleDao.getArticlesByGroupIdSuspend(groupId)
-        val deleted = articles.map {
-            it.copy(
-                deleted = true,
-                updatedAt = now
-            )
-        }
-        articleDao.upsertAllArticles(deleted)
-        if (deleted.isNotEmpty()) {
+        articleDao.deleteArticlesByGroupId(groupId)
+        if (articles.isNotEmpty()) {
             val collection = firestore
                 .collection(USERS_COLLECTION)
                 .document(uid)
                 .collection(ARTICLES_COLLECTION)
             val batch = firestore.batch()
-            deleted.forEach { article ->
-                batch.set(
-                    collection.document(article.idArticle.toString()),
-                    firestoreModelMapper.toArticlesFirestoreMap(article)
-                )
+            articles.forEach { article ->
+                batch.delete(collection.document(article.idArticle.toString()))
             }
             batch.commit().await()
         }

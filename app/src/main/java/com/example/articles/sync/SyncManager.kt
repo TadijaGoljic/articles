@@ -78,22 +78,31 @@ class SyncManager(
         val sharedGroupIds = groupRepository.getAllGroupsNoMapping()
             .map { list -> list.filter { it.isShared }.map { it.idGroup }.toSet() }
             .first()
-        val localArticleChanges = articleRepository
+        val localArticles = articleRepository
             .getAllArticlesNoMapping()
-            .map { list -> list.filter { it.updatedAt > syncTimestamp && it.groupId !in sharedGroupIds } }
+            .map { list -> list.filter { it.groupId !in sharedGroupIds } }
             .first()
+        val localArticleChanges = localArticles.filter { it.updatedAt > syncTimestamp }
         Log.d(ArticlesApplication.LOG_TAG, "Uploading ${localArticleChanges.size} local article changes")
         uploadLocalArticleChanges(localArticleChanges, articlesCollection)
         val remoteSnapshot = articlesCollection
             .whereGreaterThan("updatedAt", 0)
             .get()
             .await()
-        val remoteEntities = remoteSnapshot.documents.mapNotNull {
+        val (tombstonedArticles, liveArticles) = remoteSnapshot.documents.partition { it.getBoolean("deleted") == true }
+        tombstonedArticles.forEach { it.reference.delete() }
+        val remoteEntities = liveArticles.mapNotNull {
             firestoreModelMapper.toArticleEntity(it)
         }
         Log.d(ArticlesApplication.LOG_TAG, "Fetched ${remoteEntities.size} articles from remote")
         if (remoteEntities.isNotEmpty()) {
             articleRepository.upsertAllArticlesLocal(remoteEntities)
+        }
+        val remoteIds = remoteEntities.map { it.idArticle }.toSet()
+        val staleLocalIds = localArticles.map { it.idArticle }.filterNot { it in remoteIds }
+        if (staleLocalIds.isNotEmpty()) {
+            Log.d(ArticlesApplication.LOG_TAG, "Removing ${staleLocalIds.size} articles deleted remotely")
+            articleRepository.hardDeleteLocalArticlesByIds(staleLocalIds)
         }
     }
 
@@ -101,17 +110,20 @@ class SyncManager(
         groupsCollection: CollectionReference,
         syncTimestamp: Long
     ) {
-        val localGroupChanges = groupRepository
+        val localGroups = groupRepository
             .getAllGroupsNoMapping()
-            .map { list -> list.filter { it.updatedAt > syncTimestamp } }
+            .map { list -> list.filter { !it.isShared } }
             .first()
+        val localGroupChanges = localGroups.filter { it.updatedAt > syncTimestamp }
         Log.d(ArticlesApplication.LOG_TAG, "Uploading ${localGroupChanges.size} local group changes")
         uploadLocalGroupChanges(localGroupChanges, groupsCollection)
         val remoteSnapshot = groupsCollection
             .whereGreaterThan("updatedAt", 0)
             .get()
             .await()
-        val remoteEntities = remoteSnapshot.documents.mapNotNull {
+        val (tombstonedGroups, liveGroups) = remoteSnapshot.documents.partition { it.getBoolean("deleted") == true }
+        tombstonedGroups.forEach { it.reference.delete() }
+        val remoteEntities = liveGroups.mapNotNull {
             firestoreModelMapper.toGroupEntity(it)
         }
         Log.d(ArticlesApplication.LOG_TAG, "Fetched ${remoteEntities.size} groups from remote")
@@ -119,6 +131,12 @@ class SyncManager(
             groupRepository.upsertAllGroupsLocal(
                 remoteEntities.map { it.toUIGroup() }
             )
+        }
+        val remoteIds = remoteEntities.map { it.idGroup }.toSet()
+        val staleLocalIds = localGroups.map { it.idGroup }.filterNot { it in remoteIds }
+        if (staleLocalIds.isNotEmpty()) {
+            Log.d(ArticlesApplication.LOG_TAG, "Removing ${staleLocalIds.size} groups deleted remotely")
+            groupRepository.hardDeleteLocalGroupsByIds(staleLocalIds)
         }
     }
 
@@ -128,7 +146,7 @@ class SyncManager(
     ) {
         articles.forEach { article ->
             val documentId = article.idArticle.toString()
-            Log.d(ArticlesApplication.LOG_TAG, "Uploading article id=$documentId name=${article.name} deleted=${article.deleted}")
+            Log.d(ArticlesApplication.LOG_TAG, "Uploading article id=$documentId name=${article.name}")
             collection.document(documentId)
                 .set(firestoreModelMapper.toArticlesFirestoreMap(article))
                 .await()
@@ -141,7 +159,7 @@ class SyncManager(
     ) {
         groups.filter { !it.isShared }.forEach { group ->
             val documentId = group.idGroup.toString()
-            Log.d(ArticlesApplication.LOG_TAG, "Uploading group id=$documentId name=${group.name} deleted=${group.deleted}")
+            Log.d(ArticlesApplication.LOG_TAG, "Uploading group id=$documentId name=${group.name}")
             collection.document(documentId)
                 .set(firestoreModelMapper.toGroupsFirestoreMap(group))
                 .await()
@@ -183,6 +201,14 @@ class SyncManager(
                 articleRepository.upsertAllArticlesLocal(
                     articles.map { it.copy(groupId = localGroupId) }
                 )
+            }
+
+            val remoteArticleIds = articles.map { it.idArticle }.toSet()
+            val localArticleIds = articleRepository.getArticlesByGroupIdSuspend(localGroupId).map { it.idArticle }
+            val staleLocalIds = localArticleIds.filterNot { it in remoteArticleIds }
+            if (staleLocalIds.isNotEmpty()) {
+                Log.d(ArticlesApplication.LOG_TAG, "Removing ${staleLocalIds.size} shared articles deleted remotely for group $sharedGroupId")
+                articleRepository.hardDeleteLocalArticlesByIds(staleLocalIds)
             }
         }
     }

@@ -18,7 +18,6 @@ data class UIArticle(
     val quantity: Double? = null,
     val unit: ArticleUnit = ArticleUnit.default,
     val photoUri: String? = null,
-    val deleted: Boolean = false,
     val groupId: UUID = randomUUID(),
     val updatedAt: Long = System.currentTimeMillis(),
     val websiteLink: String? = null,

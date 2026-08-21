@@ -6,7 +6,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.articles.R
 import com.example.articles.models.UIGroup
-import com.example.articles.models.isGroupOwner
 import com.example.articles.repositories.ArticleRepository
 import com.example.articles.repositories.GroupMember
 import com.example.articles.repositories.GroupRepository
@@ -54,7 +53,7 @@ class GroupsPageViewModel @Inject constructor(
                 }
                 val currentUid = Firebase.auth.currentUser?.uid
                 groupsWithArticles
-                    .filter { it.isShared && it.sharedGroupId != null && isGroupOwner(it, currentUid) }
+                    .filter { it.isShared && it.sharedGroupId != null && it.isGroupOwner(currentUid) }
                     .mapNotNull { it.sharedGroupId }
                     .distinct()
                     .forEach { sharedGroupId -> refreshGroupMembers(sharedGroupId) }
@@ -233,15 +232,15 @@ class GroupsPageViewModel @Inject constructor(
         viewModelScope.launch {
             if (group.isShared && group.sharedGroupId != null) {
                 val uid = Firebase.auth.currentUser?.uid ?: return@launch
-                if (isGroupOwner(group, uid)) {
-                    sharedGroupRepository.markSharedGroupDeleted(group.sharedGroupId)
+                if (group.isGroupOwner(uid)) {
+                    sharedGroupRepository.deleteSharedGroup(group.sharedGroupId)
                 } else {
                     sharedGroupRepository.leaveSharedGroup(group.sharedGroupId, uid)
                 }
                 articleRepository.hardDeleteLocalArticlesByGroupId(group.id)
                 groupRepository.deleteGroupLocalById(group.id)
             } else {
-                articleRepository.softDeleteArticlesByGroupId(group.id)
+                articleRepository.deleteArticlesByGroupId(group.id)
                 groupRepository.deleteGroupById(group.id)
             }
         }

@@ -11,13 +11,12 @@ data class UIGroup(
     val articles: List<UIArticle> = emptyList(),
     val updatedAt: Long = System.currentTimeMillis(),
     val expanded: Boolean = false,
-    val deleted: Boolean = false,
     val isShared: Boolean = false,
     val sharedGroupId: String? = null,
     val ownerUid: String? = null,
 ) : Parcelable {
     fun isGroupOwner(currentUid: String?) =
-        !isShared ||
+        isShared.not() ||
         ownerUid == null ||
         ownerUid == currentUid
 }

@@ -125,8 +125,7 @@ class InvitationRepository @Inject constructor(
                         "name" to invitation.groupName,
                         "isShared" to true,
                         "sharedGroupId" to sharedGroupId,
-                        "updatedAt" to System.currentTimeMillis(),
-                        "deleted" to false
+                        "updatedAt" to System.currentTimeMillis()
                     ),
                     SetOptions.merge()
                 ).await()
