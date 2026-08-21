@@ -42,11 +42,13 @@ class InvitationRepository @Inject constructor(
             .get()
             .await()
         return snapshot.documents
+            .asSequence()
             .mapNotNull { firestoreModelMapper.toInvitation(it) }
             .sortedByDescending { it.createdAt }
             .map { it.toEmail }
             .distinct()
             .take(limit)
+            .toList()
     }
 
     suspend fun sendInvitation(

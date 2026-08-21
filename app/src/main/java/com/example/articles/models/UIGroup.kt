@@ -15,4 +15,9 @@ data class UIGroup(
     val isShared: Boolean = false,
     val sharedGroupId: String? = null,
     val ownerUid: String? = null,
-): Parcelable
+) : Parcelable {
+    fun isGroupOwner(currentUid: String?) =
+        !isShared ||
+        ownerUid == null ||
+        ownerUid == currentUid
+}

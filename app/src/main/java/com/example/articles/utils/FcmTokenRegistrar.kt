@@ -27,16 +27,13 @@ fun saveFcmToken(context: Context, uid: String, token: String) {
         .collection(USERS_COLLECTION)
         .document(uid)
         .set(mapOf("fcmTokens" to mapOf(deviceId to token)), SetOptions.merge())
-        .addOnFailureListener { e ->
-            Log.e(LOG_TAG, "Failed to save FCM token: ${e.message}")
-        }
+        .addOnFailureListener { e -> Log.e(LOG_TAG, "Failed to save FCM token: ${e.message}") }
 }
 
 @Suppress("DEPRECATION")
-fun registerFcmToken(context: Context, uid: String) {
-    FirebaseMessaging.getInstance().token
+fun registerFcmToken(context: Context, uid: String) =
+    FirebaseMessaging
+        .getInstance()
+        .token
         .addOnSuccessListener { token -> saveFcmToken(context, uid, token) }
-        .addOnFailureListener { e ->
-            Log.e(LOG_TAG, "Failed to fetch FCM token: ${e.message}")
-        }
-}
+        .addOnFailureListener { e -> Log.e(LOG_TAG, "Failed to fetch FCM token: ${e.message}") }

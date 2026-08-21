@@ -57,6 +57,3 @@ fun UIGroup.toGroupEntity() = GroupEntity(
     sharedGroupId = sharedGroupId,
     ownerUid = ownerUid
 )
-
-fun isGroupOwner(group: UIGroup, currentUid: String?) =
-    !group.isShared || group.ownerUid == null || group.ownerUid == currentUid

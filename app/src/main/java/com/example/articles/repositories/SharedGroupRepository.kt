@@ -24,16 +24,20 @@ class SharedGroupRepository @Inject constructor(
     suspend fun createSharedGroup(group: UIGroup, fromUid: String, toUid: String): String {
         val sharedGroupId = UUID.randomUUID().toString()
 
-        firestore.collection(SHARED_GROUPS_COLLECTION).document(sharedGroupId)
-            .set(mapOf(
-                "sharedGroupId" to sharedGroupId,
-                "name" to group.name,
-                "updatedAt" to System.currentTimeMillis(),
-                "deleted" to false,
-                "members" to listOf(fromUid, toUid),
-                "fromUid" to fromUid,
-                "fromGroupId" to group.id.toString()
-            ))
+        firestore
+            .collection(SHARED_GROUPS_COLLECTION)
+            .document(sharedGroupId)
+            .set(
+                mapOf(
+                    "sharedGroupId" to sharedGroupId,
+                    "name" to group.name,
+                    "updatedAt" to System.currentTimeMillis(),
+                    "deleted" to false,
+                    "members" to listOf(fromUid, toUid),
+                    "fromUid" to fromUid,
+                    "fromGroupId" to group.id.toString()
+                )
+            )
             .await()
 
         val articlesSnapshot = firestore
@@ -49,7 +53,8 @@ class SharedGroupRepository @Inject constructor(
 
         articlesSnapshot.documents.forEach { doc ->
             val articleEntity = firestoreModelMapper.toArticleEntity(doc) ?: return@forEach
-            sharedArticlesCollection.document(articleEntity.idArticle.toString())
+            sharedArticlesCollection
+                .document(articleEntity.idArticle.toString())
                 .set(firestoreModelMapper.toArticlesFirestoreMap(articleEntity))
                 .await()
         }
@@ -59,7 +64,8 @@ class SharedGroupRepository @Inject constructor(
 
     suspend fun syncSharedGroup(sharedGroupId: String): Pair<GroupEntity, List<ArticleEntity>> {
         val groupSnapshot = firestore
-            .collection(SHARED_GROUPS_COLLECTION).document(sharedGroupId)
+            .collection(SHARED_GROUPS_COLLECTION)
+            .document(sharedGroupId)
             .get()
             .await()
 
@@ -75,7 +81,8 @@ class SharedGroupRepository @Inject constructor(
         )
 
         val articlesSnapshot = firestore
-            .collection(SHARED_GROUPS_COLLECTION).document(sharedGroupId)
+            .collection(SHARED_GROUPS_COLLECTION)
+            .document(sharedGroupId)
             .collection(ARTICLES_COLLECTION)
             .whereGreaterThan("updatedAt", 0)
             .get()
@@ -95,11 +102,13 @@ class SharedGroupRepository @Inject constructor(
         articles: List<ArticleEntity>
     ) {
         val collection = firestore
-            .collection(SHARED_GROUPS_COLLECTION).document(sharedGroupId)
+            .collection(SHARED_GROUPS_COLLECTION)
+            .document(sharedGroupId)
             .collection(ARTICLES_COLLECTION)
 
         articles.forEach { article ->
-            collection.document(article.idArticle.toString())
+            collection
+                .document(article.idArticle.toString())
                 .set(firestoreModelMapper.toArticlesFirestoreMap(article))
                 .await()
         }
@@ -107,23 +116,34 @@ class SharedGroupRepository @Inject constructor(
 
     suspend fun getSharedGroupMeta(sharedGroupId: String): Pair<String?, String?> {
         val snapshot = firestore
-            .collection(SHARED_GROUPS_COLLECTION).document(sharedGroupId)
-            .get().await()
+            .collection(SHARED_GROUPS_COLLECTION)
+            .document(sharedGroupId)
+            .get()
+            .await()
         return snapshot.getString("fromUid") to snapshot.getString("fromGroupId")
     }
 
     suspend fun leaveSharedGroup(sharedGroupId: String, uid: String) {
-        val docRef = firestore.collection(SHARED_GROUPS_COLLECTION).document(sharedGroupId)
-        val snapshot = docRef.get().await()
+        val docRef = firestore
+            .collection(SHARED_GROUPS_COLLECTION)
+            .document(sharedGroupId)
+        val snapshot = docRef
+            .get()
+            .await()
         val data = snapshot.data ?: return
         val members = (data["members"] as? List<*>)?.filterIsInstance<String>() ?: return
         val remaining = members.filter { it != uid }
         if (remaining.isEmpty()) {
-            val articles = docRef.collection(ARTICLES_COLLECTION).get().await()
+            val articles = docRef
+                .collection(ARTICLES_COLLECTION)
+                .get()
+                .await()
             val batch = firestore.batch()
             articles.documents.forEach { batch.delete(it.reference) }
             batch.delete(docRef)
-            batch.commit().await()
+            batch
+                .commit()
+                .await()
         } else {
             docRef.update("members", remaining).await()
         }
@@ -140,28 +160,47 @@ class SharedGroupRepository @Inject constructor(
 
     suspend fun getMembers(sharedGroupId: String): List<GroupMember> {
         val snapshot = firestore
-            .collection(SHARED_GROUPS_COLLECTION).document(sharedGroupId)
-            .get().await()
+            .collection(SHARED_GROUPS_COLLECTION)
+            .document(sharedGroupId)
+            .get()
+            .await()
         val memberUids = (snapshot.get("members") as? List<*>)?.filterIsInstance<String>() ?: emptyList()
         return memberUids.mapNotNull { uid ->
-            val profile = firestore.collection(USERS_COLLECTION).document(uid)
-                .collection("profile").document("info")
-                .get().await()
+            val profile = firestore
+                .collection(USERS_COLLECTION)
+                .document(uid)
+                .collection("profile")
+                .document("info")
+                .get()
+                .await()
             val email = profile.getString("email") ?: return@mapNotNull null
             GroupMember(uid = uid, email = email)
         }
     }
 
     suspend fun removeMember(sharedGroupId: String, memberUid: String) {
-        val docRef = firestore.collection(SHARED_GROUPS_COLLECTION).document(sharedGroupId)
-        val snapshot = docRef.get().await()
+        val docRef = firestore
+            .collection(SHARED_GROUPS_COLLECTION)
+            .document(sharedGroupId)
+        val snapshot = docRef
+            .get()
+            .await()
         val members = (snapshot.get("members") as? List<*>)?.filterIsInstance<String>() ?: return
-        docRef.update("members", members - memberUid).await()
+        docRef
+            .update("members", members - memberUid)
+            .await()
     }
 
     suspend fun markSharedGroupDeleted(sharedGroupId: String) {
-        firestore.collection(SHARED_GROUPS_COLLECTION).document(sharedGroupId)
-            .update(mapOf("deleted" to true, "updatedAt" to System.currentTimeMillis()))
+        firestore
+            .collection(SHARED_GROUPS_COLLECTION)
+            .document(sharedGroupId)
+            .update(
+                mapOf(
+                    "deleted" to true,
+                    "updatedAt" to System.currentTimeMillis()
+                )
+            )
             .await()
     }
 

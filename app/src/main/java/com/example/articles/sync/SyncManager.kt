@@ -80,9 +80,7 @@ class SyncManager(
             .first()
         val localArticleChanges = articleRepository
             .getAllArticlesNoMapping()
-            .map { list ->
-                list.filter { it.updatedAt > syncTimestamp && it.groupId !in sharedGroupIds }
-            }
+            .map { list -> list.filter { it.updatedAt > syncTimestamp && it.groupId !in sharedGroupIds } }
             .first()
         Log.d(ArticlesApplication.LOG_TAG, "Uploading ${localArticleChanges.size} local article changes")
         uploadLocalArticleChanges(localArticleChanges, articlesCollection)

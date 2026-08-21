@@ -18,7 +18,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-private const val MESSAGE_TYPE_FORCE_SIGN_OUT = "forceSignOut"
+private enum class MessageType(val value: String) {
+    SYNC("sync"),
+    FORCE_SIGN_OUT("forceSignOut");
+
+    companion object {
+        fun from(value: String?): MessageType? = entries.find { it.value == value }
+    }
+}
 
 @AndroidEntryPoint
 class ArticlesFirebaseMessagingService : FirebaseMessagingService() {
@@ -28,10 +35,10 @@ class ArticlesFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         Log.d(LOG_TAG, "FCM message received: ${message.data}")
-        if (message.data["type"] == MESSAGE_TYPE_FORCE_SIGN_OUT) {
-            forceSignOut()
-        } else {
-            triggerSync()
+        when (MessageType.from(message.data["type"])) {
+            MessageType.FORCE_SIGN_OUT -> forceSignOut()
+            MessageType.SYNC -> triggerSync()
+            null -> Unit
         }
     }
 

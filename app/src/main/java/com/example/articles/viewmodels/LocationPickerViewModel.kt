@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 
 private val DEFAULT_LAT_LNG = LatLng(44.80567303794035, 20.476393389720563)
 private const val SEARCH_DEBOUNCE_MS = 300L
@@ -75,7 +76,9 @@ class LocationPickerViewModel @Inject constructor(
     }
 
     private fun onLocationPermissionResult(granted: Boolean) {
-        state.update { it.copy(requestLocationPermission = false) }
+        state.update { currentState ->
+            currentState.copy(requestLocationPermission = false)
+        }
         if (granted) fetchCurrentLocation()
     }
 
@@ -98,42 +101,44 @@ class LocationPickerViewModel @Inject constructor(
         }
     }
 
-    private fun hasLocationPermission(): Boolean {
-        return ContextCompat.checkSelfPermission(
-            context, Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED ||
-            ContextCompat.checkSelfPermission(
-                context, Manifest.permission.ACCESS_COARSE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-    }
+    private fun hasLocationPermission(): Boolean =
+        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
     private fun isLocationEnabled(): Boolean {
-        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
-            ?: return false
+        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager ?: return false
         return LocationManagerCompat.isLocationEnabled(locationManager)
     }
 
     private fun updateSearchQuery(query: String) {
-        state.update { it.copy(searchQuery = query) }
+        state.update { currentState ->
+            currentState.copy(searchQuery = query)
+        }
         searchJob?.cancel()
 
         if (query.isBlank()) {
-            state.update { it.copy(predictions = emptyList()) }
+            state.update { currentState ->
+                currentState.copy(predictions = emptyList())
+            }
             return
         }
 
         searchJob = viewModelScope.launch {
-            delay(SEARCH_DEBOUNCE_MS)
+            delay(SEARCH_DEBOUNCE_MS.milliseconds)
             val request = FindAutocompletePredictionsRequest.builder()
                 .setQuery(query)
                 .setSessionToken(sessionToken)
                 .build()
             try {
                 val response = placesClient.findAutocompletePredictions(request).await()
-                state.update { it.copy(predictions = response.autocompletePredictions) }
+                state.update { currentState ->
+                    currentState.copy(predictions = response.autocompletePredictions)
+                }
             } catch (e: Exception) {
                 Log.e(LOG_TAG, "Place search failed: ${e.message}")
-                state.update { it.copy(predictions = emptyList()) }
+                state.update { currentState ->
+                    currentState.copy(predictions = emptyList())
+                }
             }
         }
     }

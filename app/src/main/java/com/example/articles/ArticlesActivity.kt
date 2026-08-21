@@ -116,7 +116,12 @@ class ArticlesActivity : ComponentActivity() {
             invitation.fromEmail,
             invitation.groupName
         )
-        val deepLinkIntent = Intent(Intent.ACTION_VIEW, Uri.parse(INVITATIONS_DEEP_LINK), this, ArticlesActivity::class.java)
+        val deepLinkIntent = Intent(
+            Intent.ACTION_VIEW,
+            INVITATIONS_DEEP_LINK.toUri(),
+            this,
+            ArticlesActivity::class.java
+        )
         val pendingIntent = TaskStackBuilder.create(this).run {
             addNextIntentWithParentStack(deepLinkIntent)
             getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)

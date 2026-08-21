@@ -27,7 +27,10 @@ class GroupRepository @Inject constructor(
     private val firestore = Firebase.firestore
 
     private fun groupsCollection(uid: String) =
-        firestore.collection(USERS_COLLECTION).document(uid).collection(GROUPS_COLLECTION)
+        firestore
+            .collection(USERS_COLLECTION)
+            .document(uid)
+            .collection(GROUPS_COLLECTION)
 
     suspend fun upsertGroup(group: UIGroup) {
         val uid = Firebase.auth.currentUser?.uid ?: return

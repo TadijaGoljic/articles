@@ -30,7 +30,9 @@ object NetworkModule {
         return OkHttpClient.Builder()
             .addInterceptor { chain ->
                 chain.proceed(
-                    chain.request().newBuilder()
+                    chain
+                        .request()
+                        .newBuilder()
                         .header("User-Agent", "ArticlesApp")
                         .build()
                 )
@@ -44,9 +46,7 @@ object NetworkModule {
         return Retrofit.Builder()
             .baseUrl("https://nominatim.openstreetmap.org/")
             .client(okHttpClient)
-            .addConverterFactory(
-                json.asConverterFactory("application/json".toMediaType())
-            )
+            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
     }
 
