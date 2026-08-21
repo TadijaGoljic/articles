@@ -13,6 +13,7 @@ import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.tasks.await
 import java.util.UUID
 import javax.inject.Inject
@@ -87,7 +88,7 @@ class InvitationRepository @Inject constructor(
                 trySend(invitations)
             }
         awaitClose { registration.remove() }
-    }
+    }.catch { /* listener closed, e.g. signed out or account deleted mid-session */ emit(emptyList()) }
 
     suspend fun respondToInvitation(invitation: Invitation, accepted: Boolean) {
         if (accepted) {

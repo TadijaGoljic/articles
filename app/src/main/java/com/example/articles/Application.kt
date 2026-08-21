@@ -3,9 +3,11 @@ package com.example.articles
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.pm.PackageManager
 import android.os.Build
 import androidx.work.Configuration
 import com.example.articles.sync.SyncWorkerFactory
+import com.google.android.libraries.places.api.Places
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
@@ -17,6 +19,18 @@ class ArticlesApplication : Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannels()
+        initializePlaces()
+    }
+
+    private fun initializePlaces() {
+        if (Places.isInitialized()) return
+        val apiKey = packageManager
+            .getApplicationInfo(packageName, PackageManager.GET_META_DATA)
+            .metaData
+            .getString("com.google.android.geo.API_KEY")
+        if (!apiKey.isNullOrBlank()) {
+            Places.initializeWithNewPlacesApiEnabled(applicationContext, apiKey)
+        }
     }
 
     override val workManagerConfiguration: Configuration

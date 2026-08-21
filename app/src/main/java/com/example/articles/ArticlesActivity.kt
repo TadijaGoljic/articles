@@ -30,13 +30,13 @@ import com.example.articles.ui.composables.ArticlesNavigationFlow
 import com.example.articles.ui.composables.INVITATIONS_DEEP_LINK
 import com.example.articles.ui.theme.ArticlesTheme
 import com.example.articles.utils.TriggerSync
+import com.example.articles.utils.registerFcmToken
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.firestore
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -63,8 +63,6 @@ class ArticlesActivity : ComponentActivity() {
         private const val GOOGLE_MAPS_BASE_URL = "https://www.google.com/maps"
         private const val NOTIFIED_INVITATIONS_PREFS = "notified_invitations"
         private const val NOTIFIED_INVITATIONS_KEY = "ids"
-        private const val BATTERY_OPTIMIZATION_PREFS = "battery_optimization"
-        private const val BATTERY_OPTIMIZATION_PROMPTED_KEY = "prompted"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -73,8 +71,8 @@ class ArticlesActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
-        requestIgnoreBatteryOptimizations()
         writeUserProfile()
+        Firebase.auth.currentUser?.uid?.let { uid -> registerFcmToken(this, uid) }
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(state = Lifecycle.State.STARTED) {
                 triggerSync()
@@ -83,9 +81,7 @@ class ArticlesActivity : ComponentActivity() {
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(state = Lifecycle.State.STARTED) {
                 val uid = Firebase.auth.currentUser?.uid ?: return@repeatOnLifecycle
-                invitationRepository.observePendingInvitations(uid)
-                    .catch { /* account deleted or signed out */ }
-                    .collectLatest { invitations ->
+                invitationRepository.observePendingInvitations(uid).collectLatest { invitations ->
                     invitations.forEach { invitation ->
                         if (!isAlreadyNotified(invitation.invitationId)) {
                             showInvitationNotification(invitation)
@@ -136,18 +132,6 @@ class ArticlesActivity : ComponentActivity() {
 
         getSystemService<NotificationManager>()
             ?.notify(invitation.invitationId.hashCode(), notification)
-    }
-
-    private fun requestIgnoreBatteryOptimizations() {
-        val prefs = getSharedPreferences(BATTERY_OPTIMIZATION_PREFS, MODE_PRIVATE)
-        if (prefs.getBoolean(BATTERY_OPTIMIZATION_PROMPTED_KEY, false)) return
-        val powerManager = getSystemService<PowerManager>() ?: return
-        if (powerManager.isIgnoringBatteryOptimizations(packageName)) return
-        prefs.edit { putBoolean(BATTERY_OPTIMIZATION_PROMPTED_KEY, true) }
-        val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-            data = "package:$packageName".toUri()
-        }
-        startActivity(intent)
     }
 
     private fun writeUserProfile() {

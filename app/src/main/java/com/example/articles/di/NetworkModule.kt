@@ -1,10 +1,14 @@
 package com.example.articles.di
 
+import android.content.Context
 import com.example.articles.nominatim.NominatimAPI
+import com.google.android.libraries.places.api.Places
+import com.google.android.libraries.places.api.net.PlacesClient
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -50,5 +54,11 @@ object NetworkModule {
     @Singleton
     fun provideNominatimApi(retrofit: Retrofit): NominatimAPI {
         return retrofit.create(NominatimAPI::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun providePlacesClient(@ApplicationContext context: Context): PlacesClient {
+        return Places.createClient(context)
     }
 }
