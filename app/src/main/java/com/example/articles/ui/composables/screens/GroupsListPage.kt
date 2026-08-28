@@ -1,5 +1,6 @@
 package com.example.articles.ui.composables.screens
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -43,6 +44,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -51,6 +53,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -92,6 +95,14 @@ fun GroupsListPage(
     val sheetState = rememberModalBottomSheetState()
     val coroutineScope = rememberCoroutineScope()
     val screenSize = ScreenSize.getScreenSize()
+    val context = LocalContext.current
+
+    LaunchedEffect(state.invitationSentEvent) {
+        if (state.invitationSentEvent) {
+            Toast.makeText(context, context.getString(R.string.invitation_sent), Toast.LENGTH_SHORT).show()
+            groupsPageViewModel.handleAction(GroupsPageAction.ConsumeInvitationSentEvent)
+        }
+    }
 
     if (state.showAddNewGroupDialog) {
         OneTextFieldDialog(

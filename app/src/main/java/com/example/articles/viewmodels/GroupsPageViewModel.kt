@@ -93,6 +93,7 @@ class GroupsPageViewModel @Inject constructor(
             is GroupsPageAction.ShowGroupMembersDialog -> showGroupMembersDialog(group = action.group)
             is GroupsPageAction.HideGroupMembersDialog -> hideGroupMembersDialog()
             is GroupsPageAction.RemoveGroupMember -> removeGroupMember(member = action.member)
+            is GroupsPageAction.ConsumeInvitationSentEvent -> consumeInvitationSentEvent()
         }
     }
 
@@ -296,6 +297,10 @@ class GroupsPageViewModel @Inject constructor(
         currentState.copy(showGroupMembersDialog = false)
     }
 
+    private fun consumeInvitationSentEvent() = state.update { currentState ->
+        currentState.copy(invitationSentEvent = false)
+    }
+
     private fun shareGroup(group: UIGroup, email: String) {
         val currentUser = Firebase.auth.currentUser ?: return
         state.update { currentState ->
@@ -331,6 +336,7 @@ class GroupsPageViewModel @Inject constructor(
                         showShareGroupDialog = false,
                         shareGroupEmail = TextFieldState(),
                         isShareGroupError = false,
+                        invitationSentEvent = true,
                     )
                 }
             } catch (e: Exception) {
@@ -364,6 +370,7 @@ data class GroupsPageState(
     val isCreateGroupDialogLoading: Boolean = false,
     val longPressedGroup: UIGroup? = null,
     val pendingInvitationsCount: Int = 0,
+    val invitationSentEvent: Boolean = false,
     val recentShareRecipients: List<String> = emptyList(),
     val currentUid: String? = null,
     val showGroupMembersDialog: Boolean = false,
@@ -392,4 +399,5 @@ sealed interface GroupsPageAction {
     data class ShowGroupMembersDialog(val group: UIGroup) : GroupsPageAction
     data object HideGroupMembersDialog : GroupsPageAction
     data class RemoveGroupMember(val member: GroupMember) : GroupsPageAction
+    data object ConsumeInvitationSentEvent : GroupsPageAction
 }
