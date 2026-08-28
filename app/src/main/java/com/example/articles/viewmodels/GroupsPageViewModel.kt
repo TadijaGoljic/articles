@@ -1,12 +1,15 @@
 package com.example.articles.viewmodels
 
+import android.util.Log
 import androidx.annotation.StringRes
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.articles.ArticlesApplication
 import com.example.articles.R
 import com.example.articles.models.UIGroup
 import com.example.articles.repositories.ArticleRepository
+import com.example.articles.repositories.CommentRepository
 import com.example.articles.repositories.GroupMember
 import com.example.articles.repositories.GroupRepository
 import com.example.articles.repositories.InvitationRepository
@@ -16,6 +19,7 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
@@ -26,30 +30,27 @@ import javax.inject.Inject
 class GroupsPageViewModel @Inject constructor(
     private val groupRepository: GroupRepository,
     private val articleRepository: ArticleRepository,
+    private val commentRepository: CommentRepository,
     private val invitationRepository: InvitationRepository,
     private val sharedGroupRepository: SharedGroupRepository,
     private val triggerSync: TriggerSync
 ) : ViewModel() {
 
-    private val state = MutableStateFlow(GroupsPageState())
-    val uiState = state
+    private val state = MutableStateFlow(value = GroupsPageState())
+    val uiState = state.asStateFlow()
 
     init {
         viewModelScope.launch {
             combine(
-                groupRepository.getAllGroups(),
-                articleRepository.getAllArticles()
+                flow = groupRepository.getAllGroups(),
+                flow2 = articleRepository.getAllArticles()
             ) { groups, articles ->
                 groups.map { group ->
-                    group.copy(
-                        articles = articles.filter { article -> article.groupId == group.id }
-                    )
+                    group.copy(articles = articles.filter { article -> article.groupId == group.id })
                 }
             }.collectLatest { groupsWithArticles ->
                 state.update { currentState ->
-                    currentState.copy(
-                        groups = groupsWithArticles
-                    )
+                    currentState.copy(groups = groupsWithArticles)
                 }
                 val currentUid = Firebase.auth.currentUser?.uid
                 groupsWithArticles
@@ -62,74 +63,36 @@ class GroupsPageViewModel @Inject constructor(
         viewModelScope.launch {
             val uid = Firebase.auth.currentUser?.uid ?: return@launch
             invitationRepository.observePendingInvitations(uid).collectLatest { invitations ->
-                state.update { it.copy(pendingInvitationsCount = invitations.size) }
+                state.update { currentState ->
+                    currentState.copy(pendingInvitationsCount = invitations.size)
+                }
             }
         }
-        state.update { it.copy(currentUid = Firebase.auth.currentUser?.uid) }
+        state.update { currentState ->
+            currentState.copy(currentUid = Firebase.auth.currentUser?.uid)
+        }
     }
 
     fun handleAction(action: GroupsPageAction) {
         when (action) {
-            is GroupsPageAction.ShowAddNewGroupDialog ->
-                updateAddNewGroupDialogVisibility(visible = true)
-
-            is GroupsPageAction.HideAddNewGroupDialog ->
-                updateAddNewGroupDialogVisibility(visible = false)
-
-            is GroupsPageAction.SaveGroup ->
-                saveGroup(name = action.name)
-
-            is GroupsPageAction.ShowEditGroupDialog ->
-                updateEditGroupDialogVisibility(visible = true, group = action.group)
-
-            is GroupsPageAction.HideEditGroupDialog ->
-                updateEditGroupDialogVisibility(visible = false, group = null)
-
-            is GroupsPageAction.EditGroup ->
-                editGroup(group = action.group, name = action.name)
-
-            is GroupsPageAction.DeleteGroup ->
-                deleteGroup(group = action.group)
-
-            is GroupsPageAction.LongClick ->
-                updateEditDeleteBottomSheetVisibility(visible = true, group = action.group)
-
-            is GroupsPageAction.DismissBottomSheet ->
-                updateEditDeleteBottomSheetVisibility(visible = false, group = null)
-
-            is GroupsPageAction.ExpandGroup -> updateGroupExpandedStatus(
-                action.group,
-                status = true
-            )
-
-            is GroupsPageAction.CollapseGroup -> updateGroupExpandedStatus(
-                action.group,
-                status = false
-            )
-
-            is GroupsPageAction.ShowShareGroupDialog ->
-                updateShareGroupDialogVisibility(visible = true, group = action.group)
-
-            is GroupsPageAction.HideShareGroupDialog ->
-                updateShareGroupDialogVisibility(visible = false, group = null)
-
-            is GroupsPageAction.ShareGroup ->
-                shareGroup(
-                    group = state.value.longPressedGroup ?: UIGroup(),
-                    email = action.email
-                )
-
-            is GroupsPageAction.SelectRecentShareRecipient ->
-                selectRecentShareRecipient(email = action.email)
-
-            is GroupsPageAction.ShowGroupMembersDialog ->
-                showGroupMembersDialog(group = action.group)
-
-            is GroupsPageAction.HideGroupMembersDialog ->
-                state.update { it.copy(showGroupMembersDialog = false) }
-
-            is GroupsPageAction.RemoveGroupMember ->
-                removeGroupMember(member = action.member)
+            is GroupsPageAction.ShowAddNewGroupDialog -> updateAddNewGroupDialogVisibility(visible = true)
+            is GroupsPageAction.HideAddNewGroupDialog -> updateAddNewGroupDialogVisibility(visible = false)
+            is GroupsPageAction.SaveGroup -> saveGroup(name = action.name)
+            is GroupsPageAction.ShowEditGroupDialog -> updateEditGroupDialogVisibility(visible = true, group = action.group)
+            is GroupsPageAction.HideEditGroupDialog -> updateEditGroupDialogVisibility(visible = false, group = null)
+            is GroupsPageAction.EditGroup -> editGroup(group = action.group, name = action.name)
+            is GroupsPageAction.DeleteGroup -> deleteGroup(group = action.group)
+            is GroupsPageAction.LongClick -> updateEditDeleteBottomSheetVisibility(visible = true, group = action.group)
+            is GroupsPageAction.DismissBottomSheet -> updateEditDeleteBottomSheetVisibility(visible = false, group = null)
+            is GroupsPageAction.ExpandGroup -> updateGroupExpandedStatus(group = action.group, status = true)
+            is GroupsPageAction.CollapseGroup -> updateGroupExpandedStatus(group = action.group, status = false)
+            is GroupsPageAction.ShowShareGroupDialog -> updateShareGroupDialogVisibility(visible = true, group = action.group)
+            is GroupsPageAction.HideShareGroupDialog -> updateShareGroupDialogVisibility(visible = false, group = null)
+            is GroupsPageAction.ShareGroup -> shareGroup(group = state.value.longPressedGroup ?: UIGroup(), email = action.email)
+            is GroupsPageAction.SelectRecentShareRecipient -> selectRecentShareRecipient(email = action.email)
+            is GroupsPageAction.ShowGroupMembersDialog -> showGroupMembersDialog(group = action.group)
+            is GroupsPageAction.HideGroupMembersDialog -> hideGroupMembersDialog()
+            is GroupsPageAction.RemoveGroupMember -> removeGroupMember(member = action.member)
         }
     }
 
@@ -147,6 +110,8 @@ class GroupsPageViewModel @Inject constructor(
             currentState.copy(
                 isCreateGroupDialogLoading = true,
                 isGroupCreationError = false,
+                isShareGroupError = false,
+                groupCreationErrorResource = null
             )
         }
         if (name.isEmpty() || name.uppercase() in state.value.groups.map { it.name.uppercase() }) {
@@ -160,9 +125,7 @@ class GroupsPageViewModel @Inject constructor(
             return
         } else {
             viewModelScope.launch {
-                groupRepository.upsertGroup(
-                    group = UIGroup(name = name)
-                )
+                groupRepository.upsertGroup(group = UIGroup(name = name))
                 state.update { currentState ->
                     currentState.copy(
                         isCreateGroupDialogLoading = false,
@@ -238,9 +201,11 @@ class GroupsPageViewModel @Inject constructor(
                     sharedGroupRepository.leaveSharedGroup(group.sharedGroupId, uid)
                 }
                 articleRepository.hardDeleteLocalArticlesByGroupId(group.id)
+                commentRepository.hardDeleteLocalCommentsByGroupId(group.id)
                 groupRepository.deleteGroupLocalById(group.id)
             } else {
                 articleRepository.deleteArticlesByGroupId(group.id)
+                commentRepository.deleteCommentsByGroupId(group.id)
                 groupRepository.deleteGroupById(group.id)
             }
         }
@@ -327,6 +292,10 @@ class GroupsPageViewModel @Inject constructor(
         }
     }
 
+    fun hideGroupMembersDialog() = state.update { currentState ->
+        currentState.copy(showGroupMembersDialog = false)
+    }
+
     private fun shareGroup(group: UIGroup, email: String) {
         val currentUser = Firebase.auth.currentUser ?: return
         state.update { currentState ->
@@ -337,31 +306,42 @@ class GroupsPageViewModel @Inject constructor(
             )
         }
         viewModelScope.launch {
-            val toUid = invitationRepository.lookupUidByEmail(email)
-            if (toUid == null) {
+            try {
+                val toUid = invitationRepository.lookupUidByEmail(email)
+                if (toUid == null) {
+                    state.update { currentState ->
+                        currentState.copy(
+                            isShareGroupLoading = false,
+                            groupSharingErrorResource = R.string.user_not_found,
+                            isShareGroupError = true,
+                        )
+                    }
+                    return@launch
+                }
+                invitationRepository.sendInvitation(
+                    fromUid = currentUser.uid,
+                    fromEmail = currentUser.email ?: "",
+                    toEmail = email,
+                    toUid = toUid,
+                    group = group
+                )
                 state.update { currentState ->
                     currentState.copy(
                         isShareGroupLoading = false,
-                        groupSharingErrorResource = R.string.user_not_found,
+                        showShareGroupDialog = false,
+                        shareGroupEmail = TextFieldState(),
+                        isShareGroupError = false,
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e(ArticlesApplication.LOG_TAG, "shareGroup failed: ${e.message}", e)
+                state.update { currentState ->
+                    currentState.copy(
+                        isShareGroupLoading = false,
+                        groupSharingErrorResource = R.string.something_went_wrong,
                         isShareGroupError = true,
                     )
                 }
-                return@launch
-            }
-            invitationRepository.sendInvitation(
-                fromUid = currentUser.uid,
-                fromEmail = currentUser.email ?: "",
-                toEmail = email,
-                toUid = toUid,
-                group = group
-            )
-            state.update { currentState ->
-                currentState.copy(
-                    isShareGroupLoading = false,
-                    showShareGroupDialog = false,
-                    shareGroupEmail = TextFieldState(),
-                    isShareGroupError = false,
-                )
             }
         }
     }

@@ -9,7 +9,7 @@ import android.net.Uri
 import android.util.Log
 import com.example.articles.ArticlesApplication.Companion.LOG_TAG
 import com.example.articles.models.ArticleUnit
-import com.example.articles.models.Location
+import com.example.articles.models.UILocation
 import com.example.articles.models.UIArticle
 import com.example.articles.nominatim.NominatimAPI
 import com.example.articles.repositories.ArticleRepository
@@ -19,6 +19,7 @@ import com.example.articles.utils.TriggerSync
 import com.example.articles.utils.isValidUri
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -38,7 +39,7 @@ class AddNewArticleViewModel @Inject constructor(
     private val groupId: UUID = UUID.fromString(args.groupId)
 
     private var state = MutableStateFlow(AddNewArticleState())
-    val uiState = state
+    val uiState = state.asStateFlow()
 
     init {
         args.articleId?.let { id ->
@@ -135,7 +136,7 @@ class AddNewArticleViewModel @Inject constructor(
         }
     }
 
-    private fun updateLocation(location: Location?) {
+    private fun updateLocation(location: UILocation?) {
         if (location == null) {
             state.update { currentState ->
                 currentState.copy(
@@ -223,7 +224,7 @@ data class AddNewArticleState(
 
 sealed interface AddNewArticleAction {
     data object SaveArticle : AddNewArticleAction
-    data class UpdateLocation(val location: Location) : AddNewArticleAction
+    data class UpdateLocation(val location: UILocation) : AddNewArticleAction
     data class UpdatePhoto(val photoUri: String) : AddNewArticleAction
     data object ClearLocation : AddNewArticleAction
     data object ClearPhoto : AddNewArticleAction

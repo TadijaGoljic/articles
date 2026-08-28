@@ -27,4 +27,8 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun providesGroupDao(database: ArticleDatabase) = database.groupDao()
+
+    @Provides
+    @Singleton
+    fun providesCommentDao(database: ArticleDatabase) = database.commentDao()
 }

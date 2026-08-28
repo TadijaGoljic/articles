@@ -66,7 +66,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.articles.R
 import com.example.articles.models.ArticleUnit
-import com.example.articles.models.Location
+import com.example.articles.models.UILocation
 import com.example.articles.ui.composables.utils.BottomSheetRowItem
 import com.example.articles.ui.composables.utils.ProgressButton
 import com.example.articles.ui.composables.utils.Toolbar
@@ -82,7 +82,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun AddNewArticle(
     onBackClick: () -> Unit,
-    onLocationPickerClick: (Location?) -> Unit,
+    onLocationPickerClick: (UILocation?) -> Unit,
     modifier: Modifier = Modifier,
     addNewArticleViewModel: AddNewArticleViewModel
 ) {

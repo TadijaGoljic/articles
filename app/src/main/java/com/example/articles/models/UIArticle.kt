@@ -14,7 +14,7 @@ data class UIArticle(
     val name: String = "",
     val description: String? = "",
     val dateCreated: Date = Date(),
-    val location: Location? = null,
+    val location: UILocation? = null,
     val quantity: Double? = null,
     val unit: ArticleUnit = ArticleUnit.default,
     val photoUri: String? = null,

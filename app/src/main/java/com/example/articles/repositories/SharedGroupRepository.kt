@@ -1,10 +1,12 @@
 package com.example.articles.repositories
 
 import com.example.articles.db.entities.ArticleEntity
+import com.example.articles.db.entities.CommentEntity
 import com.example.articles.db.entities.GroupEntity
-import com.example.articles.models.FirestoreModelMapper
+import com.example.articles.models.mappers.FirestoreModelMapper
 import com.example.articles.models.UIGroup
 import com.example.articles.utils.ARTICLES_COLLECTION
+import com.example.articles.utils.COMMENTS_COLLECTION
 import com.example.articles.utils.SHARED_GROUPS_COLLECTION
 import com.example.articles.utils.USERS_COLLECTION
 import com.google.firebase.Firebase
@@ -24,6 +26,10 @@ class SharedGroupRepository @Inject constructor(
     suspend fun createSharedGroup(group: UIGroup, fromUid: String, toUid: String): String {
         val sharedGroupId = UUID.randomUUID().toString()
 
+        // Note: articles are NOT copied here. This runs on the accepter's (toUid's)
+        // device, which has no permission to read fromUid's private articles collection.
+        // The inviter's own device seeds sharedGroups/{id}/articles on its next sync
+        // (see SyncManager.syncSharedGroups' first-sync-as-shared full upload).
         firestore
             .collection(SHARED_GROUPS_COLLECTION)
             .document(sharedGroupId)
@@ -38,25 +44,6 @@ class SharedGroupRepository @Inject constructor(
                 )
             )
             .await()
-
-        val articlesSnapshot = firestore
-            .collection("users").document(fromUid)
-            .collection("articles")
-            .whereEqualTo("groupId", group.id.toString())
-            .get()
-            .await()
-
-        val sharedArticlesCollection = firestore
-            .collection(SHARED_GROUPS_COLLECTION).document(sharedGroupId)
-            .collection(ARTICLES_COLLECTION)
-
-        articlesSnapshot.documents.forEach { doc ->
-            val articleEntity = firestoreModelMapper.toArticleEntity(doc) ?: return@forEach
-            sharedArticlesCollection
-                .document(articleEntity.idArticle.toString())
-                .set(firestoreModelMapper.toArticlesFirestoreMap(articleEntity))
-                .await()
-        }
 
         return sharedGroupId
     }
@@ -115,6 +102,39 @@ class SharedGroupRepository @Inject constructor(
         }
     }
 
+    suspend fun syncSharedGroupComments(sharedGroupId: String): List<CommentEntity> {
+        val commentsSnapshot = firestore
+            .collection(SHARED_GROUPS_COLLECTION)
+            .document(sharedGroupId)
+            .collection(COMMENTS_COLLECTION)
+            .whereGreaterThan("updatedAt", 0)
+            .get()
+            .await()
+
+        return commentsSnapshot.documents.mapNotNull { doc ->
+            firestoreModelMapper.toCommentEntity(doc)?.copy(
+                groupId = UUID.fromString(sharedGroupId)
+            )
+        }
+    }
+
+    suspend fun uploadSharedGroupCommentChanges(
+        sharedGroupId: String,
+        comments: List<CommentEntity>
+    ) {
+        val collection = firestore
+            .collection(SHARED_GROUPS_COLLECTION)
+            .document(sharedGroupId)
+            .collection(COMMENTS_COLLECTION)
+
+        comments.forEach { comment ->
+            collection
+                .document(comment.idComment.toString())
+                .set(firestoreModelMapper.toCommentsFirestoreMap(comment))
+                .await()
+        }
+    }
+
     suspend fun getSharedGroupMeta(sharedGroupId: String): Pair<String?, String?> {
         val snapshot = firestore
             .collection(SHARED_GROUPS_COLLECTION)
@@ -139,8 +159,13 @@ class SharedGroupRepository @Inject constructor(
                 .collection(ARTICLES_COLLECTION)
                 .get()
                 .await()
+            val comments = docRef
+                .collection(COMMENTS_COLLECTION)
+                .get()
+                .await()
             val batch = firestore.batch()
             articles.documents.forEach { batch.delete(it.reference) }
+            comments.documents.forEach { batch.delete(it.reference) }
             batch.delete(docRef)
             batch
                 .commit()
@@ -205,8 +230,13 @@ class SharedGroupRepository @Inject constructor(
             .collection(ARTICLES_COLLECTION)
             .get()
             .await()
+        val comments = docRef
+            .collection(COMMENTS_COLLECTION)
+            .get()
+            .await()
         val batch = firestore.batch()
         articles.documents.forEach { batch.delete(it.reference) }
+        comments.documents.forEach { batch.delete(it.reference) }
         batch.delete(docRef)
         batch.commit().await()
     }

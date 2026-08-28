@@ -1,7 +1,11 @@
-package com.example.articles.models
+package com.example.articles.models.mappers
 
 import com.example.articles.db.entities.ArticleEntity
+import com.example.articles.db.entities.CommentEntity
 import com.example.articles.db.entities.GroupEntity
+import com.example.articles.models.UIArticle
+import com.example.articles.models.UIComment
+import com.example.articles.models.UIGroup
 import java.util.Date
 
 fun ArticleEntity.toUIArticle() = UIArticle(
@@ -52,4 +56,26 @@ fun UIGroup.toGroupEntity() = GroupEntity(
     isShared = isShared,
     sharedGroupId = sharedGroupId,
     ownerUid = ownerUid
+)
+
+fun CommentEntity.toUIComment() = UIComment(
+    id = idComment,
+    groupId = groupId,
+    articleId = articleId,
+    authorUid = authorUid,
+    authorEmail = authorEmail,
+    text = text,
+    createdAt = createdAt,
+    updatedAt = updatedAt
+)
+
+fun UIComment.toCommentEntity() = CommentEntity(
+    idComment = id,
+    groupId = groupId,
+    articleId = articleId,
+    authorUid = authorUid,
+    authorEmail = authorEmail,
+    text = text,
+    createdAt = createdAt,
+    updatedAt = System.currentTimeMillis()
 )

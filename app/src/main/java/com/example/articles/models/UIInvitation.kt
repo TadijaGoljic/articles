@@ -1,6 +1,6 @@
 package com.example.articles.models
 
-data class Invitation(
+data class UIInvitation(
     val invitationId: String,
     val fromUid: String,
     val fromEmail: String,

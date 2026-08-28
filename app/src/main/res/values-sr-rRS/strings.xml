@@ -70,6 +70,11 @@
     <string name="filter">Филтрирај</string>
     <string name="expand_all_articles">Рашири све артикле</string>
     <string name="collapse_all_articles">Скупи све артикле</string>
+    <string name="comments">Коментари</string>
+    <string name="add_comment">Додај коментар</string>
+    <string name="write_a_comment">Напишите коментар…</string>
+    <string name="no_comments_yet">Још увек нема коментара</string>
+    <string name="delete_comment">Обриши коментар</string>
 
     <!-- Filters-->
     <string name="filters_all">Сви</string>

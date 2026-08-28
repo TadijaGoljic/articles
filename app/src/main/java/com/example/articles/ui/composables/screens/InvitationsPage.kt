@@ -31,7 +31,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.articles.R
-import com.example.articles.models.Invitation
+import com.example.articles.models.UIInvitation
 import com.example.articles.ui.composables.utils.Toolbar
 import com.example.articles.viewmodels.InvitationsAction
 import com.example.articles.viewmodels.InvitationsViewModel
@@ -60,7 +60,7 @@ fun InvitationsPage(
                 leadingIcon = Icons.Default.ChevronLeft,
                 onLeadingIconClick = onBackClick
             )
-            if (state.invitations.isEmpty() && !state.isLoading) {
+            if (state.invitation.isEmpty() && !state.isLoading) {
                 NoInvitations(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -83,7 +83,7 @@ fun InvitationsPage(
                         ScreenSize.VERY_LARGE -> Modifier.padding(horizontal = 160.dp)
                     }
                 ) {
-                    items(state.invitations) { invitation ->
+                    items(state.invitation) { invitation ->
                         InvitationCard(
                             invitation = invitation,
                             onAccept = {
@@ -104,7 +104,7 @@ fun InvitationsPage(
 
 @Composable
 private fun InvitationCard(
-    invitation: Invitation,
+    invitation: UIInvitation,
     onAccept: () -> Unit,
     onDecline: () -> Unit,
     modifier: Modifier = Modifier

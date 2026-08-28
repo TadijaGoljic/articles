@@ -5,9 +5,10 @@ import androidx.work.DelegatingWorkerFactory
 import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
-import com.example.articles.models.FirestoreModelMapper
+import com.example.articles.models.mappers.FirestoreModelMapper
 import com.example.articles.models.UserPreferences
 import com.example.articles.repositories.ArticleRepository
+import com.example.articles.repositories.CommentRepository
 import com.example.articles.repositories.GroupRepository
 import com.example.articles.repositories.SharedGroupRepository
 import javax.inject.Inject
@@ -17,6 +18,7 @@ class SyncManagerFactory(
     private val userPreferences: UserPreferences,
     private val articleRepository: ArticleRepository,
     private val groupRepository: GroupRepository,
+    private val commentRepository: CommentRepository,
     private val sharedGroupRepository: SharedGroupRepository,
     private val firestoreModelMapper: FirestoreModelMapper,
 ) : WorkerFactory() {
@@ -33,6 +35,7 @@ class SyncManagerFactory(
                     userPreferences,
                     articleRepository,
                     groupRepository,
+                    commentRepository,
                     sharedGroupRepository,
                     firestoreModelMapper
                 )
@@ -47,6 +50,7 @@ class SyncWorkerFactory @Inject constructor(
     userPreferences: UserPreferences,
     articleRepository: ArticleRepository,
     groupRepository: GroupRepository,
+    commentRepository: CommentRepository,
     sharedGroupRepository: SharedGroupRepository,
     firestoreModelMapper: FirestoreModelMapper,
 ) : DelegatingWorkerFactory() {
@@ -56,6 +60,7 @@ class SyncWorkerFactory @Inject constructor(
                 userPreferences = userPreferences,
                 articleRepository = articleRepository,
                 groupRepository = groupRepository,
+                commentRepository = commentRepository,
                 sharedGroupRepository = sharedGroupRepository,
                 firestoreModelMapper = firestoreModelMapper
             )

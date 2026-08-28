@@ -25,6 +25,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -54,7 +55,7 @@ class LocationPickerViewModel @Inject constructor(
             requestLocationPermission = !hasExplicitLocation && !hasLocationPermission()
         )
     )
-    val uiState = state
+    val uiState = state.asStateFlow()
 
     private var sessionToken = AutocompleteSessionToken.newInstance()
     private var searchJob: Job? = null

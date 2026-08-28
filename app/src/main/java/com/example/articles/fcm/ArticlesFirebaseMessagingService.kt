@@ -6,7 +6,6 @@ import com.example.articles.ArticlesApplication.Companion.LOG_TAG
 import com.example.articles.AuthenticationActivity
 import com.example.articles.db.ArticleDatabase
 import com.example.articles.utils.TriggerSync
-import com.example.articles.utils.saveFcmToken
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth

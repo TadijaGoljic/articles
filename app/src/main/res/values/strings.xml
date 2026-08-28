@@ -69,6 +69,11 @@
     <string name="mark_as_not_bought">Mark as not bought</string>
     <string name="expand_all_articles">Expand all articles</string>
     <string name="collapse_all_articles">Collapse all articles</string>
+    <string name="comments">Comments</string>
+    <string name="add_comment">Add comment</string>
+    <string name="write_a_comment">Write a comment…</string>
+    <string name="no_comments_yet">No comments yet</string>
+    <string name="delete_comment">Delete comment</string>
 
     <!-- Filters-->
     <string name="filters_all">All</string>

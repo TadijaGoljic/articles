@@ -5,7 +5,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.example.articles.models.ArticleUnit
-import com.example.articles.models.Location
+import com.example.articles.models.UILocation
 import java.util.UUID
 
 @Entity(
@@ -22,7 +22,7 @@ data class ArticleEntity(
     @PrimaryKey val idArticle: UUID = UUID.randomUUID(),
     val name: String,
     val dateCreated: Long,
-    val location: Location?,
+    val location: UILocation?,
     val quantity: Double?,
     val unit: ArticleUnit,
     val photoUri: String?,

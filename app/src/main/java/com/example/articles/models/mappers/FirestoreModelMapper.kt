@@ -1,10 +1,15 @@
-package com.example.articles.models
+package com.example.articles.models.mappers
 
 import android.content.Context
 import android.util.Base64
 import androidx.core.net.toUri
 import com.example.articles.db.entities.ArticleEntity
+import com.example.articles.db.entities.CommentEntity
 import com.example.articles.db.entities.GroupEntity
+import com.example.articles.models.ArticleUnit
+import com.example.articles.models.InvitationStatus
+import com.example.articles.models.UIInvitation
+import com.example.articles.models.UILocation
 import com.example.articles.utils.FileManager
 import com.example.articles.utils.FileManager.Companion.IMAGE_PREFIX
 import com.example.articles.utils.FileManager.Companion.IMAGE_SUFFIX
@@ -67,7 +72,7 @@ class FirestoreModelMapper @Inject constructor(
             name = data["name"] as String,
             dateCreated = (data["dateCreated"] as? Long) ?: 0L,
             location = (data["location"] as? String)?.let { locationString ->
-                Location(
+                UILocation(
                     latitude = locationString.split(',')[0].toDouble(),
                     longitude = locationString.split(',')[1].toDouble()
                 )
@@ -103,7 +108,34 @@ class FirestoreModelMapper @Inject constructor(
         ownerUid = snapshot["ownerUid"] as? String
     )
 
-    fun toInvitationFirestoreMap(invitation: Invitation) = mapOf(
+    fun toCommentsFirestoreMap(commentEntity: CommentEntity) = mapOf(
+        "idComment" to commentEntity.idComment.toString(),
+        "groupId" to commentEntity.groupId.toString(),
+        "articleId" to commentEntity.articleId?.toString(),
+        "authorUid" to commentEntity.authorUid,
+        "authorEmail" to commentEntity.authorEmail,
+        "text" to commentEntity.text,
+        "createdAt" to commentEntity.createdAt,
+        "updatedAt" to commentEntity.updatedAt,
+        "syncedAt" to System.currentTimeMillis()
+    )
+
+    fun toCommentEntity(snapshot: DocumentSnapshot): CommentEntity? {
+        val data = snapshot.data ?: return null
+        val commentId = data["idComment"] as? String ?: return null
+        return CommentEntity(
+            idComment = UUID.fromString(commentId),
+            groupId = UUID.fromString(data["groupId"] as? String ?: return null),
+            articleId = (data["articleId"] as? String)?.let { UUID.fromString(it) },
+            authorUid = data["authorUid"] as? String ?: return null,
+            authorEmail = data["authorEmail"] as? String ?: "",
+            text = data["text"] as? String ?: "",
+            createdAt = (data["createdAt"] as? Long) ?: 0L,
+            updatedAt = (data["updatedAt"] as? Long) ?: 0L
+        )
+    }
+
+    fun toInvitationFirestoreMap(invitation: UIInvitation) = mapOf(
         "invitationId" to invitation.invitationId,
         "fromUid" to invitation.fromUid,
         "fromEmail" to invitation.fromEmail,
@@ -115,9 +147,9 @@ class FirestoreModelMapper @Inject constructor(
         "createdAt" to invitation.createdAt
     )
 
-    fun toInvitation(snapshot: DocumentSnapshot): Invitation? {
+    fun toInvitation(snapshot: DocumentSnapshot): UIInvitation? {
         val data = snapshot.data ?: return null
-        return Invitation(
+        return UIInvitation(
             invitationId = data["invitationId"] as? String ?: return null,
             fromUid = data["fromUid"] as? String ?: return null,
             fromEmail = data["fromEmail"] as? String ?: return null,

@@ -1,9 +1,10 @@
-package com.example.articles.utils
+package com.example.articles.fcm
 
 import android.content.Context
 import android.util.Log
 import androidx.core.content.edit
 import com.example.articles.ArticlesApplication.Companion.LOG_TAG
+import com.example.articles.utils.USERS_COLLECTION
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.firestore

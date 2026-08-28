@@ -26,6 +26,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -56,7 +57,7 @@ class SettingsViewModel @Inject constructor(
 ) : ViewModel() {
 
     private var state = MutableStateFlow(SettingsState())
-    val uiState = state
+    val uiState = state.asStateFlow()
 
     init {
         val currentUser = Firebase.auth.currentUser

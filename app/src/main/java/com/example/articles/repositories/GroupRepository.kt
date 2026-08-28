@@ -2,10 +2,10 @@ package com.example.articles.repositories
 
 import com.example.articles.db.dao.GroupDao
 import com.example.articles.db.entities.GroupEntity
-import com.example.articles.models.FirestoreModelMapper
+import com.example.articles.models.mappers.FirestoreModelMapper
 import com.example.articles.models.UIGroup
-import com.example.articles.models.toGroupEntity
-import com.example.articles.models.toUIGroup
+import com.example.articles.models.mappers.toGroupEntity
+import com.example.articles.models.mappers.toUIGroup
 import com.example.articles.utils.GROUPS_COLLECTION
 import com.example.articles.utils.USERS_COLLECTION
 import com.google.firebase.Firebase

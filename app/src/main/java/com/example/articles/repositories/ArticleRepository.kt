@@ -3,10 +3,10 @@ package com.example.articles.repositories
 import com.example.articles.db.dao.ArticleDao
 import com.example.articles.db.dao.GroupDao
 import com.example.articles.db.entities.ArticleEntity
-import com.example.articles.models.FirestoreModelMapper
+import com.example.articles.models.mappers.FirestoreModelMapper
 import com.example.articles.models.UIArticle
-import com.example.articles.models.toArticleEntity
-import com.example.articles.models.toUIArticle
+import com.example.articles.models.mappers.toArticleEntity
+import com.example.articles.models.mappers.toUIArticle
 import com.example.articles.utils.ARTICLES_COLLECTION
 import com.example.articles.utils.SHARED_GROUPS_COLLECTION
 import com.example.articles.utils.USERS_COLLECTION
@@ -55,11 +55,11 @@ class ArticleRepository @Inject constructor(
             ?.await()
     }
 
-    suspend fun deleteArticleById(idArticle: UUID) {
-        val article = articleDao.getArticleByIdSuspend(idArticle) ?: return
-        articleDao.deleteArticleById(idArticle)
+    suspend fun deleteArticleById(articleId: UUID) {
+        val article = articleDao.getArticleByIdSuspend(articleId) ?: return
+        articleDao.deleteArticleById(articleId)
         articlesCollection(article.groupId)
-            ?.document(idArticle.toString())
+            ?.document(articleId.toString())
             ?.delete()
             ?.await()
     }

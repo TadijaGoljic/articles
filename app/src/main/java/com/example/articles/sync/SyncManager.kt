@@ -11,14 +11,17 @@ import androidx.work.WorkRequest
 import androidx.work.WorkerParameters
 import com.example.articles.ArticlesApplication
 import com.example.articles.db.entities.ArticleEntity
+import com.example.articles.db.entities.CommentEntity
 import com.example.articles.db.entities.GroupEntity
-import com.example.articles.models.FirestoreModelMapper
+import com.example.articles.models.mappers.FirestoreModelMapper
 import com.example.articles.models.UserPreferences
-import com.example.articles.models.toUIGroup
+import com.example.articles.models.mappers.toUIGroup
 import com.example.articles.repositories.ArticleRepository
+import com.example.articles.repositories.CommentRepository
 import com.example.articles.repositories.GroupRepository
 import com.example.articles.repositories.SharedGroupRepository
 import com.example.articles.utils.ARTICLES_COLLECTION
+import com.example.articles.utils.COMMENTS_COLLECTION
 import com.example.articles.utils.GROUPS_COLLECTION
 import com.example.articles.utils.USERS_COLLECTION
 import com.google.firebase.Firebase
@@ -39,6 +42,7 @@ class SyncManager(
     private val userPreferences: UserPreferences,
     private val articleRepository: ArticleRepository,
     private val groupRepository: GroupRepository,
+    private val commentRepository: CommentRepository,
     private val sharedGroupRepository: SharedGroupRepository,
     private val firestoreModelMapper: FirestoreModelMapper
 ) : CoroutineWorker(context, parameters) {
@@ -56,11 +60,16 @@ class SyncManager(
             .collection(USERS_COLLECTION)
             .document(uid)
             .collection(ARTICLES_COLLECTION)
+        val commentsCollection = firestore
+            .collection(USERS_COLLECTION)
+            .document(uid)
+            .collection(COMMENTS_COLLECTION)
         return try {
             val syncTimestamp = userPreferences.lastSyncTimestamp
             Log.d(ArticlesApplication.LOG_TAG, "Sync started, lastSyncTimestamp=$syncTimestamp")
             syncGroups(groupsCollection, syncTimestamp)
             syncArticles(articlesCollection, syncTimestamp)
+            syncComments(commentsCollection, syncTimestamp)
             syncSharedGroups(uid, syncTimestamp)
             userPreferences.lastSyncTimestamp = System.currentTimeMillis()
             Log.d(ArticlesApplication.LOG_TAG, "Sync completed successfully")
@@ -103,6 +112,39 @@ class SyncManager(
         if (staleLocalIds.isNotEmpty()) {
             Log.d(ArticlesApplication.LOG_TAG, "Removing ${staleLocalIds.size} articles deleted remotely")
             articleRepository.hardDeleteLocalArticlesByIds(staleLocalIds)
+        }
+    }
+
+    private suspend fun syncComments(
+        commentsCollection: CollectionReference,
+        syncTimestamp: Long,
+    ) {
+        val sharedGroupIds = groupRepository.getAllGroupsNoMapping()
+            .map { list -> list.filter { it.isShared }.map { it.idGroup }.toSet() }
+            .first()
+        val localComments = commentRepository
+            .getAllCommentsNoMapping()
+            .map { list -> list.filter { it.groupId !in sharedGroupIds } }
+            .first()
+        val localCommentChanges = localComments.filter { it.updatedAt > syncTimestamp }
+        Log.d(ArticlesApplication.LOG_TAG, "Uploading ${localCommentChanges.size} local comment changes")
+        uploadLocalCommentChanges(localCommentChanges, commentsCollection)
+        val remoteSnapshot = commentsCollection
+            .whereGreaterThan("updatedAt", 0)
+            .get()
+            .await()
+        val remoteEntities = remoteSnapshot.documents.mapNotNull {
+            firestoreModelMapper.toCommentEntity(it)
+        }
+        Log.d(ArticlesApplication.LOG_TAG, "Fetched ${remoteEntities.size} comments from remote")
+        if (remoteEntities.isNotEmpty()) {
+            commentRepository.upsertAllCommentsLocal(remoteEntities)
+        }
+        val remoteIds = remoteEntities.map { it.idComment }.toSet()
+        val staleLocalIds = localComments.map { it.idComment }.filterNot { it in remoteIds }
+        if (staleLocalIds.isNotEmpty()) {
+            Log.d(ArticlesApplication.LOG_TAG, "Removing ${staleLocalIds.size} comments deleted remotely")
+            commentRepository.hardDeleteLocalCommentsByIds(staleLocalIds)
         }
     }
 
@@ -166,6 +208,19 @@ class SyncManager(
         }
     }
 
+    private suspend fun uploadLocalCommentChanges(
+        comments: List<CommentEntity>,
+        collection: CollectionReference
+    ) {
+        comments.forEach { comment ->
+            val documentId = comment.idComment.toString()
+            Log.d(ArticlesApplication.LOG_TAG, "Uploading comment id=$documentId")
+            collection.document(documentId)
+                .set(firestoreModelMapper.toCommentsFirestoreMap(comment))
+                .await()
+        }
+    }
+
     private suspend fun syncSharedGroups(uid: String, syncTimestamp: Long) {
         val sharedGroupIds = sharedGroupRepository.getSharedGroupIdsForUser(uid)
         Log.d(ArticlesApplication.LOG_TAG, "Syncing ${sharedGroupIds.size} shared groups")
@@ -181,11 +236,17 @@ class SyncManager(
                 }
             }
             val localGroupId = existingLocalGroup?.idGroup ?: UUID.fromString(sharedGroupId)
+            // First time this group is synced as shared: push everything local, not just
+            // changes since last sync, since pre-existing unchanged articles/comments would
+            // otherwise never reach the shared collection (the accepter can't read them directly).
+            val isFirstSyncAsShared = existingLocalGroup?.isShared != true
 
             val localChanges = articleRepository
                 .getAllArticlesNoMapping()
                 .map { list ->
-                    list.filter { it.groupId == localGroupId && it.updatedAt > syncTimestamp }
+                    list.filter {
+                        it.groupId == localGroupId && (isFirstSyncAsShared || it.updatedAt > syncTimestamp)
+                    }
                 }
                 .first()
             if (localChanges.isNotEmpty()) {
@@ -210,6 +271,28 @@ class SyncManager(
                 Log.d(ArticlesApplication.LOG_TAG, "Removing ${staleLocalIds.size} shared articles deleted remotely for group $sharedGroupId")
                 articleRepository.hardDeleteLocalArticlesByIds(staleLocalIds)
             }
+
+            val localCommentChanges = commentRepository
+                .getCommentsByGroupIdSuspend(localGroupId)
+                .filter { isFirstSyncAsShared || it.updatedAt > syncTimestamp }
+            if (localCommentChanges.isNotEmpty()) {
+                Log.d(ArticlesApplication.LOG_TAG, "Uploading ${localCommentChanges.size} comment changes for shared group $sharedGroupId")
+                sharedGroupRepository.uploadSharedGroupCommentChanges(sharedGroupId, localCommentChanges)
+            }
+
+            val comments = sharedGroupRepository.syncSharedGroupComments(sharedGroupId)
+            if (comments.isNotEmpty()) {
+                commentRepository.upsertAllCommentsLocal(
+                    comments.map { it.copy(groupId = localGroupId) }
+                )
+            }
+            val remoteCommentIds = comments.map { it.idComment }.toSet()
+            val localCommentIds = commentRepository.getCommentsByGroupIdSuspend(localGroupId).map { it.idComment }
+            val staleCommentIds = localCommentIds.filterNot { it in remoteCommentIds }
+            if (staleCommentIds.isNotEmpty()) {
+                Log.d(ArticlesApplication.LOG_TAG, "Removing ${staleCommentIds.size} shared comments deleted remotely for group $sharedGroupId")
+                commentRepository.hardDeleteLocalCommentsByIds(staleCommentIds)
+            }
         }
     }
 
@@ -221,6 +304,7 @@ class SyncManager(
         orphaned.forEach { group ->
             Log.d(ArticlesApplication.LOG_TAG, "Removing orphaned shared group id=${group.idGroup} (no longer a member)")
             articleRepository.hardDeleteLocalArticlesByGroupId(group.idGroup)
+            commentRepository.hardDeleteLocalCommentsByGroupId(group.idGroup)
             groupRepository.deleteGroupLocalById(group.idGroup)
         }
     }

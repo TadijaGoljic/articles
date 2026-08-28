@@ -3,7 +3,12 @@ package com.example.articles.ui.composables.screens
 import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
@@ -13,10 +18,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -180,6 +188,7 @@ fun SignInScreen(
 
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SignInPortrait(
     state: SignInState,
@@ -208,12 +217,18 @@ fun SignInPortrait(
             ),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Logos(
-            showBlue = true,
-            showGreen = true,
-            showLeadingIcon = authenticationState != AuthenticationState.SIGN_IN,
-            onBackClick = { updateAuthenticationState(AuthenticationState.SIGN_IN) }
-        )
+        AnimatedVisibility(
+            visible = !WindowInsets.isImeVisible,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
+        ) {
+            Logos(
+                showBlue = true,
+                showGreen = true,
+                showLeadingIcon = authenticationState != AuthenticationState.SIGN_IN,
+                onBackClick = { updateAuthenticationState(AuthenticationState.SIGN_IN) }
+            )
+        }
         SignInScreenAction(
             modifier = Modifier.weight(1f),
             state = state,
@@ -242,6 +257,7 @@ fun SignInLandscape(
         modifier = modifier
             .fillMaxSize()
             .padding(horizontal = 20.dp)
+            .imePadding()
     ) {
         Column(
             modifier = Modifier

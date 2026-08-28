@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Comment
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.Delete
@@ -67,7 +68,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.articles.R
-import com.example.articles.models.Location
+import com.example.articles.models.UILocation
 import com.example.articles.models.UIArticle
 import com.example.articles.models.UIGroup
 import com.example.articles.ui.composables.utils.BottomSheetRowItem
@@ -76,6 +77,8 @@ import com.example.articles.utils.ScreenSize
 import com.example.articles.viewmodels.FilterType
 import com.example.articles.viewmodels.GroupDetailsAction
 import com.example.articles.viewmodels.GroupDetailsViewModel
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -84,7 +87,7 @@ fun GroupDetailsPage(
     onAddArticle: (articleGroup: UIGroup) -> Unit,
     onEditArticle: (UIArticle) -> Unit,
     onBackClick: () -> Unit,
-    onOpenNavigation: (Location) -> Unit,
+    onOpenNavigation: (UILocation) -> Unit,
     onOpenLink: (String) -> Unit,
     modifier: Modifier = Modifier,
     groupDetailsViewModel: GroupDetailsViewModel = hiltViewModel()
@@ -151,8 +154,43 @@ fun GroupDetailsPage(
                         groupDetailsViewModel.handleAction(GroupDetailsAction.HideBottomSheet)
                     }
                 )
+                BottomSheetRowItem(
+                    icon = Icons.AutoMirrored.Filled.Comment,
+                    contentDescription = stringResource(id = R.string.comments),
+                    text = stringResource(id = R.string.comments),
+                    onClick = {
+                        val article = state.articleToEditOrDelete
+                        groupDetailsViewModel.handleAction(GroupDetailsAction.HideBottomSheet)
+                        article?.let {
+                            groupDetailsViewModel.handleAction(GroupDetailsAction.ShowArticleComments(it))
+                        }
+                    }
+                )
             }
         }
+    }
+
+    if (state.showCommentsSheet) {
+        val commentsSheetState = rememberModalBottomSheetState()
+        val commentsCoroutineScope = rememberCoroutineScope()
+        CommentsBottomSheet(
+            comments = state.comments,
+            currentUid = Firebase.auth.currentUser?.uid,
+            sheetState = commentsSheetState,
+            onDismiss = {
+                commentsCoroutineScope
+                    .launch { commentsSheetState.hide() }
+                    .invokeOnCompletion {
+                        groupDetailsViewModel.handleAction(GroupDetailsAction.HideCommentsSheet)
+                    }
+            },
+            onAddComment = { text ->
+                groupDetailsViewModel.handleAction(GroupDetailsAction.AddComment(text))
+            },
+            onDeleteComment = { comment ->
+                groupDetailsViewModel.handleAction(GroupDetailsAction.DeleteComment(comment))
+            }
+        )
     }
 
     Scaffold { innerPadding ->
@@ -237,6 +275,16 @@ fun GroupDetailsPage(
                         }
                     }
                     Spacer(modifier = Modifier.weight(1f))
+                    IconButton(
+                        onClick = {
+                            groupDetailsViewModel.handleAction(GroupDetailsAction.ShowGroupComments)
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Comment,
+                            contentDescription = stringResource(id = R.string.comments)
+                        )
+                    }
                     TextButton(
                         onClick = {
                             groupDetailsViewModel.handleAction(
@@ -329,7 +377,7 @@ fun GroupDetailsPage(
 fun ArticleItem(
     article: UIArticle,
     onLongClick: (UIArticle) -> Unit,
-    onOpenNavigation: (Location) -> Unit,
+    onOpenNavigation: (UILocation) -> Unit,
     onOpenLink: (String) -> Unit,
     onChangeExpandedStatus: () -> Unit,
     modifier: Modifier = Modifier

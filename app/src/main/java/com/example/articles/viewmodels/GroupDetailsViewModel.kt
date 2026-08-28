@@ -1,17 +1,22 @@
 package com.example.articles.viewmodels
 
-import androidx.compose.runtime.currentComposer
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.example.articles.models.UIArticle
+import com.example.articles.models.UIComment
 import com.example.articles.models.UIGroup
 import com.example.articles.repositories.ArticleRepository
+import com.example.articles.repositories.CommentRepository
 import com.example.articles.repositories.GroupRepository
 import com.example.articles.ui.composables.ArticlesDestinations
+import com.example.articles.utils.TriggerSync
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
@@ -24,13 +29,15 @@ class GroupDetailsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val groupRepository: GroupRepository,
     private val articleRepository: ArticleRepository,
+    private val commentRepository: CommentRepository,
+    private val triggerSync: TriggerSync,
 ) : ViewModel() {
 
     private val args = savedStateHandle.toRoute<ArticlesDestinations.GroupDetailsDestination>()
     private val groupId: UUID = UUID.fromString(args.groupId)
 
     private val state = MutableStateFlow(GroupDetailsState())
-    val uiState = state
+    val uiState = state.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -51,28 +58,22 @@ class GroupDetailsViewModel @Inject constructor(
 
     fun handleAction(action: GroupDetailsAction) {
         when (action) {
-            is GroupDetailsAction.ArticleLongClick -> onArticleLongClick(action.article)
+            is GroupDetailsAction.ArticleLongClick -> onArticleLongClick(article = action.article)
             is GroupDetailsAction.HideBottomSheet -> onHideBottomSheet()
-            is GroupDetailsAction.RemoveArticle -> removeArticle(
-                article = state.value.articleToEditOrDelete ?: return
-            )
-            is GroupDetailsAction.MarkAsBought -> updateArticleStatus(
-                article = state.value.articleToEditOrDelete ?: return,
-                status = true
-            )
-            is GroupDetailsAction.MarkAsNotBought -> updateArticleStatus(
-                article = state.value.articleToEditOrDelete ?: return,
-                status = false
-            )
-            is GroupDetailsAction.UpdateExpandedStatus -> updateExpandedStatus(
-                article = action.article,
-                expanded = action.expanded
-            )
-            is GroupDetailsAction.ExpandAllArticles -> updateAllArticlesExpandedStatus(true)
-            is GroupDetailsAction.CollapseAllArticles -> updateAllArticlesExpandedStatus(false)
+            is GroupDetailsAction.RemoveArticle -> removeArticle(article = state.value.articleToEditOrDelete ?: return)
+            is GroupDetailsAction.MarkAsBought -> updateArticleStatus(article = state.value.articleToEditOrDelete ?: return, status = true)
+            is GroupDetailsAction.MarkAsNotBought -> updateArticleStatus(article = state.value.articleToEditOrDelete ?: return, status = false)
+            is GroupDetailsAction.UpdateExpandedStatus -> updateExpandedStatus(article = action.article, expanded = action.expanded)
+            is GroupDetailsAction.ExpandAllArticles -> updateAllArticlesExpandedStatus(status = true)
+            is GroupDetailsAction.CollapseAllArticles -> updateAllArticlesExpandedStatus(status = false)
             is GroupDetailsAction.ShowFilterDropdownMenu -> showFilterDropdownMenu()
             is GroupDetailsAction.HideFilterDropdownMenu -> hideFilterDropdownMenu()
-            is GroupDetailsAction.FilterSelected -> onFilterSelected(action.filter)
+            is GroupDetailsAction.FilterSelected -> onFilterSelected(filter = action.filter)
+            is GroupDetailsAction.ShowGroupComments -> showComments(target = CommentsTarget.ForGroup)
+            is GroupDetailsAction.ShowArticleComments -> showComments(target = CommentsTarget.ForArticle(action.article))
+            is GroupDetailsAction.HideCommentsSheet -> hideComments()
+            is GroupDetailsAction.AddComment -> addComment(text = action.text)
+            is GroupDetailsAction.DeleteComment -> deleteComment(comment = action.comment)
         }
     }
 
@@ -96,7 +97,63 @@ class GroupDetailsViewModel @Inject constructor(
 
     private fun removeArticle(article: UIArticle) {
         viewModelScope.launch {
-            articleRepository.deleteArticleById(article.id)
+            articleRepository.deleteArticleById(articleId = article.id)
+            commentRepository.deleteCommentsByArticleId(groupId = article.groupId, articleId = article.id)
+        }
+    }
+
+    private fun showComments(target: CommentsTarget) {
+        state.update { currentState ->
+            currentState.copy(
+                showEditDeleteBottonSheet = false,
+                showCommentsSheet = true,
+                commentsTarget = target,
+                comments = emptyList()
+            )
+        }
+        viewModelScope.launch {
+            val commentsFlow = when (target) {
+                is CommentsTarget.ForGroup -> commentRepository.getCommentsForGroup(groupId = groupId)
+                is CommentsTarget.ForArticle -> commentRepository.getCommentsForArticle(articleId = target.article.id)
+            }
+            commentsFlow.collectLatest { comments ->
+                state.update { it.copy(comments = comments) }
+            }
+        }
+    }
+
+    private fun hideComments() {
+        state.update { currentState ->
+            currentState.copy(
+                showCommentsSheet = false,
+                commentsTarget = null,
+                comments = emptyList()
+            )
+        }
+    }
+
+    private fun addComment(text: String) {
+        if (text.isBlank()) return
+        val target = state.value.commentsTarget ?: return
+        val currentUser = Firebase.auth.currentUser ?: return
+        viewModelScope.launch {
+            commentRepository.upsertComment(
+                UIComment(
+                    groupId = groupId,
+                    articleId = (target as? CommentsTarget.ForArticle)?.article?.id,
+                    authorUid = currentUser.uid,
+                    authorEmail = currentUser.email ?: "",
+                    text = text
+                )
+            )
+            triggerSync()
+        }
+    }
+
+    private fun deleteComment(comment: UIComment) {
+        viewModelScope.launch {
+            commentRepository.deleteCommentById(comment.id)
+            triggerSync()
         }
     }
 
@@ -172,7 +229,15 @@ data class GroupDetailsState(
     val articleToEditOrDelete: UIArticle? = null,
     val showEditDeleteBottonSheet: Boolean = false,
     val filterDropdownMenuVisible: Boolean = false,
+    val showCommentsSheet: Boolean = false,
+    val commentsTarget: CommentsTarget? = null,
+    val comments: List<UIComment> = emptyList(),
 )
+
+sealed interface CommentsTarget {
+    data object ForGroup : CommentsTarget
+    data class ForArticle(val article: UIArticle) : CommentsTarget
+}
 
 sealed interface GroupDetailsAction {
     data class ArticleLongClick(val article: UIArticle): GroupDetailsAction
@@ -186,4 +251,9 @@ sealed interface GroupDetailsAction {
     data object ShowFilterDropdownMenu: GroupDetailsAction
     data object HideFilterDropdownMenu: GroupDetailsAction
     data class FilterSelected(val filter: FilterType): GroupDetailsAction
+    data object ShowGroupComments: GroupDetailsAction
+    data class ShowArticleComments(val article: UIArticle): GroupDetailsAction
+    data object HideCommentsSheet: GroupDetailsAction
+    data class AddComment(val text: String): GroupDetailsAction
+    data class DeleteComment(val comment: UIComment): GroupDetailsAction
 }

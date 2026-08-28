@@ -1,9 +1,11 @@
 package com.example.articles.repositories
 
-import com.example.articles.models.FirestoreModelMapper
-import com.example.articles.models.Invitation
+import com.example.articles.models.mappers.FirestoreModelMapper
+import com.example.articles.models.UIInvitation
 import com.example.articles.models.InvitationStatus
 import com.example.articles.models.UIGroup
+import android.util.Log
+import com.example.articles.ArticlesApplication
 import com.example.articles.utils.GROUPS_COLLECTION
 import com.example.articles.utils.INVITATIONS_COLLECTION
 import com.example.articles.utils.USERS_COLLECTION
@@ -58,7 +60,7 @@ class InvitationRepository @Inject constructor(
         toUid: String,
         group: UIGroup
     ) {
-        val invitation = Invitation(
+        val invitation = UIInvitation(
             invitationId = UUID.randomUUID().toString(),
             fromUid = fromUid,
             fromEmail = fromEmail,
@@ -75,7 +77,7 @@ class InvitationRepository @Inject constructor(
             .await()
     }
 
-    fun observePendingInvitations(uid: String): Flow<List<Invitation>> = callbackFlow {
+    fun observePendingInvitations(uid: String): Flow<List<UIInvitation>> = callbackFlow {
         val registration = firestore.collection(INVITATIONS_COLLECTION)
             .whereEqualTo("toUid", uid)
             .whereEqualTo("status", InvitationStatus.PENDING.name)
@@ -90,9 +92,12 @@ class InvitationRepository @Inject constructor(
                 trySend(invitations)
             }
         awaitClose { registration.remove() }
-    }.catch { /* listener closed, e.g. signed out or account deleted mid-session */ emit(emptyList()) }
+    }.catch { error ->
+        Log.e(ArticlesApplication.LOG_TAG, "observePendingInvitations failed: ${error.message}", error)
+        emit(emptyList())
+    }
 
-    suspend fun respondToInvitation(invitation: Invitation, accepted: Boolean) {
+    suspend fun respondToInvitation(invitation: UIInvitation, accepted: Boolean) {
         if (accepted) {
             val sharedGroupId = sharedGroupRepository.createSharedGroup(
                 group = UIGroup(

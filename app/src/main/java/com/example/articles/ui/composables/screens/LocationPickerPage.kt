@@ -39,7 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.articles.R
-import com.example.articles.models.Location
+import com.example.articles.models.UILocation
 import com.example.articles.viewmodels.LocationPickerAction
 import com.example.articles.viewmodels.LocationPickerViewModel
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -53,7 +53,7 @@ import com.google.maps.android.compose.rememberUpdatedMarkerState
 @Composable
 fun LocationPicker(
     locationPickerViewModel: LocationPickerViewModel = hiltViewModel(),
-    onLocationSelected: (Location) -> Unit,
+    onLocationSelected: (UILocation) -> Unit,
     onCancel: () -> Unit
 ) {
 
@@ -186,7 +186,7 @@ fun LocationPicker(
                 Button(
                     onClick = {
                         onLocationSelected(
-                            Location(
+                            UILocation(
                                 latitude = state.selectedLocation.latitude,
                                 longitude = state.selectedLocation.longitude
                             )

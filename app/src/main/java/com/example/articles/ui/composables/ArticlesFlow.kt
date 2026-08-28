@@ -7,12 +7,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navDeepLink
-import com.example.articles.models.Location
+import com.example.articles.models.UILocation
 import com.example.articles.ui.composables.screens.AddNewArticle
 import com.example.articles.ui.composables.screens.InvitationsPage
 import com.example.articles.ui.composables.screens.LocationPicker
@@ -28,7 +27,7 @@ import kotlinx.serialization.Serializable
 fun ArticlesNavigationFlow(
     onSignOut: () -> Unit,
     onAccountDelete: () -> Unit,
-    onOpenNavigation: (Location) -> Unit,
+    onOpenNavigation: (UILocation) -> Unit,
     onOpenLink: (String) -> Unit,
     newIntentFlow: Flow<Intent>,
     modifier: Modifier = Modifier
@@ -86,13 +85,13 @@ fun ArticlesNavigationFlow(
         composable<ArticlesDestinations.AddNewArticleDestination> { backStackEntry ->
             val addNewArticleViewModel: AddNewArticleViewModel = hiltViewModel()
             val pickedLocation by backStackEntry.savedStateHandle
-                .getStateFlow<Location?>(KEY_LOCATION, null)
+                .getStateFlow<UILocation?>(KEY_LOCATION, null)
                 .collectAsStateWithLifecycle()
 
             LaunchedEffect(pickedLocation) {
                 pickedLocation?.let { location ->
                     addNewArticleViewModel.handleAction(AddNewArticleAction.UpdateLocation(location))
-                    backStackEntry.savedStateHandle.remove<Location>(KEY_LOCATION)
+                    backStackEntry.savedStateHandle.remove<UILocation>(KEY_LOCATION)
                 }
             }
 
