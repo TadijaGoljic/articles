@@ -229,6 +229,7 @@ fun GroupsListPage(
                         GroupItem(
                             group = group,
                             members = state.groupMembers[group.sharedGroupId].orEmpty(),
+                            currentUid = state.currentUid,
                             onLongClick = {
                                 groupsPageViewModel.handleAction(GroupsPageAction.LongClick(group))
                             },
@@ -347,8 +348,10 @@ fun GroupItem(
     onIconClick: () -> Unit,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    members: List<GroupMember> = emptyList()
+    members: List<GroupMember> = emptyList(),
+    currentUid: String? = null
 ) {
+    val otherMembers = members.filter { it.uid != currentUid }
 
     Box(
         modifier = modifier
@@ -383,7 +386,7 @@ fun GroupItem(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.align(Alignment.CenterEnd)
                 ) {
-                    if (members.isNotEmpty()) {
+                    if (group.isShared && otherMembers.isNotEmpty()) {
                         GroupMembersAvatars(
                             members = members,
                             modifier = Modifier.padding(end = 4.dp)
