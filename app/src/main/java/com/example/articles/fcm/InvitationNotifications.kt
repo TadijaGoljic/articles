@@ -42,7 +42,7 @@ fun showInvitationNotification(context: Context, invitationId: String, fromEmail
         getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
     }
     val notification = NotificationCompat.Builder(context, ArticlesApplication.INVITATION_CHANNEL_ID)
-        .setSmallIcon(android.R.drawable.ic_dialog_email)
+        .setSmallIcon(R.drawable.app_icon)
         .setContentTitle(context.getString(R.string.invitations))
         .setContentText(contentText)
         .setPriority(NotificationCompat.PRIORITY_DEFAULT)

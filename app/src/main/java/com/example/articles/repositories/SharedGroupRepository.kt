@@ -73,10 +73,7 @@ class SharedGroupRepository @Inject constructor(
             .get()
             .await()
 
-        val (tombstoned, live) = articlesSnapshot.documents.partition { it.getBoolean("deleted") == true }
-        tombstoned.forEach { it.reference.delete() }
-
-        val articles = live.mapNotNull { doc ->
+        val articles = articlesSnapshot.documents.mapNotNull { doc ->
             firestoreModelMapper.toArticleEntity(doc)?.copy(
                 groupId = UUID.fromString(sharedGroupId)
             )
@@ -181,12 +178,7 @@ class SharedGroupRepository @Inject constructor(
             .whereArrayContains("members", uid)
             .get()
             .await()
-        val (tombstoned, live) = snapshot.documents.partition { it.getBoolean("deleted") == true }
-        tombstoned.forEach { doc ->
-            val sharedGroupId = doc.getString("sharedGroupId") ?: doc.id
-            deleteSharedGroup(sharedGroupId)
-        }
-        return live.mapNotNull { it.getString("sharedGroupId") }
+        return snapshot.documents.mapNotNull { it.getString("sharedGroupId") }
     }
 
     suspend fun getMembers(sharedGroupId: String): List<GroupMember> {
@@ -238,7 +230,9 @@ class SharedGroupRepository @Inject constructor(
         articles.documents.forEach { batch.delete(it.reference) }
         comments.documents.forEach { batch.delete(it.reference) }
         batch.delete(docRef)
-        batch.commit().await()
+        batch
+            .commit()
+            .await()
     }
 
 }

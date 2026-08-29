@@ -4,11 +4,8 @@ import android.content.Intent
 import android.util.Log
 import com.example.articles.ArticlesApplication.Companion.LOG_TAG
 import com.example.articles.AuthenticationActivity
-import com.example.articles.db.ArticleDatabase
 import com.example.articles.utils.TriggerSync
-import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.auth
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import dagger.hilt.android.AndroidEntryPoint
@@ -31,7 +28,7 @@ private enum class MessageType(val value: String) {
 class ArticlesFirebaseMessagingService : FirebaseMessagingService() {
 
     @Inject lateinit var triggerSync: TriggerSync
-    @Inject lateinit var database: ArticleDatabase
+    @Inject lateinit var sessionManager: SessionManager
 
     override fun onMessageReceived(message: RemoteMessage) {
         Log.d(LOG_TAG, "FCM message received: ${message.data}")
@@ -57,10 +54,10 @@ class ArticlesFirebaseMessagingService : FirebaseMessagingService() {
 
     private fun forceSignOut() {
         CoroutineScope(Dispatchers.IO).launch {
-            database.clearAllTables()
-            Firebase.auth.signOut()
-            val intent = Intent(this@ArticlesFirebaseMessagingService, AuthenticationActivity::class.java)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            sessionManager.clearLocalDataAndSignOut()
+            val intent = Intent(this@ArticlesFirebaseMessagingService, AuthenticationActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            }
             startActivity(intent)
         }
     }

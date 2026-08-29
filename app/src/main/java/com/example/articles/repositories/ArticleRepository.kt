@@ -104,16 +104,16 @@ class ArticleRepository @Inject constructor(
         list.map { article -> article.toUIArticle() }
     }
 
-    fun getArticleById(id: UUID) = articleDao.getArticleById(id).map { it?.toUIArticle() }
+    fun getArticleById(id: UUID) = articleDao.getArticleById(id).map {
+        it?.toUIArticle()
+    }
 
-    fun getBoughtArticlesByGroupId(groupId: UUID) =
-        articleDao.getBoughtArticlesByGroupId(groupId).map { list ->
-            list.map { it.toUIArticle() }
-        }
+    fun getBoughtArticlesByGroupId(groupId: UUID) = articleDao.getBoughtArticlesByGroupId(groupId).map { list ->
+        list.map { it.toUIArticle() }
+    }
 
-    fun getUnboughtArticlesByGroupId(groupId: UUID) =
-        articleDao.getUnboughtArticlesByGroupId(groupId).map { list ->
-            list.map { it.toUIArticle() }
-        }
+    fun getUnboughtArticlesByGroupId(groupId: UUID) = articleDao.getUnboughtArticlesByGroupId(groupId).map { list ->
+        list.map { it.toUIArticle() }
+    }
 
 }

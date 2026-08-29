@@ -98,9 +98,7 @@ class SyncManager(
             .whereGreaterThan("updatedAt", 0)
             .get()
             .await()
-        val (tombstonedArticles, liveArticles) = remoteSnapshot.documents.partition { it.getBoolean("deleted") == true }
-        tombstonedArticles.forEach { it.reference.delete() }
-        val remoteEntities = liveArticles.mapNotNull {
+        val remoteEntities = remoteSnapshot.documents.mapNotNull {
             firestoreModelMapper.toArticleEntity(it)
         }
         Log.d(ArticlesApplication.LOG_TAG, "Fetched ${remoteEntities.size} articles from remote")
@@ -163,9 +161,7 @@ class SyncManager(
             .whereGreaterThan("updatedAt", 0)
             .get()
             .await()
-        val (tombstonedGroups, liveGroups) = remoteSnapshot.documents.partition { it.getBoolean("deleted") == true }
-        tombstonedGroups.forEach { it.reference.delete() }
-        val remoteEntities = liveGroups.mapNotNull {
+        val remoteEntities = remoteSnapshot.documents.mapNotNull {
             firestoreModelMapper.toGroupEntity(it)
         }
         Log.d(ArticlesApplication.LOG_TAG, "Fetched ${remoteEntities.size} groups from remote")

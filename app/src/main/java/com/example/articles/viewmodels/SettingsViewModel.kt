@@ -17,6 +17,7 @@ import com.example.articles.repositories.ArticleRepository
 import com.example.articles.repositories.GroupRepository
 import com.example.articles.repositories.InvitationRepository
 import com.example.articles.utils.FileManager
+import com.example.articles.fcm.SessionManager
 import com.example.articles.utils.TriggerSync
 import com.google.firebase.Firebase
 import com.google.firebase.auth.EmailAuthProvider
@@ -53,6 +54,7 @@ class SettingsViewModel @Inject constructor(
     private val userPreferences: UserPreferences,
     private val triggerSync: TriggerSync,
     private val fileManager: FileManager,
+    private val sessionManager: SessionManager,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
@@ -113,8 +115,7 @@ class SettingsViewModel @Inject constructor(
                 signOutLoading = true
             )
         }
-        withContext(Dispatchers.IO) { database.clearAllTables() }
-        Firebase.auth.signOut()
+        sessionManager.clearLocalDataAndSignOut()
         state.update { currentState ->
             currentState.copy(
                 signOutLoading = false,
