@@ -13,6 +13,12 @@ import javax.inject.Singleton
 class FileManager @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
+
+    companion object {
+        const val IMAGE_PREFIX = "article"
+        const val IMAGE_SUFFIX = ".jpg"
+    }
+
     fun photoUri(): Uri {
         val currentTimestamp = System.currentTimeMillis()
         val uri = FileProvider.getUriForFile(
@@ -26,11 +32,6 @@ class FileManager @Inject constructor(
         )
         context.grantUriPermission(context.packageName, uri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
         return uri
-    }
-
-    companion object {
-        const val IMAGE_PREFIX = "article"
-        const val IMAGE_SUFFIX = ".jpg"
     }
 
     fun getFileFromUri(context: Context, uri: Uri): File? {

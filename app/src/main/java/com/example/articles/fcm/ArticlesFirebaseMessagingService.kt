@@ -19,7 +19,8 @@ import javax.inject.Inject
 
 private enum class MessageType(val value: String) {
     SYNC("sync"),
-    FORCE_SIGN_OUT("forceSignOut");
+    FORCE_SIGN_OUT("forceSignOut"),
+    INVITATION("invitation");
 
     companion object {
         fun from(value: String?): MessageType? = entries.find { it.value == value }
@@ -37,8 +38,21 @@ class ArticlesFirebaseMessagingService : FirebaseMessagingService() {
         when (MessageType.from(message.data["type"])) {
             MessageType.FORCE_SIGN_OUT -> forceSignOut()
             MessageType.SYNC -> triggerSync()
+            MessageType.INVITATION -> handleInvitationMessage(message.data)
             null -> Unit
         }
+    }
+
+    private fun handleInvitationMessage(data: Map<String, String>) {
+        val invitationId = data["invitationId"] ?: return
+        if (isInvitationAlreadyNotified(this, invitationId)) return
+        showInvitationNotification(
+            context = this,
+            invitationId = invitationId,
+            fromEmail = data["fromEmail"].orEmpty(),
+            groupName = data["groupName"].orEmpty()
+        )
+        markInvitationNotified(this, invitationId)
     }
 
     private fun forceSignOut() {

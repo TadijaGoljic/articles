@@ -312,8 +312,7 @@ class SyncManager(
     companion object {
         const val NAME = "SyncManager"
         fun sync() = OneTimeWorkRequestBuilder<SyncManager>()
-            .setConstraints(Constraints
-                .Builder()
+            .setConstraints(Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build())
             .setBackoffCriteria(

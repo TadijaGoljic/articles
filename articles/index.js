@@ -1,6 +1,6 @@
 const {setGlobalOptions} = require("firebase-functions");
 const {onRequest} = require("firebase-functions/https");
-const {onDocumentWritten, onDocumentDeleted} = require("firebase-functions/v2/firestore");
+const {onDocumentWritten, onDocumentCreated, onDocumentDeleted} = require("firebase-functions/v2/firestore");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 
@@ -29,6 +29,35 @@ exports.onGroupChanged = onDocumentWritten(
   "users/{uid}/groups/{groupId}",
   async (event) => {
     await notifyDevices(event.params.uid);
+  }
+);
+
+exports.onInvitationCreated = onDocumentCreated(
+  "invitations/{invitationId}",
+  async (event) => {
+    const invitation = event.data?.data();
+    if (!invitation || invitation.status !== "PENDING") return;
+
+    const userDoc = await admin.firestore()
+      .collection("users")
+      .doc(invitation.toUid)
+      .get();
+    const fcmTokens = userDoc.data()?.fcmTokens;
+    if (!fcmTokens) return;
+
+    const tokens = Object.values(fcmTokens).filter(Boolean);
+    if (tokens.length === 0) return;
+
+    await admin.messaging().sendEachForMulticast({
+      tokens,
+      android: { priority: "high" },
+      data: {
+        type: "invitation",
+        invitationId: event.params.invitationId,
+        fromEmail: invitation.fromEmail || "",
+        groupName: invitation.groupName || "",
+      },
+    });
   }
 );
 

@@ -1,5 +1,6 @@
 package com.example.articles.ui.composables.screens
 
+import android.annotation.SuppressLint
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -75,6 +76,7 @@ import com.example.articles.viewmodels.GroupsPageAction
 import com.example.articles.viewmodels.GroupsPageViewModel
 import kotlinx.coroutines.launch
 
+@SuppressLint("LocalContextGetResourceValueCall")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupsListPage(

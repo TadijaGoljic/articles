@@ -1,8 +1,6 @@
 package com.example.articles
 
 import android.Manifest
-import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -12,22 +10,19 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.core.app.NotificationCompat
-import androidx.core.app.TaskStackBuilder
-import androidx.core.content.edit
-import androidx.core.content.getSystemService
 import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import com.example.articles.models.UIInvitation
 import com.example.articles.models.UILocation
 import com.example.articles.repositories.InvitationRepository
 import com.example.articles.ui.composables.ArticlesNavigationFlow
-import com.example.articles.ui.composables.INVITATIONS_DEEP_LINK
 import com.example.articles.ui.theme.ArticlesTheme
 import com.example.articles.utils.TriggerSync
+import com.example.articles.fcm.isInvitationAlreadyNotified
+import com.example.articles.fcm.markInvitationNotified
 import com.example.articles.fcm.registerFcmToken
+import com.example.articles.fcm.showInvitationNotification
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.SetOptions
@@ -37,6 +32,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.contracts.contract
 
 @AndroidEntryPoint
 class ArticlesActivity : ComponentActivity() {
@@ -52,14 +48,12 @@ class ArticlesActivity : ComponentActivity() {
     }
 
     private val notificationPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
+        contract = ActivityResultContracts.RequestPermission()
     ) {}
 
     companion object {
         private const val GOOGLE_MAPS_PACKAGE_NAME = "com.google.android.apps.maps"
         private const val GOOGLE_MAPS_BASE_URL = "https://www.google.com/maps"
-        private const val NOTIFIED_INVITATIONS_PREFS = "notified_invitations"
-        private const val NOTIFIED_INVITATIONS_KEY = "ids"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -80,9 +74,14 @@ class ArticlesActivity : ComponentActivity() {
                 val uid = Firebase.auth.currentUser?.uid ?: return@repeatOnLifecycle
                 invitationRepository.observePendingInvitations(uid).collectLatest { invitations ->
                     invitations.forEach { invitation ->
-                        if (!isAlreadyNotified(invitation.invitationId)) {
-                            showInvitationNotification(invitation)
-                            markNotified(invitation.invitationId)
+                        if (!isInvitationAlreadyNotified(this@ArticlesActivity, invitation.invitationId)) {
+                            showInvitationNotification(
+                                context = this@ArticlesActivity,
+                                invitationId = invitation.invitationId,
+                                fromEmail = invitation.fromEmail,
+                                groupName = invitation.groupName
+                            )
+                            markInvitationNotified(this@ArticlesActivity, invitation.invitationId)
                         }
                     }
                 }
@@ -95,53 +94,20 @@ class ArticlesActivity : ComponentActivity() {
         }
     }
 
-    private fun isAlreadyNotified(invitationId: String): Boolean {
-        val prefs = getSharedPreferences(NOTIFIED_INVITATIONS_PREFS, MODE_PRIVATE)
-        return prefs.getStringSet(NOTIFIED_INVITATIONS_KEY, emptySet())?.contains(invitationId) == true
-    }
-
-    private fun markNotified(invitationId: String) {
-        val prefs = getSharedPreferences(NOTIFIED_INVITATIONS_PREFS, MODE_PRIVATE)
-        val existing = prefs.getStringSet(NOTIFIED_INVITATIONS_KEY, emptySet())?.toMutableSet() ?: mutableSetOf()
-        existing.add(invitationId)
-        prefs.edit { putStringSet(NOTIFIED_INVITATIONS_KEY, existing) }
-    }
-
-    private fun showInvitationNotification(invitation: UIInvitation) {
-        val contentText = getString(
-            R.string.new_invitation_notification,
-            invitation.fromEmail,
-            invitation.groupName
-        )
-        val deepLinkIntent = Intent(
-            Intent.ACTION_VIEW,
-            INVITATIONS_DEEP_LINK.toUri(),
-            this,
-            ArticlesActivity::class.java
-        )
-        val pendingIntent = TaskStackBuilder.create(this).run {
-            addNextIntentWithParentStack(deepLinkIntent)
-            getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        }
-        val notification = NotificationCompat.Builder(this, ArticlesApplication.INVITATION_CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_email)
-            .setContentTitle(getString(R.string.invitations))
-            .setContentText(contentText)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setContentIntent(pendingIntent)
-            .setAutoCancel(true)
-            .build()
-
-        getSystemService<NotificationManager>()
-            ?.notify(invitation.invitationId.hashCode(), notification)
-    }
-
     private fun writeUserProfile() {
         val user = Firebase.auth.currentUser ?: return
         Firebase.firestore
-            .collection("users").document(user.uid)
-            .collection("profile").document("info")
-            .set(mapOf("email" to user.email, "uid" to user.uid), SetOptions.merge())
+            .collection("users")
+            .document(user.uid)
+            .collection("profile")
+            .document("info")
+            .set(
+                mapOf(
+                    "email" to user.email,
+                    "uid" to user.uid
+                ),
+                SetOptions.merge()
+            )
     }
 
     private fun openNavigation(location: UILocation) {

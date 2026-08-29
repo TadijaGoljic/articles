@@ -46,20 +46,19 @@ class AuthenticationActivity : ComponentActivity() {
     }
 
     private fun onAuthenticationComplete() {
-        startActivity(Intent(this, ArticlesActivity::class.java))
         finish()
+        startActivity(Intent(this, ArticlesActivity::class.java))
     }
 
-    private fun onMoveToBackground() =
-        moveTaskToBack(true)
+    private fun onMoveToBackground() = moveTaskToBack(true)
 
     @Composable
     private fun Authentication(
         modifier: Modifier = Modifier
     ) {
         AuthenticationNavigationFlow(
-            onAuthenticationComplete = { onAuthenticationComplete() },
-            onMoveToBackground = { onMoveToBackground() },
+            onAuthenticationComplete = ::onAuthenticationComplete,
+            onMoveToBackground = ::onMoveToBackground,
             modifier = modifier
                 .background(color = MaterialTheme.colorScheme.surface)
                 .padding(top = 15.dp)
