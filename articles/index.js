@@ -43,6 +43,42 @@ exports.onSharedGroupChanged = onDocumentWritten(
   }
 );
 
+exports.onInvitationAccepted = onDocumentWritten(
+  "invitations/{invitationId}",
+  async (event) => {
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
+    if (!after || after.status !== "ACCEPTED") return;
+    if (before?.status === "ACCEPTED") return;
+    if (!after.sharedGroupId || !after.groupId) return;
+
+    await Promise.all([
+      tagCollectionAsShared("articles", after.groupId, after.sharedGroupId),
+      tagCollectionAsShared("comments", after.groupId, after.sharedGroupId),
+    ]);
+  }
+);
+
+async function tagCollectionAsShared(collectionName, groupId, sharedGroupId) {
+  const snapshot = await admin.firestore()
+    .collection(collectionName)
+    .where("groupId", "==", groupId)
+    .get();
+  if (snapshot.empty) return;
+
+  const docsToTag = snapshot.docs.filter((doc) => doc.data().sharedGroupId !== sharedGroupId);
+  if (docsToTag.length === 0) return;
+
+  const BATCH_LIMIT = 450;
+  for (let i = 0; i < docsToTag.length; i += BATCH_LIMIT) {
+    const batch = admin.firestore().batch();
+    docsToTag.slice(i, i + BATCH_LIMIT).forEach((doc) => {
+      batch.update(doc.ref, { sharedGroupId });
+    });
+    await batch.commit();
+  }
+}
+
 exports.onInvitationCreated = onDocumentCreated(
   "invitations/{invitationId}",
   async (event) => {
@@ -91,16 +127,14 @@ exports.onUserDeleted = onDocumentDeleted(
 
 async function notifyForOwnedOrSharedDocument(data) {
   if (!data) return;
-  if (data.ownerUid) {
-    await notifyDevices(data.ownerUid);
-    return;
-  }
+  const uidsToNotify = new Set();
+  if (data.ownerUid) uidsToNotify.add(data.ownerUid);
   if (data.sharedGroupId) {
     const groupDoc = await admin.firestore().collection("sharedGroups").doc(data.sharedGroupId).get();
     const members = groupDoc.data()?.members;
-    if (!Array.isArray(members)) return;
-    await Promise.all(members.map((uid) => notifyDevices(uid)));
+    if (Array.isArray(members)) members.forEach((uid) => uidsToNotify.add(uid));
   }
+  await Promise.all([...uidsToNotify].map((uid) => notifyDevices(uid)));
 }
 
 async function notifyDevices(uid) {

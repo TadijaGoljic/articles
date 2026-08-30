@@ -1,5 +1,7 @@
 package com.example.articles.ui.composables.screens
 
+import android.annotation.SuppressLint
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -11,20 +13,26 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Comment
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
@@ -46,14 +54,22 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -62,12 +78,14 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.articles.R
+import com.example.articles.models.UIComment
 import com.example.articles.models.UILocation
 import com.example.articles.models.UIArticle
 import com.example.articles.models.UIGroup
@@ -76,11 +94,14 @@ import com.example.articles.ui.composables.utils.Toolbar
 import com.example.articles.utils.ScreenSize
 import com.example.articles.viewmodels.FilterType
 import com.example.articles.viewmodels.GroupDetailsAction
+import com.example.articles.viewmodels.GroupDetailsMode
+import com.example.articles.viewmodels.GroupDetailsState
 import com.example.articles.viewmodels.GroupDetailsViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import kotlinx.coroutines.launch
 
+@SuppressLint("CoroutineCreationDuringComposition")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupDetailsPage(
@@ -97,6 +118,11 @@ fun GroupDetailsPage(
     val coroutineScope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState()
     val screenSize = ScreenSize.getScreenSize()
+    val currentUid = Firebase.auth.currentUser?.uid
+
+    BackHandler(enabled = state.mode == GroupDetailsMode.COMMENTS) {
+        groupDetailsViewModel.handleAction(GroupDetailsAction.SelectMode(GroupDetailsMode.ARTICLES))
+    }
 
     if (state.showEditDeleteBottonSheet) {
         ModalBottomSheet(
@@ -111,8 +137,8 @@ fun GroupDetailsPage(
             containerColor = MaterialTheme.colorScheme.surface
         ) {
             Column(
-                modifier = Modifier.padding(bottom = 60.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(bottom = 60.dp)
             ) {
                 if (state.articleToEditOrDelete?.bought == true) {
                     BottomSheetRowItem(
@@ -154,29 +180,18 @@ fun GroupDetailsPage(
                         groupDetailsViewModel.handleAction(GroupDetailsAction.HideBottomSheet)
                     }
                 )
-                BottomSheetRowItem(
-                    icon = Icons.AutoMirrored.Filled.Comment,
-                    contentDescription = stringResource(id = R.string.comments),
-                    text = stringResource(id = R.string.comments),
-                    onClick = {
-                        val article = state.articleToEditOrDelete
-                        groupDetailsViewModel.handleAction(GroupDetailsAction.HideBottomSheet)
-                        article?.let {
-                            groupDetailsViewModel.handleAction(GroupDetailsAction.ShowArticleComments(it))
-                        }
-                    }
-                )
             }
         }
     }
 
     if (state.showCommentsSheet) {
-        val commentsSheetState = rememberModalBottomSheetState()
+        val commentsSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         val commentsCoroutineScope = rememberCoroutineScope()
         CommentsBottomSheet(
-            comments = state.comments,
-            currentUid = Firebase.auth.currentUser?.uid,
+            comments = state.articleComments,
+            currentUid = currentUid,
             sheetState = commentsSheetState,
+            subtitle = state.articleCommentsTarget?.name,
             onDismiss = {
                 commentsCoroutineScope
                     .launch { commentsSheetState.hide() }
@@ -194,183 +209,321 @@ fun GroupDetailsPage(
     }
 
     Scaffold { innerPadding ->
-        Box(
+        Column(
             modifier = modifier
-                .fillMaxHeight()
+                .fillMaxSize()
+                .background(color = MaterialTheme.colorScheme.surface)
                 .padding(innerPadding)
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-            ) {
-                Toolbar(
-                    title = state.group.name,
-                    leadingIcon = Icons.Default.ChevronLeft,
-                    onLeadingIconClick = onBackClick
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp)
-                        .fillMaxWidth()
-                ) {
-                    Box {
-                        Button(
-                            onClick = {
-                                groupDetailsViewModel.handleAction(GroupDetailsAction.ShowFilterDropdownMenu)
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.surface,
-                                contentColor = MaterialTheme.colorScheme.primary,
-                            ),
-                            shape = RoundedCornerShape(10.dp),
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .width(50.dp)
-                            ) {
-                                Text(
-                                    text = stringResource(id = R.string.filter),
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Icon(
-                                    imageVector = Icons.Default.FilterList,
-                                    contentDescription = stringResource(id = R.string.filter),
-                                )
-                            }
-                        }
-                        DropdownMenu(
-                            expanded = state.filterDropdownMenuVisible,
-                            onDismissRequest = {
-                                groupDetailsViewModel.handleAction(GroupDetailsAction.HideFilterDropdownMenu)
-                            }
-                        ) {
-                            DropdownMenuItem(
-                                text = {
-                                    Text(text = stringResource(id = R.string.filters_all))
-                                },
-                                onClick = {
-                                    groupDetailsViewModel.handleAction(GroupDetailsAction.FilterSelected(FilterType.ALL))
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = {
-                                    Text(text = stringResource(id = R.string.filters_bought))
-                                },
-                                onClick = {
-                                    groupDetailsViewModel.handleAction(GroupDetailsAction.FilterSelected(FilterType.BOUGHT))
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = {
-                                    Text(text = stringResource(id = R.string.filters_unbought))
-                                },
-                                onClick = {
-                                    groupDetailsViewModel.handleAction(GroupDetailsAction.FilterSelected(FilterType.UNBOUGHT))
-                                }
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.weight(1f))
-                    IconButton(
-                        onClick = {
-                            groupDetailsViewModel.handleAction(GroupDetailsAction.ShowGroupComments)
-                        }
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Comment,
-                            contentDescription = stringResource(id = R.string.comments)
-                        )
-                    }
-                    TextButton(
-                        onClick = {
-                            groupDetailsViewModel.handleAction(
-                                if (state.articles.all { it.expanded }) GroupDetailsAction.CollapseAllArticles
-                                else GroupDetailsAction.ExpandAllArticles
-                            )
-                        },
-                        colors = ButtonDefaults.textButtonColors(
-                            contentColor = MaterialTheme.colorScheme.onBackground,
-                        )
-                    ) {
-                        Text(
-                            text =
-                                if (state.articles.all { it.expanded }) stringResource(id = R.string.collapse_all_articles)
-                                else stringResource(id = R.string.expand_all_articles)
-                        )
-                    }
+            Toolbar(
+                title = state.group.name,
+                leadingIcon = Icons.Default.ChevronLeft,
+                onLeadingIconClick = onBackClick
+            )
+            GroupDetailsModeTabs(
+                mode = state.mode,
+                onModeSelected = { groupDetailsViewModel.handleAction(GroupDetailsAction.SelectMode(it)) },
+                commentsCount = state.groupComments.size
+            )
+            val pagerState = rememberPagerState(
+                initialPage = state.mode.toPageIndex(),
+                pageCount = { GroupDetailsMode.entries.size }
+            )
+            LaunchedEffect(state.mode) {
+                val targetPage = state.mode.toPageIndex()
+                if (pagerState.currentPage != targetPage) {
+                    pagerState.animateScrollToPage(targetPage)
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                if (state.articles.isNotEmpty()) {
-                    LazyColumn(
+            }
+            LaunchedEffect(pagerState.currentPage) {
+                val swipedMode = pagerState.currentPage.toGroupDetailsMode()
+                if (swipedMode != state.mode) {
+                    groupDetailsViewModel.handleAction(GroupDetailsAction.SelectMode(swipedMode))
+                }
+            }
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) { page ->
+                when (page.toGroupDetailsMode()) {
+                    GroupDetailsMode.ARTICLES -> ArticlesModeContent(
+                        state = state,
+                        screenSize = screenSize,
+                        onAddArticle = onAddArticle,
+                        onOpenNavigation = onOpenNavigation,
+                        onOpenLink = onOpenLink,
+                        onAction = groupDetailsViewModel::handleAction,
                         modifier = Modifier
-                            .padding(bottom = 60.dp)
-                            .then(
-                                when (screenSize) {
-                                    ScreenSize.NORMAL -> Modifier
-                                    ScreenSize.LARGE -> Modifier.padding(horizontal = 40.dp)
-                                    ScreenSize.VERY_LARGE -> Modifier.padding(horizontal = 160.dp)
-                                }
-                            )
-                    ) {
-                        items(state.articles) { article ->
-                            ArticleItem(
-                                article = article,
-                                onLongClick = {
-                                    groupDetailsViewModel.handleAction(
-                                        GroupDetailsAction.ArticleLongClick(article = article)
-                                    )
-                                },
-                                onOpenNavigation = onOpenNavigation,
-                                onOpenLink = onOpenLink,
-                                onChangeExpandedStatus = {
-                                    groupDetailsViewModel.handleAction(
-                                        GroupDetailsAction.UpdateExpandedStatus(
-                                            article = article,
-                                            expanded = !article.expanded
-                                        )
-                                    )
-                                }
-                            )
-                        }
-                    }
-                } else {
-                    NoArticles(
+                            .fillMaxSize()
+                            .background(color = MaterialTheme.colorScheme.background)
+                    )
+                    GroupDetailsMode.COMMENTS -> GroupCommentsContent(
+                        comments = state.groupComments,
+                        currentUid = currentUid,
+                        onAction = groupDetailsViewModel::handleAction,
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .height(78.dp)
-                            .clip(shape = RoundedCornerShape(16.dp))
+                            .fillMaxSize()
+                            .background(color = MaterialTheme.colorScheme.background)
                     )
                 }
             }
-            Button(
-                onClick = {
-                    onAddArticle(state.group)
-                },
-                shape = RoundedCornerShape(10.dp),
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = stringResource(id = R.string.add_new_article)
-                    )
-                    Text(
-                        text = stringResource(id = R.string.add_new_article)
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 
+}
+
+private fun GroupDetailsMode.toPageIndex(): Int = if (this == GroupDetailsMode.ARTICLES) 0 else 1
+
+private fun Int.toGroupDetailsMode(): GroupDetailsMode =
+    if (this == 0) GroupDetailsMode.ARTICLES else GroupDetailsMode.COMMENTS
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun GroupDetailsModeTabs(
+    mode: GroupDetailsMode,
+    onModeSelected: (GroupDetailsMode) -> Unit,
+    commentsCount: Int,
+    modifier: Modifier = Modifier
+) {
+    PrimaryTabRow(
+        selectedTabIndex = if (mode == GroupDetailsMode.ARTICLES) 0 else 1,
+        modifier = modifier.fillMaxWidth(),
+        containerColor = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.primary,
+        indicator = {
+            TabRowDefaults.PrimaryIndicator(
+                modifier = Modifier.tabIndicatorOffset(
+                    selectedTabIndex = if (mode == GroupDetailsMode.ARTICLES) 0 else 1,
+                    matchContentSize = false
+                ),
+                width = Dp.Unspecified
+            )
+        }
+    ) {
+        Tab(
+            selected = mode == GroupDetailsMode.ARTICLES,
+            onClick = { onModeSelected(GroupDetailsMode.ARTICLES) },
+            text = { Text(text = stringResource(id = R.string.articles_tab)) }
+        )
+        Tab(
+            selected = mode == GroupDetailsMode.COMMENTS,
+            onClick = { onModeSelected(GroupDetailsMode.COMMENTS) },
+            text = { Text(text = stringResource(id = R.string.comments_tab) +  " (${commentsCount})") }
+        )
+    }
+}
+
+@Composable
+private fun ArticlesModeContent(
+    state: GroupDetailsState,
+    screenSize: ScreenSize,
+    onAddArticle: (UIGroup) -> Unit,
+    onOpenNavigation: (UILocation) -> Unit,
+    onOpenLink: (String) -> Unit,
+    onAction: (GroupDetailsAction) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+        ) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .fillMaxWidth()
+            ) {
+                Box {
+                    Button(
+                        onClick = {
+                            onAction(GroupDetailsAction.ShowFilterDropdownMenu)
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            contentColor = MaterialTheme.colorScheme.primary,
+                        ),
+                        shape = RoundedCornerShape(10.dp),
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .width(50.dp)
+                        ) {
+                            Text(
+                                text = stringResource(id = R.string.filter),
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(
+                                imageVector = Icons.Default.FilterList,
+                                contentDescription = stringResource(id = R.string.filter),
+                            )
+                        }
+                    }
+                    DropdownMenu(
+                        expanded = state.filterDropdownMenuVisible,
+                        onDismissRequest = {
+                            onAction(GroupDetailsAction.HideFilterDropdownMenu)
+                        }
+                    ) {
+                        DropdownMenuItem(
+                            text = {
+                                Text(text = stringResource(id = R.string.filters_all))
+                            },
+                            onClick = {
+                                onAction(GroupDetailsAction.FilterSelected(FilterType.ALL))
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = {
+                                Text(text = stringResource(id = R.string.filters_bought))
+                            },
+                            onClick = {
+                                onAction(GroupDetailsAction.FilterSelected(FilterType.BOUGHT))
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = {
+                                Text(text = stringResource(id = R.string.filters_unbought))
+                            },
+                            onClick = {
+                                onAction(GroupDetailsAction.FilterSelected(FilterType.UNBOUGHT))
+                            }
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.weight(1f))
+                TextButton(
+                    onClick = {
+                        onAction(
+                            if (state.articles.all { it.expanded }) GroupDetailsAction.CollapseAllArticles
+                            else GroupDetailsAction.ExpandAllArticles
+                        )
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onBackground,
+                    )
+                ) {
+                    Text(
+                        text =
+                            if (state.articles.all { it.expanded }) stringResource(id = R.string.collapse_all_articles)
+                            else stringResource(id = R.string.expand_all_articles)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            if (state.articles.isNotEmpty()) {
+                LazyColumn(
+                    modifier = Modifier
+                        .padding(bottom = 60.dp)
+                        .then(
+                            when (screenSize) {
+                                ScreenSize.NORMAL -> Modifier
+                                ScreenSize.LARGE -> Modifier.padding(horizontal = 40.dp)
+                                ScreenSize.VERY_LARGE -> Modifier.padding(horizontal = 160.dp)
+                            }
+                        )
+                ) {
+                    items(items = state.articles, key = { it.id }) { article ->
+                        ArticleItem(
+                            article = article,
+                            commentCount = state.articleCommentCounts[article.id] ?: 0,
+                            onLongClick = {
+                                onAction(GroupDetailsAction.ArticleLongClick(article = article))
+                            },
+                            onCommentsClick = {
+                                onAction(GroupDetailsAction.ShowArticleComments(article = article))
+                            },
+                            onOpenNavigation = onOpenNavigation,
+                            onOpenLink = onOpenLink,
+                            onChangeExpandedStatus = {
+                                onAction(
+                                    GroupDetailsAction.UpdateExpandedStatus(
+                                        article = article,
+                                        expanded = !article.expanded
+                                    )
+                                )
+                            }
+                        )
+                    }
+                }
+            } else {
+                NoArticles(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .height(78.dp)
+                        .clip(shape = RoundedCornerShape(16.dp))
+                )
+            }
+        }
+        Button(
+            onClick = {
+                onAddArticle(state.group)
+            },
+            shape = RoundedCornerShape(10.dp),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 8.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = stringResource(id = R.string.add_new_article)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = stringResource(id = R.string.add_new_article)
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun GroupCommentsContent(
+    comments: List<UIComment>,
+    currentUid: String?,
+    onAction: (GroupDetailsAction) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var commentText by rememberSaveable { mutableStateOf("") }
+
+    Column(modifier = modifier) {
+        Box(modifier = Modifier.weight(1f)) {
+            CommentsList(
+                comments = comments,
+                currentUid = currentUid,
+                onDeleteComment = { comment -> onAction(GroupDetailsAction.DeleteComment(comment)) },
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            )
+        }
+        HorizontalDivider()
+        CommentComposer(
+            value = commentText,
+            onValueChange = { commentText = it },
+            onSend = {
+                if (commentText.isNotBlank()) {
+                    onAction(GroupDetailsAction.AddComment(commentText))
+                    commentText = ""
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(color = MaterialTheme.colorScheme.surface)
+                .imePadding()
+                .padding(16.dp)
+        )
+    }
 }
 
 @Composable
@@ -380,7 +533,9 @@ fun ArticleItem(
     onOpenNavigation: (UILocation) -> Unit,
     onOpenLink: (String) -> Unit,
     onChangeExpandedStatus: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    commentCount: Int = 0,
+    onCommentsClick: () -> Unit = {},
 ) {
 
     val hasDescription = !article.description.isNullOrBlank()
@@ -414,17 +569,44 @@ fun ArticleItem(
                         .padding(start = 12.dp)
                         .align(Alignment.Center)
                 )
-                IconButton(
-                    onClick = onChangeExpandedStatus,
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
                     modifier = Modifier
                         .align(Alignment.CenterEnd)
                 ) {
-                    Icon(
-                        imageVector =
-                            if (!article.expanded) Icons.Default.KeyboardArrowDown
-                            else Icons.Default.KeyboardArrowUp,
-                        contentDescription = stringResource(id = R.string.expand)
-                    )
+                    IconButton(
+                        onClick = onCommentsClick
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Comment,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.height(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = commentCount.toString(),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    IconButton(
+                        onClick = onChangeExpandedStatus,
+                    ) {
+                        Icon(
+                            imageVector =
+                                if (!article.expanded) Icons.Default.KeyboardArrowDown
+                                else Icons.Default.KeyboardArrowUp,
+                            contentDescription = stringResource(id = R.string.expand)
+                        )
+                    }
                 }
             }
             AnimatedVisibility(

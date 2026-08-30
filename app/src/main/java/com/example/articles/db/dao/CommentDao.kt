@@ -26,6 +26,9 @@ interface CommentDao {
     @Query("DELETE FROM comments WHERE groupId = :groupId")
     suspend fun deleteCommentsByGroupId(groupId: UUID)
 
+    @Query("UPDATE comments SET groupId = :newGroupId WHERE groupId = :oldGroupId")
+    suspend fun reassignGroupId(oldGroupId: UUID, newGroupId: UUID)
+
     @Query("DELETE FROM comments WHERE articleId = :articleId")
     suspend fun deleteCommentsByArticleId(articleId: UUID)
 
@@ -34,6 +37,9 @@ interface CommentDao {
 
     @Query("SELECT * FROM comments WHERE articleId = :articleId")
     fun getCommentsForArticle(articleId: UUID): Flow<List<CommentEntity>>
+
+    @Query("SELECT * FROM comments WHERE groupId = :groupId")
+    fun getAllCommentsForGroupId(groupId: UUID): Flow<List<CommentEntity>>
 
     @Query("SELECT * FROM comments WHERE groupId = :groupId")
     suspend fun getCommentsByGroupIdSuspend(groupId: UUID): List<CommentEntity>

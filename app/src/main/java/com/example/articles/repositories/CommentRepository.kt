@@ -67,6 +67,9 @@ class CommentRepository @Inject constructor(
     suspend fun hardDeleteLocalCommentsByGroupId(groupId: UUID) =
         commentDao.deleteCommentsByGroupId(groupId)
 
+    suspend fun reassignCommentsGroupIdLocal(oldGroupId: UUID, newGroupId: UUID) =
+        commentDao.reassignGroupId(oldGroupId, newGroupId)
+
     suspend fun hardDeleteLocalCommentsByArticleId(articleId: UUID) =
         commentDao.deleteCommentsByArticleId(articleId)
 
@@ -106,6 +109,10 @@ class CommentRepository @Inject constructor(
     }
 
     fun getCommentsForArticle(articleId: UUID) = commentDao.getCommentsForArticle(articleId).map { list ->
+        list.map { comment -> comment.toUIComment() }
+    }
+
+    fun getAllCommentsForGroup(groupId: UUID) = commentDao.getAllCommentsForGroupId(groupId).map { list ->
         list.map { comment -> comment.toUIComment() }
     }
 

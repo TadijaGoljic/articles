@@ -74,6 +74,15 @@
     <string name="write_a_comment">Write a comment…</string>
     <string name="no_comments_yet">No comments yet</string>
     <string name="delete_comment">Delete comment</string>
+    <string name="articles_tab">Articles</string>
+    <string name="comments_tab">Comments</string>
+    <string name="comments_tab_with_count">Comments %1$d</string>
+    <string name="article_comments_title">Article comments</string>
+    <string name="no_group_comments_message">Start the conversation by writing the first comment.</string>
+    <string name="no_article_comments_message">Be the first to comment on this article.</string>
+    <string name="sort_newest">Newest</string>
+    <string name="sort_oldest">Oldest</string>
+    <string name="article_comment_count">%1$d comments</string>
 
     <!-- Filters-->
     <string name="filters_all">All</string>

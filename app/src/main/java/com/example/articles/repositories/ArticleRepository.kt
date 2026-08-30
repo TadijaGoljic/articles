@@ -70,6 +70,9 @@ class ArticleRepository @Inject constructor(
     suspend fun hardDeleteLocalArticlesByGroupId(groupId: UUID) =
         articleDao.deleteArticlesByGroupId(groupId)
 
+    suspend fun reassignArticlesGroupIdLocal(oldGroupId: UUID, newGroupId: UUID) =
+        articleDao.reassignGroupId(oldGroupId, newGroupId)
+
     suspend fun hardDeleteLocalArticlesByIds(ids: List<UUID>) =
         articleDao.deleteArticlesByIds(ids)
 

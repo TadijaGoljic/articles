@@ -29,6 +29,9 @@ interface ArticleDao {
     @Query("DELETE FROM articles WHERE groupId = :groupId")
     suspend fun deleteArticlesByGroupId(groupId: UUID)
 
+    @Query("UPDATE articles SET groupId = :newGroupId WHERE groupId = :oldGroupId")
+    suspend fun reassignGroupId(oldGroupId: UUID, newGroupId: UUID)
+
     @Query("SELECT * FROM articles WHERE groupId = :groupId")
     fun getArticlesByGroupId(groupId: UUID): Flow<List<ArticleEntity>>
 

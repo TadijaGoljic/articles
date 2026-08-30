@@ -39,6 +39,8 @@ class GroupDetailsViewModel @Inject constructor(
     private val state = MutableStateFlow(GroupDetailsState())
     val uiState = state.asStateFlow()
 
+    private var latestGroupComments: List<UIComment> = emptyList()
+
     init {
         viewModelScope.launch {
             combine(
@@ -52,6 +54,21 @@ class GroupDetailsViewModel @Inject constructor(
                             group = group
                         )
                     }
+            }
+        }
+        viewModelScope.launch {
+            commentRepository.getAllCommentsForGroup(groupId).collectLatest { allComments ->
+                latestGroupComments = allComments.filter { it.articleId == null }
+                val articleCommentCounts = allComments
+                    .mapNotNull { comment -> comment.articleId?.let { it to comment } }
+                    .groupingBy { (articleId, _) -> articleId }
+                    .eachCount()
+                state.update { currentState ->
+                    currentState.copy(
+                        articleCommentCounts = articleCommentCounts,
+                        groupComments = latestGroupComments
+                    )
+                }
             }
         }
     }
@@ -69,9 +86,9 @@ class GroupDetailsViewModel @Inject constructor(
             is GroupDetailsAction.ShowFilterDropdownMenu -> showFilterDropdownMenu()
             is GroupDetailsAction.HideFilterDropdownMenu -> hideFilterDropdownMenu()
             is GroupDetailsAction.FilterSelected -> onFilterSelected(filter = action.filter)
-            is GroupDetailsAction.ShowGroupComments -> showComments(target = CommentsTarget.ForGroup)
-            is GroupDetailsAction.ShowArticleComments -> showComments(target = CommentsTarget.ForArticle(action.article))
-            is GroupDetailsAction.HideCommentsSheet -> hideComments()
+            is GroupDetailsAction.SelectMode -> selectMode(mode = action.mode)
+            is GroupDetailsAction.ShowArticleComments -> showArticleComments(article = action.article)
+            is GroupDetailsAction.HideCommentsSheet -> hideArticleComments()
             is GroupDetailsAction.AddComment -> addComment(text = action.text)
             is GroupDetailsAction.DeleteComment -> deleteComment(comment = action.comment)
         }
@@ -102,45 +119,45 @@ class GroupDetailsViewModel @Inject constructor(
         }
     }
 
-    private fun showComments(target: CommentsTarget) {
+    private fun selectMode(mode: GroupDetailsMode) {
+        state.update { currentState -> currentState.copy(mode = mode) }
+    }
+
+    private fun showArticleComments(article: UIArticle) {
         state.update { currentState ->
             currentState.copy(
                 showEditDeleteBottonSheet = false,
                 showCommentsSheet = true,
-                commentsTarget = target,
-                comments = emptyList()
+                articleCommentsTarget = article,
+                articleComments = emptyList()
             )
         }
         viewModelScope.launch {
-            val commentsFlow = when (target) {
-                is CommentsTarget.ForGroup -> commentRepository.getCommentsForGroup(groupId = groupId)
-                is CommentsTarget.ForArticle -> commentRepository.getCommentsForArticle(articleId = target.article.id)
-            }
-            commentsFlow.collectLatest { comments ->
-                state.update { it.copy(comments = comments) }
+            commentRepository.getCommentsForArticle(articleId = article.id).collectLatest { comments ->
+                state.update { it.copy(articleComments = comments) }
             }
         }
     }
 
-    private fun hideComments() {
+    private fun hideArticleComments() {
         state.update { currentState ->
             currentState.copy(
                 showCommentsSheet = false,
-                commentsTarget = null,
-                comments = emptyList()
+                articleCommentsTarget = null,
+                articleComments = emptyList()
             )
         }
     }
 
     private fun addComment(text: String) {
         if (text.isBlank()) return
-        val target = state.value.commentsTarget ?: return
         val currentUser = Firebase.auth.currentUser ?: return
+        val articleId = state.value.articleCommentsTarget?.id
         viewModelScope.launch {
             commentRepository.upsertComment(
                 UIComment(
                     groupId = groupId,
-                    articleId = (target as? CommentsTarget.ForArticle)?.article?.id,
+                    articleId = articleId,
                     authorUid = currentUser.uid,
                     authorEmail = currentUser.email ?: "",
                     text = text
@@ -223,21 +240,24 @@ enum class FilterType {
     UNBOUGHT,
 }
 
+enum class GroupDetailsMode {
+    ARTICLES,
+    COMMENTS,
+}
+
 data class GroupDetailsState(
     val group: UIGroup = UIGroup(),
     val articles: List<UIArticle> = emptyList(),
     val articleToEditOrDelete: UIArticle? = null,
     val showEditDeleteBottonSheet: Boolean = false,
     val filterDropdownMenuVisible: Boolean = false,
+    val mode: GroupDetailsMode = GroupDetailsMode.ARTICLES,
+    val groupComments: List<UIComment> = emptyList(),
+    val articleCommentCounts: Map<UUID, Int> = emptyMap(),
     val showCommentsSheet: Boolean = false,
-    val commentsTarget: CommentsTarget? = null,
-    val comments: List<UIComment> = emptyList(),
+    val articleCommentsTarget: UIArticle? = null,
+    val articleComments: List<UIComment> = emptyList(),
 )
-
-sealed interface CommentsTarget {
-    data object ForGroup : CommentsTarget
-    data class ForArticle(val article: UIArticle) : CommentsTarget
-}
 
 sealed interface GroupDetailsAction {
     data class ArticleLongClick(val article: UIArticle): GroupDetailsAction
@@ -251,7 +271,7 @@ sealed interface GroupDetailsAction {
     data object ShowFilterDropdownMenu: GroupDetailsAction
     data object HideFilterDropdownMenu: GroupDetailsAction
     data class FilterSelected(val filter: FilterType): GroupDetailsAction
-    data object ShowGroupComments: GroupDetailsAction
+    data class SelectMode(val mode: GroupDetailsMode): GroupDetailsAction
     data class ShowArticleComments(val article: UIArticle): GroupDetailsAction
     data object HideCommentsSheet: GroupDetailsAction
     data class AddComment(val text: String): GroupDetailsAction

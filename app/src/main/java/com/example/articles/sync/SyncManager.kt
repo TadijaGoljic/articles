@@ -90,6 +90,7 @@ class SyncManager(
             .chunked(WHERE_IN_CHUNK_SIZE)
             .flatMap { chunk ->
                 articlesCollection
+                    .whereEqualTo("ownerUid", uid)
                     .whereIn("groupId", chunk)
                     .whereGreaterThan("updatedAt", 0)
                     .get()
@@ -126,6 +127,7 @@ class SyncManager(
         uploadLocalCommentChanges(localCommentChanges, commentsCollection, uid)
         val remoteSnapshot = commentsCollection
             .whereEqualTo("ownerUid", uid)
+            .whereEqualTo("sharedGroupId", null)
             .whereGreaterThan("updatedAt", 0)
             .get()
             .await()
@@ -227,15 +229,24 @@ class SyncManager(
         removeOrphanedSharedGroups(sharedGroupIds.toSet())
 
         for (sharedGroupId in sharedGroupIds) {
-            var existingLocalGroup = groupRepository.getGroupBySharedGroupId(sharedGroupId)
-            if (existingLocalGroup == null) {
-                val (fromUid, fromGroupId) = sharedGroupRepository.getSharedGroupMeta(sharedGroupId)
-                if (uid == fromUid && fromGroupId != null) {
-                    existingLocalGroup = groupRepository.getGroupByIdSuspend(UUID.fromString(fromGroupId))
-                }
-            }
+            val (fromUid, fromGroupId) = sharedGroupRepository.getSharedGroupMeta(sharedGroupId)
+            val ownerLocalGroup = if (uid == fromUid && fromGroupId != null) {
+                groupRepository.getGroupByIdSuspend(UUID.fromString(fromGroupId))
+            } else null
+            val sharedIdLocalGroup = groupRepository.getGroupBySharedGroupId(sharedGroupId)
+
+            val existingLocalGroup = ownerLocalGroup ?: sharedIdLocalGroup
             val localGroupId = existingLocalGroup?.idGroup ?: UUID.fromString(sharedGroupId)
             val isFirstSyncAsShared = existingLocalGroup?.isShared != true
+
+            // Self-heal: a past resolution failure may have left a stray duplicate group keyed
+            // by the raw sharedGroupId, holding articles/comments that belong under localGroupId.
+            if (sharedIdLocalGroup != null && sharedIdLocalGroup.idGroup != localGroupId) {
+                Log.d(ArticlesApplication.LOG_TAG, "Merging duplicate shared group ${sharedIdLocalGroup.idGroup} into $localGroupId")
+                articleRepository.reassignArticlesGroupIdLocal(sharedIdLocalGroup.idGroup, localGroupId)
+                commentRepository.reassignCommentsGroupIdLocal(sharedIdLocalGroup.idGroup, localGroupId)
+                groupRepository.deleteGroupLocalById(sharedIdLocalGroup.idGroup)
+            }
 
             val localChanges = articleRepository
                 .getAllArticlesNoMapping()

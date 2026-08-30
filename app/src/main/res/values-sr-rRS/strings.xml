@@ -42,6 +42,7 @@
     <string name="collapse">Скупи</string>
     <string name="selected_location">Изабрана локација</string>
     <string name="tap_on_the_map">Додирните било где на мапи како бисме изабрали локацију</string>
+    <string name="search_for_a_place">Претражите локацију</string>
     <string name="cancel">Поништи</string>
     <string name="close">Затвори</string>
     <string name="select_location">Изаберите локацију</string>
@@ -75,6 +76,15 @@
     <string name="write_a_comment">Напишите коментар…</string>
     <string name="no_comments_yet">Још увек нема коментара</string>
     <string name="delete_comment">Обриши коментар</string>
+    <string name="articles_tab">Артикли</string>
+    <string name="comments_tab">Коментари</string>
+    <string name="comments_tab_with_count">Коментари %1$d</string>
+    <string name="article_comments_title">Коментари на артикал</string>
+    <string name="no_group_comments_message">Започните разговор тако што ћете написати први коментар.</string>
+    <string name="no_article_comments_message">Будите први који ће коментарисати овај артикал.</string>
+    <string name="sort_newest">Најновије</string>
+    <string name="sort_oldest">Најстарије</string>
+    <string name="article_comment_count">%1$d коментара</string>
 
     <!-- Filters-->
     <string name="filters_all">Сви</string>
