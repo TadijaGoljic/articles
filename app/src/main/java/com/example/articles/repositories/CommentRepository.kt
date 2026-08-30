@@ -8,11 +8,8 @@ import com.example.articles.models.UIComment
 import com.example.articles.models.mappers.toCommentEntity
 import com.example.articles.models.mappers.toUIComment
 import com.example.articles.utils.COMMENTS_COLLECTION
-import com.example.articles.utils.SHARED_GROUPS_COLLECTION
-import com.example.articles.utils.USERS_COLLECTION
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
-import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
@@ -29,18 +26,14 @@ class CommentRepository @Inject constructor(
 
     private val firestore = Firebase.firestore
 
-    private suspend fun commentsCollection(groupId: UUID): CollectionReference? {
+    /** Returns (ownerUid, sharedGroupId) firestore scoping for a comment's group; null if signed out. */
+    private suspend fun ownerContext(groupId: UUID): Pair<String?, String?>? {
         val uid = Firebase.auth.currentUser?.uid ?: return null
         val group = groupDao.getGroupByIdSuspend(groupId)
         return if (group?.isShared == true && group.sharedGroupId != null) {
-            firestore
-                .collection(SHARED_GROUPS_COLLECTION)
-                .document(group.sharedGroupId)
-                .collection(COMMENTS_COLLECTION)
+            null to group.sharedGroupId
         } else {
-            firestore.collection(USERS_COLLECTION)
-                .document(uid)
-                .collection(COMMENTS_COLLECTION)
+            uid to null
         }
     }
 
@@ -49,19 +42,20 @@ class CommentRepository @Inject constructor(
     suspend fun upsertComment(comment: UIComment) {
         val commentEntity = comment.toCommentEntity()
         commentDao.upsertComment(commentEntity)
-        commentsCollection(comment.groupId)
-            ?.document(comment.id.toString())
-            ?.set(firestoreModelMapper.toCommentsFirestoreMap(commentEntity))
-            ?.await()
+        val (ownerUid, sharedGroupId) = ownerContext(comment.groupId) ?: return
+        firestore.collection(COMMENTS_COLLECTION)
+            .document(comment.id.toString())
+            .set(firestoreModelMapper.toCommentsFirestoreMap(commentEntity, ownerUid, sharedGroupId))
+            .await()
     }
 
     suspend fun deleteCommentById(id: UUID) {
-        val comment = commentDao.getCommentByIdSuspend(id) ?: return
+        commentDao.getCommentByIdSuspend(id) ?: return
         commentDao.deleteCommentById(id)
-        commentsCollection(comment.groupId)
-            ?.document(id.toString())
-            ?.delete()
-            ?.await()
+        firestore.collection(COMMENTS_COLLECTION)
+            .document(id.toString())
+            .delete()
+            .await()
     }
 
     suspend fun upsertAllCommentsLocal(comments: List<CommentEntity>) =
@@ -80,14 +74,11 @@ class CommentRepository @Inject constructor(
         commentDao.deleteCommentsByIds(ids)
 
     suspend fun deleteCommentsByGroupId(groupId: UUID) {
-        val uid = Firebase.auth.currentUser?.uid ?: return
+        Firebase.auth.currentUser ?: return
         val comments = commentDao.getCommentsByGroupIdSuspend(groupId)
         commentDao.deleteCommentsByGroupId(groupId)
         if (comments.isNotEmpty()) {
-            val collection = firestore
-                .collection(USERS_COLLECTION)
-                .document(uid)
-                .collection(COMMENTS_COLLECTION)
+            val collection = firestore.collection(COMMENTS_COLLECTION)
             val batch = firestore.batch()
             comments.forEach { comment ->
                 batch.delete(collection.document(comment.idComment.toString()))
@@ -101,7 +92,7 @@ class CommentRepository @Inject constructor(
             .filter { it.articleId == articleId }
         commentDao.deleteCommentsByArticleId(articleId)
         if (comments.isNotEmpty()) {
-            val collection = commentsCollection(groupId) ?: return
+            val collection = firestore.collection(COMMENTS_COLLECTION)
             val batch = firestore.batch()
             comments.forEach { comment ->
                 batch.delete(collection.document(comment.idComment.toString()))

@@ -8,7 +8,7 @@ import android.util.Log
 import com.example.articles.ArticlesApplication
 import com.example.articles.utils.GROUPS_COLLECTION
 import com.example.articles.utils.INVITATIONS_COLLECTION
-import com.example.articles.utils.USERS_COLLECTION
+import com.example.articles.utils.PROFILES_COLLECTION
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
@@ -31,7 +31,7 @@ class InvitationRepository @Inject constructor(
 
     suspend fun lookupUidByEmail(email: String): String? {
         val snapshot = firestore
-            .collectionGroup("profile")
+            .collection(PROFILES_COLLECTION)
             .whereEqualTo("email", email)
             .get()
             .await()
@@ -116,9 +116,7 @@ class InvitationRepository @Inject constructor(
                 ))
                 .await()
 
-            val fromGroupRef = firestore.collection(USERS_COLLECTION)
-                .document(invitation.fromUid)
-                .collection(GROUPS_COLLECTION)
+            val fromGroupRef = firestore.collection(GROUPS_COLLECTION)
                 .document(invitation.groupId)
             val fromGroupDoc = fromGroupRef.get().await()
             if (fromGroupDoc.exists()) {
@@ -130,7 +128,8 @@ class InvitationRepository @Inject constructor(
                         "name" to invitation.groupName,
                         "isShared" to true,
                         "sharedGroupId" to sharedGroupId,
-                        "updatedAt" to System.currentTimeMillis()
+                        "updatedAt" to System.currentTimeMillis(),
+                        "ownerUid" to invitation.fromUid
                     ),
                     SetOptions.merge()
                 ).await()

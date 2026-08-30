@@ -7,7 +7,6 @@ import com.example.articles.models.UIGroup
 import com.example.articles.models.mappers.toGroupEntity
 import com.example.articles.models.mappers.toUIGroup
 import com.example.articles.utils.GROUPS_COLLECTION
-import com.example.articles.utils.USERS_COLLECTION
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
@@ -26,26 +25,22 @@ class GroupRepository @Inject constructor(
 
     private val firestore = Firebase.firestore
 
-    private fun groupsCollection(uid: String) =
-        firestore
-            .collection(USERS_COLLECTION)
-            .document(uid)
-            .collection(GROUPS_COLLECTION)
-
     suspend fun upsertGroup(group: UIGroup) {
         val uid = Firebase.auth.currentUser?.uid ?: return
         val groupEntity = group.toGroupEntity()
         groupDao.upsertGroup(groupEntity)
-        groupsCollection(uid)
+        firestore
+            .collection(GROUPS_COLLECTION)
             .document(group.id.toString())
-            .set(firestoreModelMapper.toGroupsFirestoreMap(groupEntity))
+            .set(firestoreModelMapper.toGroupsFirestoreMap(groupEntity.copy(ownerUid = uid)))
             .await()
     }
 
     suspend fun deleteGroupById(groupId: UUID) {
-        val uid = Firebase.auth.currentUser?.uid ?: return
+        Firebase.auth.currentUser ?: return
         groupDao.deleteGroupById(groupId)
-        groupsCollection(uid)
+        firestore
+            .collection(GROUPS_COLLECTION)
             .document(groupId.toString())
             .delete()
             .await()

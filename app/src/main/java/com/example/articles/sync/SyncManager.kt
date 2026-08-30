@@ -23,7 +23,6 @@ import com.example.articles.repositories.SharedGroupRepository
 import com.example.articles.utils.ARTICLES_COLLECTION
 import com.example.articles.utils.COMMENTS_COLLECTION
 import com.example.articles.utils.GROUPS_COLLECTION
-import com.example.articles.utils.USERS_COLLECTION
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.CollectionReference
@@ -52,25 +51,16 @@ class SyncManager(
 
     override suspend fun doWork(): Result {
         val uid = auth.currentUser?.uid ?: return Result.failure()
-        val groupsCollection = firestore
-            .collection(USERS_COLLECTION)
-            .document(uid)
-            .collection(GROUPS_COLLECTION)
-        val articlesCollection = firestore
-            .collection(USERS_COLLECTION)
-            .document(uid)
-            .collection(ARTICLES_COLLECTION)
-        val commentsCollection = firestore
-            .collection(USERS_COLLECTION)
-            .document(uid)
-            .collection(COMMENTS_COLLECTION)
+        val groupsCollection = firestore.collection(GROUPS_COLLECTION)
+        val articlesCollection = firestore.collection(ARTICLES_COLLECTION)
+        val commentsCollection = firestore.collection(COMMENTS_COLLECTION)
         return try {
             val syncTimestamp = userPreferences.lastSyncTimestamp
             Log.d(ArticlesApplication.LOG_TAG, "Sync started, lastSyncTimestamp=$syncTimestamp")
-            syncGroups(groupsCollection, syncTimestamp)
-            syncArticles(articlesCollection, syncTimestamp)
-            syncComments(commentsCollection, syncTimestamp)
             syncSharedGroups(uid, syncTimestamp)
+            syncGroups(groupsCollection, uid, syncTimestamp)
+            syncArticles(articlesCollection, uid, syncTimestamp)
+            syncComments(commentsCollection, uid, syncTimestamp)
             userPreferences.lastSyncTimestamp = System.currentTimeMillis()
             Log.d(ArticlesApplication.LOG_TAG, "Sync completed successfully")
             Result.success()
@@ -82,25 +72,31 @@ class SyncManager(
 
     private suspend fun syncArticles(
         articlesCollection: CollectionReference,
+        uid: String,
         syncTimestamp: Long,
     ) {
-        val sharedGroupIds = groupRepository.getAllGroupsNoMapping()
-            .map { list -> list.filter { it.isShared }.map { it.idGroup }.toSet() }
+        val privateGroupIds = groupRepository.getAllGroupsNoMapping()
+            .map { list -> list.filter { !it.isShared }.map { it.idGroup } }
             .first()
         val localArticles = articleRepository
             .getAllArticlesNoMapping()
-            .map { list -> list.filter { it.groupId !in sharedGroupIds } }
+            .map { list -> list.filter { it.groupId in privateGroupIds } }
             .first()
         val localArticleChanges = localArticles.filter { it.updatedAt > syncTimestamp }
         Log.d(ArticlesApplication.LOG_TAG, "Uploading ${localArticleChanges.size} local article changes")
-        uploadLocalArticleChanges(localArticleChanges, articlesCollection)
-        val remoteSnapshot = articlesCollection
-            .whereGreaterThan("updatedAt", 0)
-            .get()
-            .await()
-        val remoteEntities = remoteSnapshot.documents.mapNotNull {
-            firestoreModelMapper.toArticleEntity(it)
-        }
+        uploadLocalArticleChanges(localArticleChanges, articlesCollection, uid)
+        val remoteEntities = privateGroupIds
+            .map { it.toString() }
+            .chunked(WHERE_IN_CHUNK_SIZE)
+            .flatMap { chunk ->
+                articlesCollection
+                    .whereIn("groupId", chunk)
+                    .whereGreaterThan("updatedAt", 0)
+                    .get()
+                    .await()
+                    .documents
+                    .mapNotNull { firestoreModelMapper.toArticleEntity(it) }
+            }
         Log.d(ArticlesApplication.LOG_TAG, "Fetched ${remoteEntities.size} articles from remote")
         if (remoteEntities.isNotEmpty()) {
             articleRepository.upsertAllArticlesLocal(remoteEntities)
@@ -115,6 +111,7 @@ class SyncManager(
 
     private suspend fun syncComments(
         commentsCollection: CollectionReference,
+        uid: String,
         syncTimestamp: Long,
     ) {
         val sharedGroupIds = groupRepository.getAllGroupsNoMapping()
@@ -126,8 +123,9 @@ class SyncManager(
             .first()
         val localCommentChanges = localComments.filter { it.updatedAt > syncTimestamp }
         Log.d(ArticlesApplication.LOG_TAG, "Uploading ${localCommentChanges.size} local comment changes")
-        uploadLocalCommentChanges(localCommentChanges, commentsCollection)
+        uploadLocalCommentChanges(localCommentChanges, commentsCollection, uid)
         val remoteSnapshot = commentsCollection
+            .whereEqualTo("ownerUid", uid)
             .whereGreaterThan("updatedAt", 0)
             .get()
             .await()
@@ -148,6 +146,7 @@ class SyncManager(
 
     private suspend fun syncGroups(
         groupsCollection: CollectionReference,
+        uid: String,
         syncTimestamp: Long
     ) {
         val localGroups = groupRepository
@@ -156,8 +155,9 @@ class SyncManager(
             .first()
         val localGroupChanges = localGroups.filter { it.updatedAt > syncTimestamp }
         Log.d(ArticlesApplication.LOG_TAG, "Uploading ${localGroupChanges.size} local group changes")
-        uploadLocalGroupChanges(localGroupChanges, groupsCollection)
+        uploadLocalGroupChanges(localGroupChanges, groupsCollection, uid)
         val remoteSnapshot = groupsCollection
+            .whereEqualTo("ownerUid", uid)
             .whereGreaterThan("updatedAt", 0)
             .get()
             .await()
@@ -180,39 +180,42 @@ class SyncManager(
 
     private suspend fun uploadLocalArticleChanges(
         articles: List<ArticleEntity>,
-        collection: CollectionReference
+        collection: CollectionReference,
+        uid: String
     ) {
         articles.forEach { article ->
             val documentId = article.idArticle.toString()
             Log.d(ArticlesApplication.LOG_TAG, "Uploading article id=$documentId name=${article.name}")
             collection.document(documentId)
-                .set(firestoreModelMapper.toArticlesFirestoreMap(article))
+                .set(firestoreModelMapper.toArticlesFirestoreMap(article, ownerUid = uid))
                 .await()
         }
     }
 
     private suspend fun uploadLocalGroupChanges(
         groups: List<GroupEntity>,
-        collection: CollectionReference
+        collection: CollectionReference,
+        uid: String
     ) {
         groups.filter { !it.isShared }.forEach { group ->
             val documentId = group.idGroup.toString()
             Log.d(ArticlesApplication.LOG_TAG, "Uploading group id=$documentId name=${group.name}")
             collection.document(documentId)
-                .set(firestoreModelMapper.toGroupsFirestoreMap(group))
+                .set(firestoreModelMapper.toGroupsFirestoreMap(group.copy(ownerUid = uid)))
                 .await()
         }
     }
 
     private suspend fun uploadLocalCommentChanges(
         comments: List<CommentEntity>,
-        collection: CollectionReference
+        collection: CollectionReference,
+        uid: String
     ) {
         comments.forEach { comment ->
             val documentId = comment.idComment.toString()
             Log.d(ArticlesApplication.LOG_TAG, "Uploading comment id=$documentId")
             collection.document(documentId)
-                .set(firestoreModelMapper.toCommentsFirestoreMap(comment))
+                .set(firestoreModelMapper.toCommentsFirestoreMap(comment, ownerUid = uid))
                 .await()
         }
     }
@@ -232,9 +235,6 @@ class SyncManager(
                 }
             }
             val localGroupId = existingLocalGroup?.idGroup ?: UUID.fromString(sharedGroupId)
-            // First time this group is synced as shared: push everything local, not just
-            // changes since last sync, since pre-existing unchanged articles/comments would
-            // otherwise never reach the shared collection (the accepter can't read them directly).
             val isFirstSyncAsShared = existingLocalGroup?.isShared != true
 
             val localChanges = articleRepository
@@ -307,6 +307,8 @@ class SyncManager(
 
     companion object {
         const val NAME = "SyncManager"
+        // Firestore's whereIn() accepts at most 30 values per query.
+        private const val WHERE_IN_CHUNK_SIZE = 30
         fun sync() = OneTimeWorkRequestBuilder<SyncManager>()
             .setConstraints(Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)

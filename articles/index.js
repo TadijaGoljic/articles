@@ -6,29 +6,40 @@ const admin = require("firebase-admin");
 
 admin.initializeApp();
 
-// For cost control, you can set the maximum number of containers that can be
-// running at the same time. This helps mitigate the impact of unexpected
-// traffic spikes by instead downgrading performance. This limit is a
-// per-function limit. You can override the limit for each function using the
-// `maxInstances` option in the function's options, e.g.
-// `onRequest({ maxInstances: 5 }, (req, res) => { ... })`.
-// NOTE: setGlobalOptions does not apply to functions using the v1 API. V1
-// functions should each use functions.runWith({ maxInstances: 10 }) instead.
-// In the v1 API, each function can only serve one request per container, so
-// this will be the maximum concurrent request count.
 setGlobalOptions({ maxInstances: 10 });
 
 exports.onArticleChanged = onDocumentWritten(
-  "users/{uid}/articles/{articleId}",
+  "articles/{articleId}",
   async (event) => {
-    await notifyDevices(event.params.uid);
+    await notifyForOwnedOrSharedDocument(event.data?.after?.data() ?? event.data?.before?.data());
+  }
+);
+
+exports.onCommentChanged = onDocumentWritten(
+  "comments/{commentId}",
+  async (event) => {
+    await notifyForOwnedOrSharedDocument(event.data?.after?.data() ?? event.data?.before?.data());
   }
 );
 
 exports.onGroupChanged = onDocumentWritten(
-  "users/{uid}/groups/{groupId}",
+  "groups/{groupId}",
   async (event) => {
-    await notifyDevices(event.params.uid);
+    const ownerUid = event.data?.after?.data()?.ownerUid ?? event.data?.before?.data()?.ownerUid;
+    if (!ownerUid) return;
+    await notifyDevices(ownerUid);
+  }
+);
+
+exports.onSharedGroupChanged = onDocumentWritten(
+  "sharedGroups/{groupId}",
+  async (event) => {
+    const members = new Set([
+      ...(event.data?.before?.data()?.members || []),
+      ...(event.data?.after?.data()?.members || []),
+    ]);
+    if (members.size === 0) return;
+    await Promise.all([...members].map((uid) => notifyDevices(uid)));
   }
 );
 
@@ -77,6 +88,20 @@ exports.onUserDeleted = onDocumentDeleted(
     });
   }
 );
+
+async function notifyForOwnedOrSharedDocument(data) {
+  if (!data) return;
+  if (data.ownerUid) {
+    await notifyDevices(data.ownerUid);
+    return;
+  }
+  if (data.sharedGroupId) {
+    const groupDoc = await admin.firestore().collection("sharedGroups").doc(data.sharedGroupId).get();
+    const members = groupDoc.data()?.members;
+    if (!Array.isArray(members)) return;
+    await Promise.all(members.map((uid) => notifyDevices(uid)));
+  }
+}
 
 async function notifyDevices(uid) {
   const userDoc = await admin.firestore().collection("users").doc(uid).get();

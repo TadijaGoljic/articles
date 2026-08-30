@@ -8,11 +8,8 @@ import com.example.articles.models.UIArticle
 import com.example.articles.models.mappers.toArticleEntity
 import com.example.articles.models.mappers.toUIArticle
 import com.example.articles.utils.ARTICLES_COLLECTION
-import com.example.articles.utils.SHARED_GROUPS_COLLECTION
-import com.example.articles.utils.USERS_COLLECTION
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
-import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
@@ -29,18 +26,14 @@ class ArticleRepository @Inject constructor(
 
     private val firestore = Firebase.firestore
 
-    private suspend fun articlesCollection(groupId: UUID): CollectionReference? {
+    /** Returns (ownerUid, sharedGroupId) firestore scoping for an article's group; null if signed out. */
+    private suspend fun ownerContext(groupId: UUID): Pair<String?, String?>? {
         val uid = Firebase.auth.currentUser?.uid ?: return null
         val group = groupDao.getGroupByIdSuspend(groupId)
         return if (group?.isShared == true && group.sharedGroupId != null) {
-            firestore
-                .collection(SHARED_GROUPS_COLLECTION)
-                .document(group.sharedGroupId)
-                .collection(ARTICLES_COLLECTION)
+            null to group.sharedGroupId
         } else {
-            firestore.collection(USERS_COLLECTION)
-                .document(uid)
-                .collection(ARTICLES_COLLECTION)
+            uid to null
         }
     }
 
@@ -49,19 +42,20 @@ class ArticleRepository @Inject constructor(
     suspend fun upsertArticle(article: UIArticle) {
         val articleEntity = article.toArticleEntity()
         articleDao.upsertArticle(articleEntity)
-        articlesCollection(article.groupId)
-            ?.document(article.id.toString())
-            ?.set(firestoreModelMapper.toArticlesFirestoreMap(articleEntity))
-            ?.await()
+        val (ownerUid, sharedGroupId) = ownerContext(article.groupId) ?: return
+        firestore.collection(ARTICLES_COLLECTION)
+            .document(article.id.toString())
+            .set(firestoreModelMapper.toArticlesFirestoreMap(articleEntity, ownerUid, sharedGroupId))
+            .await()
     }
 
     suspend fun deleteArticleById(articleId: UUID) {
-        val article = articleDao.getArticleByIdSuspend(articleId) ?: return
+        articleDao.getArticleByIdSuspend(articleId) ?: return
         articleDao.deleteArticleById(articleId)
-        articlesCollection(article.groupId)
-            ?.document(articleId.toString())
-            ?.delete()
-            ?.await()
+        firestore.collection(ARTICLES_COLLECTION)
+            .document(articleId.toString())
+            .delete()
+            .await()
     }
 
     suspend fun upsertAllArticlesLocal(articles: List<ArticleEntity>) =
@@ -80,14 +74,11 @@ class ArticleRepository @Inject constructor(
         articleDao.deleteArticlesByIds(ids)
 
     suspend fun deleteArticlesByGroupId(groupId: UUID) {
-        val uid = Firebase.auth.currentUser?.uid ?: return
+        Firebase.auth.currentUser ?: return
         val articles = articleDao.getArticlesByGroupIdSuspend(groupId)
         articleDao.deleteArticlesByGroupId(groupId)
         if (articles.isNotEmpty()) {
-            val collection = firestore
-                .collection(USERS_COLLECTION)
-                .document(uid)
-                .collection(ARTICLES_COLLECTION)
+            val collection = firestore.collection(ARTICLES_COLLECTION)
             val batch = firestore.batch()
             articles.forEach { article ->
                 batch.delete(collection.document(article.idArticle.toString()))

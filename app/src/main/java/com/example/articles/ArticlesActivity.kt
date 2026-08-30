@@ -18,6 +18,7 @@ import com.example.articles.models.UILocation
 import com.example.articles.repositories.InvitationRepository
 import com.example.articles.ui.composables.ArticlesNavigationFlow
 import com.example.articles.ui.theme.ArticlesTheme
+import com.example.articles.utils.PROFILES_COLLECTION
 import com.example.articles.utils.TriggerSync
 import com.example.articles.fcm.isInvitationAlreadyNotified
 import com.example.articles.fcm.markInvitationNotified
@@ -97,10 +98,8 @@ class ArticlesActivity : ComponentActivity() {
     private fun writeUserProfile() {
         val user = Firebase.auth.currentUser ?: return
         Firebase.firestore
-            .collection("users")
+            .collection(PROFILES_COLLECTION)
             .document(user.uid)
-            .collection("profile")
-            .document("info")
             .set(
                 mapOf(
                     "email" to user.email,

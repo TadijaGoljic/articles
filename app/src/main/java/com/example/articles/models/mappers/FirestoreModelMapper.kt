@@ -27,7 +27,11 @@ class FirestoreModelMapper @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
 
-    fun toArticlesFirestoreMap(articleEntity: ArticleEntity): Map<String, Any?> {
+    fun toArticlesFirestoreMap(
+        articleEntity: ArticleEntity,
+        ownerUid: String? = null,
+        sharedGroupId: String? = null
+    ): Map<String, Any?> {
         val file = articleEntity.photoUri?.let { uri ->
             fileManager.getFileFromUri(context, uri.toUri())
         }
@@ -57,7 +61,9 @@ class FirestoreModelMapper @Inject constructor(
             "description" to articleEntity.description,
             "websiteLink" to articleEntity.websiteLink,
             "price" to articleEntity.price,
-            "bought" to articleEntity.bought
+            "bought" to articleEntity.bought,
+            "ownerUid" to ownerUid,
+            "sharedGroupId" to sharedGroupId
         )
     }
 
@@ -108,7 +114,11 @@ class FirestoreModelMapper @Inject constructor(
         ownerUid = snapshot["ownerUid"] as? String
     )
 
-    fun toCommentsFirestoreMap(commentEntity: CommentEntity) = mapOf(
+    fun toCommentsFirestoreMap(
+        commentEntity: CommentEntity,
+        ownerUid: String? = null,
+        sharedGroupId: String? = null
+    ) = mapOf(
         "idComment" to commentEntity.idComment.toString(),
         "groupId" to commentEntity.groupId.toString(),
         "articleId" to commentEntity.articleId?.toString(),
@@ -117,7 +127,9 @@ class FirestoreModelMapper @Inject constructor(
         "text" to commentEntity.text,
         "createdAt" to commentEntity.createdAt,
         "updatedAt" to commentEntity.updatedAt,
-        "syncedAt" to System.currentTimeMillis()
+        "syncedAt" to System.currentTimeMillis(),
+        "ownerUid" to ownerUid,
+        "sharedGroupId" to sharedGroupId
     )
 
     fun toCommentEntity(snapshot: DocumentSnapshot): CommentEntity? {
