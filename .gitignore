@@ -16,3 +16,4 @@ local.properties
 /.kotlin
 /.idea/.gitignore
 /.idea/.name
+node_modules/
