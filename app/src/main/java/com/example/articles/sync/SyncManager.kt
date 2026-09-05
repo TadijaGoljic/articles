@@ -151,10 +151,9 @@ class SyncManager(
         uid: String,
         syncTimestamp: Long
     ) {
-        val localGroups = groupRepository
-            .getAllGroupsNoMapping()
-            .map { list -> list.filter { !it.isShared } }
-            .first()
+        val allLocalGroups = groupRepository.getAllGroupsNoMapping().first()
+        val locallySharedIds = allLocalGroups.filter { it.isShared }.map { it.idGroup }.toSet()
+        val localGroups = allLocalGroups.filter { !it.isShared }
         val localGroupChanges = localGroups.filter { it.updatedAt > syncTimestamp }
         Log.d(ArticlesApplication.LOG_TAG, "Uploading ${localGroupChanges.size} local group changes")
         uploadLocalGroupChanges(localGroupChanges, groupsCollection, uid)
@@ -163,9 +162,9 @@ class SyncManager(
             .whereGreaterThan("updatedAt", 0)
             .get()
             .await()
-        val remoteEntities = remoteSnapshot.documents.mapNotNull {
-            firestoreModelMapper.toGroupEntity(it)
-        }
+        val remoteEntities = remoteSnapshot.documents
+            .mapNotNull { firestoreModelMapper.toGroupEntity(it) }
+            .filter { it.idGroup !in locallySharedIds }
         Log.d(ArticlesApplication.LOG_TAG, "Fetched ${remoteEntities.size} groups from remote")
         if (remoteEntities.isNotEmpty()) {
             groupRepository.upsertAllGroupsLocal(
@@ -226,7 +225,7 @@ class SyncManager(
         val sharedGroupIds = sharedGroupRepository.getSharedGroupIdsForUser(uid)
         Log.d(ArticlesApplication.LOG_TAG, "Syncing ${sharedGroupIds.size} shared groups")
 
-        removeOrphanedSharedGroups(sharedGroupIds.toSet())
+        removeOrphanedSharedGroups(uid, sharedGroupIds.toSet())
 
         for (sharedGroupId in sharedGroupIds) {
             val (fromUid, fromGroupId) = sharedGroupRepository.getSharedGroupMeta(sharedGroupId)
@@ -239,8 +238,6 @@ class SyncManager(
             val localGroupId = existingLocalGroup?.idGroup ?: UUID.fromString(sharedGroupId)
             val isFirstSyncAsShared = existingLocalGroup?.isShared != true
 
-            // Self-heal: a past resolution failure may have left a stray duplicate group keyed
-            // by the raw sharedGroupId, holding articles/comments that belong under localGroupId.
             if (sharedIdLocalGroup != null && sharedIdLocalGroup.idGroup != localGroupId) {
                 Log.d(ArticlesApplication.LOG_TAG, "Merging duplicate shared group ${sharedIdLocalGroup.idGroup} into $localGroupId")
                 articleRepository.reassignArticlesGroupIdLocal(sharedIdLocalGroup.idGroup, localGroupId)
@@ -303,22 +300,26 @@ class SyncManager(
         }
     }
 
-    private suspend fun removeOrphanedSharedGroups(remoteSharedGroupIds: Set<String>) {
+    private suspend fun removeOrphanedSharedGroups(uid: String, remoteSharedGroupIds: Set<String>) {
         val localSharedGroups = groupRepository.getAllGroupsNoMapping()
             .map { list -> list.filter { it.isShared && it.sharedGroupId != null } }
             .first()
         val orphaned = localSharedGroups.filter { it.sharedGroupId !in remoteSharedGroupIds }
         orphaned.forEach { group ->
-            Log.d(ArticlesApplication.LOG_TAG, "Removing orphaned shared group id=${group.idGroup} (no longer a member)")
-            articleRepository.hardDeleteLocalArticlesByGroupId(group.idGroup)
-            commentRepository.hardDeleteLocalCommentsByGroupId(group.idGroup)
-            groupRepository.deleteGroupLocalById(group.idGroup)
+            if (group.ownerUid == uid) {
+                Log.d(ArticlesApplication.LOG_TAG, "Reverting shared group id=${group.idGroup} to personal (still owner)")
+                groupRepository.upsertGroupLocal(group.copy(isShared = false, sharedGroupId = null).toUIGroup())
+            } else {
+                Log.d(ArticlesApplication.LOG_TAG, "Removing local access to shared group id=${group.idGroup} (no longer a member)")
+                articleRepository.hardDeleteLocalArticlesByGroupId(group.idGroup)
+                commentRepository.hardDeleteLocalCommentsByGroupId(group.idGroup)
+                groupRepository.deleteGroupLocalById(group.idGroup)
+            }
         }
     }
 
     companion object {
         const val NAME = "SyncManager"
-        // Firestore's whereIn() accepts at most 30 values per query.
         private const val WHERE_IN_CHUNK_SIZE = 30
         fun sync() = OneTimeWorkRequestBuilder<SyncManager>()
             .setConstraints(Constraints.Builder()

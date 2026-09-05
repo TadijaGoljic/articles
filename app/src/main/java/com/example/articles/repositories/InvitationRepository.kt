@@ -6,10 +6,8 @@ import com.example.articles.models.InvitationStatus
 import com.example.articles.models.UIGroup
 import android.util.Log
 import com.example.articles.ArticlesApplication
-import com.example.articles.utils.GROUPS_COLLECTION
 import com.example.articles.utils.INVITATIONS_COLLECTION
 import com.example.articles.utils.PROFILES_COLLECTION
-import com.google.firebase.firestore.SetOptions
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.channels.awaitClose
@@ -115,25 +113,6 @@ class InvitationRepository @Inject constructor(
                     "sharedGroupId" to sharedGroupId
                 ))
                 .await()
-
-            val fromGroupRef = firestore.collection(GROUPS_COLLECTION)
-                .document(invitation.groupId)
-            val fromGroupDoc = fromGroupRef.get().await()
-            if (fromGroupDoc.exists()) {
-                fromGroupRef.update(mapOf("isShared" to true, "sharedGroupId" to sharedGroupId)).await()
-            } else {
-                fromGroupRef.set(
-                    mapOf(
-                        "idGroup" to invitation.groupId,
-                        "name" to invitation.groupName,
-                        "isShared" to true,
-                        "sharedGroupId" to sharedGroupId,
-                        "updatedAt" to System.currentTimeMillis(),
-                        "ownerUid" to invitation.fromUid
-                    ),
-                    SetOptions.merge()
-                ).await()
-            }
         } else {
             firestore.collection(INVITATIONS_COLLECTION)
                 .document(invitation.invitationId)

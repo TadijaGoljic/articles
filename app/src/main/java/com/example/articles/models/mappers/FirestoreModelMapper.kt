@@ -70,9 +70,16 @@ class FirestoreModelMapper @Inject constructor(
     fun toArticleEntity(snapshot: DocumentSnapshot): ArticleEntity? {
         val data = snapshot.data ?: return null
         val articleId = data["idArticle"] as? String ?: return null
-        val file = File(context.cacheDir, "$IMAGE_PREFIX$articleId$IMAGE_SUFFIX")
+        val updatedAt = (data["updatedAt"] as? Long) ?: 0L
         val photo = data["photo"] as? String
-        if (photo != null) file.writeBytes(Base64.decode(photo, Base64.DEFAULT))
+        val filePrefix = "$IMAGE_PREFIX$articleId-"
+        val file = File(context.cacheDir, "$filePrefix$updatedAt$IMAGE_SUFFIX")
+        if (photo != null) {
+            file.writeBytes(Base64.decode(photo, Base64.DEFAULT))
+            context.cacheDir.listFiles { candidate ->
+                candidate.name.startsWith(filePrefix) && candidate.name != file.name
+            }?.forEach { it.delete() }
+        }
         return ArticleEntity(
             idArticle = UUID.fromString(articleId),
             name = data["name"] as String,
@@ -86,7 +93,7 @@ class FirestoreModelMapper @Inject constructor(
             quantity = data["quantity"] as? Double,
             unit = ArticleUnit.valueOf(data["unit"] as? String ?: "PIECE"),
             photoUri = if (photo == null) null else file.toUri().toString(),
-            updatedAt = (data["updatedAt"] as? Long) ?: 0L,
+            updatedAt = updatedAt,
             groupId = UUID.fromString(data["groupId"] as? String) ?: UUID.randomUUID(),
             description = data["description"] as? String,
             websiteLink = data["websiteLink"] as? String,

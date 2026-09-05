@@ -34,14 +34,72 @@ exports.onGroupChanged = onDocumentWritten(
 exports.onSharedGroupChanged = onDocumentWritten(
   "sharedGroups/{groupId}",
   async (event) => {
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
     const members = new Set([
-      ...(event.data?.before?.data()?.members || []),
-      ...(event.data?.after?.data()?.members || []),
+      ...(before?.members || []),
+      ...(after?.members || []),
     ]);
-    if (members.size === 0) return;
-    await Promise.all([...members].map((uid) => notifyDevices(uid)));
+
+    if (
+      after &&
+      Array.isArray(after.members) &&
+      after.members.length === 1 &&
+      after.members.includes(after.fromUid) &&
+      after.fromGroupId
+    ) {
+      await revertSharedGroupToPersonal(event.params.groupId, after);
+      if (members.size > 0) {
+        await Promise.all([...members].map((uid) => notifyDevices(uid)));
+      }
+      return;
+    }
+
+    if (members.size > 0) {
+      await Promise.all([...members].map((uid) => notifyDevices(uid)));
+    }
   }
 );
+
+async function revertSharedGroupToPersonal(sharedGroupId, sharedGroupData) {
+  const { fromUid, fromGroupId, name } = sharedGroupData;
+
+  await Promise.all([
+    untagCollectionAsShared("articles", sharedGroupId, fromUid),
+    untagCollectionAsShared("comments", sharedGroupId, fromUid),
+  ]);
+  const batch = admin.firestore().batch();
+  batch.set(admin.firestore().collection("groups").doc(fromGroupId), {
+    idGroup: fromGroupId,
+    name: name || "",
+    updatedAt: Date.now(),
+    isShared: false,
+    sharedGroupId: null,
+    ownerUid: fromUid,
+  });
+  batch.delete(admin.firestore().collection("sharedGroups").doc(sharedGroupId));
+  await batch.commit();
+}
+
+async function untagCollectionAsShared(collectionName, sharedGroupId, ownerUid) {
+  const snapshot = await admin.firestore()
+    .collection(collectionName)
+    .where("sharedGroupId", "==", sharedGroupId)
+    .get();
+  if (snapshot.empty) return;
+
+  const BATCH_LIMIT = 450;
+  for (let i = 0; i < snapshot.docs.length; i += BATCH_LIMIT) {
+    const batch = admin.firestore().batch();
+    snapshot.docs.slice(i, i + BATCH_LIMIT).forEach((doc) => {
+      batch.update(doc.ref, {
+        sharedGroupId: admin.firestore.FieldValue.delete(),
+        ownerUid,
+      });
+    });
+    await batch.commit();
+  }
+}
 
 exports.onInvitationAccepted = onDocumentWritten(
   "invitations/{invitationId}",
@@ -55,7 +113,17 @@ exports.onInvitationAccepted = onDocumentWritten(
     await Promise.all([
       tagCollectionAsShared("articles", after.groupId, after.sharedGroupId),
       tagCollectionAsShared("comments", after.groupId, after.sharedGroupId),
+      admin.firestore().collection("groups").doc(after.groupId).delete(),
     ]);
+
+    const sharedGroupDoc = await admin.firestore()
+      .collection("sharedGroups")
+      .doc(after.sharedGroupId)
+      .get();
+    const members = sharedGroupDoc.data()?.members;
+    if (Array.isArray(members)) {
+      await Promise.all(members.map((uid) => notifyDevices(uid)));
+    }
   }
 );
 
