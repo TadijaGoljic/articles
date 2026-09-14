@@ -64,7 +64,9 @@ fun ArticlesNavigationFlow(
         ) {
             InvitationsPage(onBackClick = navController::popBackStack)
         }
-        composable<ArticlesDestinations.GroupDetailsDestination> {
+        composable<ArticlesDestinations.GroupDetailsDestination>(
+            deepLinks = listOf(navDeepLink { uriPattern = GROUP_DETAILS_DEEP_LINK })
+        ) {
             GroupDetailsPage(
                 onBackClick = navController::popBackStack,
                 onAddArticle = { group ->
@@ -130,6 +132,7 @@ fun ArticlesNavigationFlow(
 
 private const val KEY_LOCATION = "KEY_LOCATION"
 const val INVITATIONS_DEEP_LINK = "articles://invitations"
+const val GROUP_DETAILS_DEEP_LINK = "articles://group/{groupId}"
 
 sealed interface ArticlesDestinations {
     @Serializable data object GroupsListDestination : ArticlesDestinations

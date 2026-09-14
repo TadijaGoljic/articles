@@ -47,14 +47,22 @@ class ArticlesApplication : Application(), Configuration.Provider {
             ).apply {
                 description = "Notifications for group sharing invitations"
             }
+            val groupActivityChannel = NotificationChannel(
+                GROUP_ACTIVITY_CHANNEL_ID,
+                "Group Activity",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Notifications for changes in shared groups, such as comments and purchases"
+            }
             getSystemService(NotificationManager::class.java)
-                .createNotificationChannel(invitationsChannel)
+                .createNotificationChannels(listOf(invitationsChannel, groupActivityChannel))
         }
     }
 
     companion object {
         const val LOG_TAG = "ArticlesApplication"
         const val INVITATION_CHANNEL_ID = "invitations"
+        const val GROUP_ACTIVITY_CHANNEL_ID = "group_activity"
     }
 
 }

@@ -116,6 +116,7 @@
     <string name="shared">Дељено</string>
     <string name="group_members">Дели се са</string>
     <string name="remove_member">Уклони члана</string>
+    <string name="group_activity_notification_fallback_title">Активност у групи</string>
 
     <!-- Units -->
     <string name="unit">Јединица мере</string>

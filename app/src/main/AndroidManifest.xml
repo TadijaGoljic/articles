@@ -63,6 +63,9 @@
                 <data
                     android:host="invitations"
                     android:scheme="articles" />
+                <data
+                    android:host="group"
+                    android:scheme="articles" />
             </intent-filter>
         </activity>
 

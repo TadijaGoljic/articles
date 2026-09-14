@@ -114,6 +114,7 @@
     <string name="shared">Shared</string>
     <string name="group_members">Shared with</string>
     <string name="remove_member">Remove member</string>
+    <string name="group_activity_notification_fallback_title">Group activity</string>
 
     <!-- Units -->
     <string name="unit">Unit</string>
