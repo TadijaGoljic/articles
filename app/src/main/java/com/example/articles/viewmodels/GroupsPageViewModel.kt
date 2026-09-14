@@ -1,5 +1,6 @@
 package com.example.articles.viewmodels
 
+import android.content.Context
 import android.util.Log
 import androidx.annotation.StringRes
 import androidx.compose.foundation.text.input.TextFieldState
@@ -7,7 +8,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.articles.ArticlesApplication
 import com.example.articles.R
+import com.example.articles.ai.GroupAgentCommand
+import com.example.articles.ai.GroupAgentRepository
 import com.example.articles.models.UIGroup
+import com.example.articles.models.UserPreferences
 import com.example.articles.repositories.ArticleRepository
 import com.example.articles.repositories.CommentRepository
 import com.example.articles.repositories.GroupMember
@@ -18,6 +22,7 @@ import com.example.articles.utils.TriggerSync
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -33,7 +38,10 @@ class GroupsPageViewModel @Inject constructor(
     private val commentRepository: CommentRepository,
     private val invitationRepository: InvitationRepository,
     private val sharedGroupRepository: SharedGroupRepository,
-    private val triggerSync: TriggerSync
+    private val groupAgentRepository: GroupAgentRepository,
+    private val userPreferences: UserPreferences,
+    private val triggerSync: TriggerSync,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val state = MutableStateFlow(value = GroupsPageState())
@@ -94,6 +102,11 @@ class GroupsPageViewModel @Inject constructor(
             is GroupsPageAction.HideGroupMembersDialog -> hideGroupMembersDialog()
             is GroupsPageAction.RemoveGroupMember -> removeGroupMember(member = action.member)
             is GroupsPageAction.ConsumeInvitationSentEvent -> consumeInvitationSentEvent()
+            is GroupsPageAction.ShowAiAgentDialog -> updateAiAgentDialogVisibility(visible = true)
+            is GroupsPageAction.HideAiAgentDialog -> updateAiAgentDialogVisibility(visible = false)
+            is GroupsPageAction.SubmitAgentPrompt -> submitAgentPrompt(text = action.text)
+            is GroupsPageAction.ConfirmPendingAgentCommand -> confirmPendingAgentCommand()
+            is GroupsPageAction.CancelPendingAgentCommand -> cancelPendingAgentCommand()
         }
     }
 
@@ -352,6 +365,126 @@ class GroupsPageViewModel @Inject constructor(
         }
     }
 
+    private fun updateAiAgentDialogVisibility(visible: Boolean) {
+        state.update { currentState ->
+            currentState.copy(
+                showAiAgentDialog = visible,
+                agentPromptText = TextFieldState(),
+                agentError = null,
+                agentPendingCommand = null,
+                isAgentProcessing = false
+            )
+        }
+    }
+
+    private fun submitAgentPrompt(text: String) {
+        if (text.isBlank()) return
+        state.update { currentState -> currentState.copy(isAgentProcessing = true, agentError = null) }
+        viewModelScope.launch {
+            val command = groupAgentRepository.parseCommand(promptText = text, groups = state.value.groups)
+            state.update { currentState -> currentState.copy(isAgentProcessing = false) }
+            when (command) {
+                is GroupAgentCommand.Unresolved ->
+                    state.update { currentState -> currentState.copy(agentError = command.message) }
+
+                is GroupAgentCommand.DeleteGroup ->
+                    state.update { currentState -> currentState.copy(agentPendingCommand = command) }
+
+                is GroupAgentCommand.CreateGroup, is GroupAgentCommand.RenameGroup ->
+                    if (userPreferences.confirmNonDestructiveAgentActions) {
+                        state.update { currentState -> currentState.copy(agentPendingCommand = command) }
+                    } else {
+                        executeAgentCommand(command)
+                    }
+            }
+        }
+    }
+
+    private fun confirmPendingAgentCommand() {
+        val command = state.value.agentPendingCommand ?: return
+        state.update { currentState -> currentState.copy(agentPendingCommand = null) }
+        executeAgentCommand(command)
+    }
+
+    private fun cancelPendingAgentCommand() {
+        state.update { currentState -> currentState.copy(agentPendingCommand = null) }
+    }
+
+    private fun executeAgentCommand(command: GroupAgentCommand) {
+        when (command) {
+            is GroupAgentCommand.CreateGroup -> {
+                if (command.name.uppercase() in state.value.groups.map { it.name.uppercase() }) {
+                    state.update { currentState ->
+                        currentState.copy(agentError = context.getString(R.string.group_already_exists))
+                    }
+                    return
+                }
+                viewModelScope.launch {
+                    groupRepository.upsertGroup(group = UIGroup(name = command.name))
+                    triggerSync()
+                    closeAiAgentDialog()
+                }
+            }
+
+            is GroupAgentCommand.RenameGroup -> {
+                val group = command.group
+                val isDuplicate = !command.newName.equals(group.name, ignoreCase = true) &&
+                    command.newName.uppercase() in state.value.groups.map { it.name.uppercase() }
+                if (isDuplicate) {
+                    state.update { currentState ->
+                        currentState.copy(agentError = context.getString(R.string.group_already_exists))
+                    }
+                    return
+                }
+                if (group.isShared) {
+                    val uid = Firebase.auth.currentUser?.uid
+                    if (!group.isGroupOwner(uid)) {
+                        state.update { currentState ->
+                            currentState.copy(agentError = context.getString(R.string.agent_permission_denied_rename))
+                        }
+                        return
+                    }
+                    val sharedGroupId = group.sharedGroupId
+                    if (sharedGroupId == null) {
+                        state.update { currentState ->
+                            currentState.copy(agentError = context.getString(R.string.something_went_wrong))
+                        }
+                        return
+                    }
+                    viewModelScope.launch {
+                        sharedGroupRepository.renameSharedGroup(sharedGroupId, command.newName)
+                        triggerSync()
+                        closeAiAgentDialog()
+                    }
+                } else {
+                    viewModelScope.launch {
+                        groupRepository.upsertGroup(group = group.copy(name = command.newName))
+                        triggerSync()
+                        closeAiAgentDialog()
+                    }
+                }
+            }
+
+            is GroupAgentCommand.DeleteGroup -> {
+                deleteGroup(group = command.group)
+                closeAiAgentDialog()
+            }
+
+            is GroupAgentCommand.Unresolved -> Unit
+        }
+    }
+
+    private fun closeAiAgentDialog() {
+        state.update { currentState ->
+            currentState.copy(
+                showAiAgentDialog = false,
+                agentPromptText = TextFieldState(),
+                agentPendingCommand = null,
+                agentError = null
+            )
+        }
+    }
+
 }
 
 data class GroupsPageState(
@@ -378,6 +511,11 @@ data class GroupsPageState(
     val loadingGroupMembersFor: Set<String> = emptySet(),
     @StringRes val groupSharingErrorResource: Int? = null,
     @StringRes val groupCreationErrorResource: Int? = null,
+    val showAiAgentDialog: Boolean = false,
+    val agentPromptText: TextFieldState = TextFieldState(),
+    val isAgentProcessing: Boolean = false,
+    val agentError: String? = null,
+    val agentPendingCommand: GroupAgentCommand? = null,
 )
 
 sealed interface GroupsPageAction {
@@ -400,4 +538,9 @@ sealed interface GroupsPageAction {
     data object HideGroupMembersDialog : GroupsPageAction
     data class RemoveGroupMember(val member: GroupMember) : GroupsPageAction
     data object ConsumeInvitationSentEvent : GroupsPageAction
+    data object ShowAiAgentDialog : GroupsPageAction
+    data object HideAiAgentDialog : GroupsPageAction
+    data class SubmitAgentPrompt(val text: String) : GroupsPageAction
+    data object ConfirmPendingAgentCommand : GroupsPageAction
+    data object CancelPendingAgentCommand : GroupsPageAction
 }

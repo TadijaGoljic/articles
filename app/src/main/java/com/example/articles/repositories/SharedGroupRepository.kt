@@ -202,6 +202,14 @@ class SharedGroupRepository @Inject constructor(
             .await()
     }
 
+    suspend fun renameSharedGroup(sharedGroupId: String, newName: String) {
+        firestore
+            .collection(SHARED_GROUPS_COLLECTION)
+            .document(sharedGroupId)
+            .update("name", newName)
+            .await()
+    }
+
     suspend fun deleteSharedGroup(sharedGroupId: String) {
         val docRef = firestore
             .collection(SHARED_GROUPS_COLLECTION)

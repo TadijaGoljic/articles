@@ -70,7 +70,8 @@ class SettingsViewModel @Inject constructor(
                 state.update { currentState ->
                     currentState.copy(
                         badgeValue = invitations.size.toString(),
-                        syncData = userPreferences.syncDataEnabled
+                        syncData = userPreferences.syncDataEnabled,
+                        confirmAgentActions = userPreferences.confirmNonDestructiveAgentActions
                     )
                 }
             }
@@ -106,6 +107,8 @@ class SettingsViewModel @Inject constructor(
             is SettingsAction.ClearImportResult -> clearImportResult()
             is SettingsAction.UpdateSyncDataStatus ->
                 updateSyncDataStatus(syncData = action.syncData)
+            is SettingsAction.UpdateConfirmAgentActionsStatus ->
+                updateConfirmAgentActionsStatus(confirm = action.confirm)
         }
     }
 
@@ -402,6 +405,15 @@ class SettingsViewModel @Inject constructor(
         triggerSync()
     }
 
+    private fun updateConfirmAgentActionsStatus(confirm: Boolean) {
+        state.update { currentState ->
+            currentState.copy(
+                confirmAgentActions = confirm
+            )
+        }
+        userPreferences.confirmNonDestructiveAgentActions = confirm
+    }
+
 }
 
 data class SettingsState(
@@ -419,6 +431,7 @@ data class SettingsState(
     val deleteAccountLoading: Boolean = false,
     val signOutLoading: Boolean = false,
     val syncData: Boolean = true,
+    val confirmAgentActions: Boolean = true,
     val badgeValue: String? = null,
     val importLoading: Boolean = false,
     val importSuccess: Boolean = false,
@@ -441,4 +454,5 @@ sealed interface SettingsAction {
     data class ImportGroups(val uri: Uri) : SettingsAction
     data object ClearImportResult : SettingsAction
     data class UpdateSyncDataStatus(val syncData: Boolean) : SettingsAction
+    data class UpdateConfirmAgentActionsStatus(val confirm: Boolean) : SettingsAction
 }

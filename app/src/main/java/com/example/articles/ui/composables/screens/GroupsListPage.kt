@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -41,6 +42,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -188,19 +190,56 @@ fun GroupsListPage(
         )
     }
 
+    if (state.showAiAgentDialog) {
+        AiAgentDialog(
+            promptState = state.agentPromptText,
+            isProcessing = state.isAgentProcessing,
+            errorMessage = state.agentError,
+            pendingCommand = state.agentPendingCommand,
+            onDismissRequest = {
+                groupsPageViewModel.handleAction(GroupsPageAction.HideAiAgentDialog)
+            },
+            onSubmit = { text ->
+                groupsPageViewModel.handleAction(GroupsPageAction.SubmitAgentPrompt(text))
+            },
+            onConfirmPending = {
+                groupsPageViewModel.handleAction(GroupsPageAction.ConfirmPendingAgentCommand)
+            },
+            onCancelPending = {
+                groupsPageViewModel.handleAction(GroupsPageAction.CancelPendingAgentCommand)
+            },
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+    }
+
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    groupsPageViewModel.handleAction(GroupsPageAction.ShowAddNewGroupDialog)
-                },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = stringResource(id = R.string.create_group)
-                )
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                SmallFloatingActionButton(
+                    onClick = {
+                        groupsPageViewModel.handleAction(GroupsPageAction.ShowAiAgentDialog)
+                    },
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = stringResource(id = R.string.ai_agent)
+                    )
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                FloatingActionButton(
+                    onClick = {
+                        groupsPageViewModel.handleAction(GroupsPageAction.ShowAddNewGroupDialog)
+                    },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = stringResource(id = R.string.create_group)
+                    )
+                }
             }
         },
         modifier = modifier

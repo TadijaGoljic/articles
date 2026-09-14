@@ -100,6 +100,20 @@
     <string name="no_groups_title">No Groups to Show</string>
     <string name="no_groups_message">To Create a Group click on \"+\" icon</string>
 
+    <!-- AI Agent -->
+    <string name="ai_agent">AI assistant</string>
+    <string name="ai_agent_prompt_hint">e.g. \"create a group Groceries\"</string>
+    <string name="ai_agent_listening">Listening…</string>
+    <string name="ai_agent_mic_permission_denied">Microphone permission is needed for voice commands</string>
+    <string name="agent_could_not_understand">I couldn\'t understand that request</string>
+    <string name="agent_group_not_found">I couldn\'t find a group named \"%1$s\"</string>
+    <string name="agent_permission_denied_rename">Only the group owner can rename this shared group</string>
+    <string name="agent_confirm_create">Create group \"%1$s\"?</string>
+    <string name="agent_confirm_rename">Rename group \"%1$s\" to \"%2$s\"?</string>
+    <string name="agent_confirm_delete">Delete group \"%1$s\"? Its articles and comments will also be deleted.</string>
+    <string name="confirm">Confirm</string>
+    <string name="confirm_ai_agent_actions">Confirm AI assistant actions</string>
+
     <!-- Sharing & Invitations -->
     <string name="share_group">Share group</string>
     <string name="invitations">Invitations</string>

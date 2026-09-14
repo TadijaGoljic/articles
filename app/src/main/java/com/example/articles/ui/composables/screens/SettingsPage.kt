@@ -306,7 +306,11 @@ fun SettingsScreen(
                 onSyncDataClick = { status ->
                     settingsViewModel.handleAction(SettingsAction.UpdateSyncDataStatus(status))
                 },
-                isSyncDataChecked = state.syncData
+                isSyncDataChecked = state.syncData,
+                onConfirmAgentActionsClick = { status ->
+                    settingsViewModel.handleAction(SettingsAction.UpdateConfirmAgentActionsStatus(status))
+                },
+                isConfirmAgentActionsChecked = state.confirmAgentActions
             )
         }
     }
@@ -322,6 +326,8 @@ fun SettingsItems(
     onExportGroups: () -> Unit,
     onImportGroups: () -> Unit,
     isSyncDataChecked: Boolean,
+    onConfirmAgentActionsClick: (Boolean) -> Unit,
+    isConfirmAgentActionsChecked: Boolean,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -388,8 +394,15 @@ fun SettingsItems(
         SettingsItemWithSwitch(
             label = stringResource(id = R.string.sync_data),
             onItemClick = onSyncDataClick,
-            position = Position.BOTTOM,
+            position = Position.MIDDLE,
             isChecked = isSyncDataChecked,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+        SettingsItemWithSwitch(
+            label = stringResource(id = R.string.confirm_ai_agent_actions),
+            onItemClick = onConfirmAgentActionsClick,
+            position = Position.BOTTOM,
+            isChecked = isConfirmAgentActionsChecked,
             modifier = Modifier.padding(horizontal = 16.dp)
         )
     }

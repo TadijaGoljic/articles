@@ -17,6 +17,9 @@ val localProperties = Properties().apply {
 val mapsApiKey: String = System.getenv("GOOGLE_MAPS_API_KEY")
     ?: localProperties.getProperty("GOOGLE_MAPS_API_KEY")
     ?: ""
+val geminiApiKey: String = System.getenv("GEMINI_API_KEY")
+    ?: localProperties.getProperty("GEMINI_API_KEY")
+    ?: ""
 
 android {
     namespace = "com.example.articles"
@@ -33,6 +36,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
     }
 
     buildTypes {
@@ -58,6 +62,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     packaging {
