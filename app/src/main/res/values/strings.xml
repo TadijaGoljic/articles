@@ -107,10 +107,15 @@
     <string name="ai_agent_mic_permission_denied">Microphone permission is needed for voice commands</string>
     <string name="agent_could_not_understand">I couldn\'t understand that request</string>
     <string name="agent_group_not_found">I couldn\'t find a group named \"%1$s\"</string>
+    <string name="agent_article_not_found">I couldn\'t find an article named \"%1$s\"</string>
+    <string name="agent_article_ambiguous">There\'s more than one article named \"%1$s\" — try mentioning the group too</string>
     <string name="agent_permission_denied_rename">Only the group owner can rename this shared group</string>
     <string name="agent_confirm_create">Create group \"%1$s\"?</string>
     <string name="agent_confirm_rename">Rename group \"%1$s\" to \"%2$s\"?</string>
     <string name="agent_confirm_delete">Delete group \"%1$s\"? Its articles and comments will also be deleted.</string>
+    <string name="agent_confirm_add_article">Add \"%1$s\" to \"%2$s\"?</string>
+    <string name="agent_confirm_rename_article">Rename \"%1$s\" to \"%2$s\"?</string>
+    <string name="agent_confirm_remove_article">Remove \"%1$s\" from \"%2$s\"?</string>
     <string name="confirm">Confirm</string>
     <string name="confirm_ai_agent_actions">Confirm AI assistant actions</string>
 

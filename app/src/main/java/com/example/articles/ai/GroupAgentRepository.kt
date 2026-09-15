@@ -5,6 +5,7 @@ import android.util.Log
 import com.example.articles.ArticlesApplication
 import com.example.articles.BuildConfig
 import com.example.articles.R
+import com.example.articles.models.UIArticle
 import com.example.articles.models.UIGroup
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -28,25 +29,43 @@ class GroupAgentRepository @Inject constructor(
     private val okHttpClient: OkHttpClient
 ) {
 
-    private val responseSchema = buildJsonObject {
+    private val actionItemSchema = buildJsonObject {
         put("type", "OBJECT")
         putJsonObject("properties") {
             putJsonObject("action") {
                 put("type", "STRING")
                 putJsonArray("enum") {
-                    add(ACTION_CREATE)
-                    add(ACTION_RENAME)
-                    add(ACTION_DELETE)
+                    add(ACTION_CREATE_GROUP)
+                    add(ACTION_RENAME_GROUP)
+                    add(ACTION_DELETE_GROUP)
+                    add(ACTION_ADD_ARTICLE)
+                    add(ACTION_RENAME_ARTICLE)
+                    add(ACTION_REMOVE_ARTICLE)
                     add(ACTION_UNKNOWN)
                 }
             }
-            putJsonObject("targetGroupName") { put("type", "STRING") }
-            putJsonObject("newGroupName") { put("type", "STRING") }
+            putJsonObject("groupName") { put("type", "STRING") }
+            putJsonObject("articleName") { put("type", "STRING") }
+            putJsonObject("newName") { put("type", "STRING") }
         }
         putJsonArray("required") {
             add("action")
-            add("targetGroupName")
-            add("newGroupName")
+            add("groupName")
+            add("articleName")
+            add("newName")
+        }
+    }
+
+    private val responseSchema = buildJsonObject {
+        put("type", "OBJECT")
+        putJsonObject("properties") {
+            putJsonObject("actions") {
+                put("type", "ARRAY")
+                put("items", actionItemSchema)
+            }
+        }
+        putJsonArray("required") {
+            add("actions")
         }
     }
 
@@ -59,7 +78,7 @@ class GroupAgentRepository @Inject constructor(
             .create(GeminiApiService::class.java)
     }
 
-    suspend fun parseCommand(promptText: String, groups: List<UIGroup>): GroupAgentCommand {
+    suspend fun parseCommand(promptText: String, groups: List<UIGroup>): List<GroupAgentCommand> {
         val result = runCatching {
             val response = service.generateContent(
                 model = MODEL_NAME,
@@ -82,82 +101,175 @@ class GroupAgentRepository @Inject constructor(
         }
         return result.getOrElse { e ->
             Log.e(ArticlesApplication.LOG_TAG, "parseCommand failed: ${e.message}", e)
-            GroupAgentCommand.Unresolved(context.getString(R.string.something_went_wrong))
+            listOf(GroupAgentCommand.Unresolved(context.getString(R.string.something_went_wrong)))
         }
     }
 
     private fun buildPrompt(promptText: String, groups: List<UIGroup>): String {
-        val groupNames = groups.joinToString(separator = "\n") { "- ${it.name}" }
+        val groupsDescription = groups.joinToString(separator = "\n") { group ->
+            val articleNames = group.articles.joinToString(separator = ", ") { it.name }
+            "- ${group.name}: ${articleNames.ifBlank { "(no articles)" }}"
+        }
         return """
-            You translate a user's natural-language request into one of three shopping-list group operations: creating a group, renaming a group, or deleting a group. You must only ever return one of these operations, nothing else.
+            You translate a user's natural-language request into a list of one or more shopping-list operations: creating a group, renaming a group, deleting a group, adding an article to a group, renaming an article, or removing an article. Return every operation the request implies, in the order they should be performed, inside the "actions" array. A request can imply several operations at once (e.g. "create groups A and B", "remove A and create C", "create group fridge and put bread and milk in it").
 
-            The user's existing groups are:
-            $groupNames
+            The user's existing groups and the articles currently in each are:
+            $groupsDescription
 
             Rules:
-            - "action" must be one of: "$ACTION_CREATE", "$ACTION_RENAME", "$ACTION_DELETE", "$ACTION_UNKNOWN".
-            - For "$ACTION_CREATE": "targetGroupName" is the name of the new group to create; "newGroupName" must be "".
-            - For "$ACTION_RENAME": "targetGroupName" must be the existing group name (copied exactly, character for character, from the list above) that the user wants to rename; "newGroupName" is the requested new name.
-            - For "$ACTION_DELETE": "targetGroupName" must be the existing group name (copied exactly from the list above) that the user wants to delete; "newGroupName" must be "".
-            - If the request does not clearly match one of these three operations, or refers to a group that is not clearly and unambiguously one of the existing group names above, return "action": "$ACTION_UNKNOWN" with both name fields as "".
-            - Never invent a group name that is not in the list above for "targetGroupName".
+            - "action" must be one of: "$ACTION_CREATE_GROUP", "$ACTION_RENAME_GROUP", "$ACTION_DELETE_GROUP", "$ACTION_ADD_ARTICLE", "$ACTION_RENAME_ARTICLE", "$ACTION_REMOVE_ARTICLE", "$ACTION_UNKNOWN".
+            - For "$ACTION_CREATE_GROUP": "groupName" is the name of the new group to create; "articleName" and "newName" must be "".
+            - For "$ACTION_RENAME_GROUP": "groupName" must be the group name (copied exactly, character for character) that the user wants to rename; "newName" is the requested new name; "articleName" must be "".
+            - For "$ACTION_DELETE_GROUP": "groupName" must be the group name (copied exactly) that the user wants to delete; "articleName" and "newName" must be "".
+            - For "$ACTION_ADD_ARTICLE": "groupName" must be the group name (copied exactly) to add the article into; "articleName" is the name of the new article; "newName" must be "".
+            - For "$ACTION_RENAME_ARTICLE": "articleName" must be the article name (copied exactly) the user wants to rename; "newName" is the requested new article name; "groupName" is the group that article belongs to if the user mentioned it, otherwise "".
+            - For "$ACTION_REMOVE_ARTICLE": "articleName" must be the article name (copied exactly) the user wants to remove; "groupName" is the group that article belongs to if the user mentioned it, otherwise ""; "newName" must be "".
+            - A "groupName" or "articleName" does not have to already exist in the list above if an earlier action in the same "actions" array creates it first (e.g. an "$ACTION_ADD_ARTICLE" action can target the "groupName" that an earlier "$ACTION_CREATE_GROUP" action in the same list is about to create).
+            - If one part of the request does not clearly match one of these operations, or refers to a group or article that is not clearly and unambiguously identifiable (either already listed above, or created earlier in the same "actions" array), emit an entry with "action": "$ACTION_UNKNOWN" and all three name fields as "" for that part instead of guessing, but still return the other, understood parts.
+            - Never invent a group or article name that was not mentioned by the user.
 
             User request: "$promptText"
         """.trimIndent()
     }
 
-    private fun parseResponse(rawJson: String, groups: List<UIGroup>): GroupAgentCommand {
+    private fun parseResponse(rawJson: String, groups: List<UIGroup>): List<GroupAgentCommand> {
         val json = runCatching { JSONObject(rawJson) }.getOrNull()
-            ?: return GroupAgentCommand.Unresolved(context.getString(R.string.agent_could_not_understand))
+        val actionsArray = json?.optJSONArray("actions")
+        if (actionsArray == null || actionsArray.length() == 0) {
+            return listOf(GroupAgentCommand.Unresolved(context.getString(R.string.agent_could_not_understand)))
+        }
 
-        val action = json.optString("action", ACTION_UNKNOWN)
-        val targetGroupName = json.optString("targetGroupName").trim()
-        val newGroupName = json.optString("newGroupName").trim()
+        var workingGroups = groups
+        val commands = mutableListOf<GroupAgentCommand>()
 
-        fun findGroup(name: String) = groups.firstOrNull { it.name.equals(name, ignoreCase = true) }
+        for (i in 0 until actionsArray.length()) {
+            val item = actionsArray.optJSONObject(i) ?: continue
 
-        return when (action) {
-            ACTION_CREATE -> {
-                if (targetGroupName.isBlank()) {
-                    GroupAgentCommand.Unresolved(context.getString(R.string.agent_could_not_understand))
+            val action = item.optString("action", ACTION_UNKNOWN)
+            val groupName = item.optString("groupName").trim()
+            val articleName = item.optString("articleName").trim()
+            val newName = item.optString("newName").trim()
+
+            fun findGroup(name: String) = workingGroups.firstOrNull { it.name.equals(name, ignoreCase = true) }
+
+            fun findArticleMatches(groupNameHint: String, name: String): List<Pair<UIGroup, UIArticle>> {
+                val candidateGroups = if (groupNameHint.isNotBlank()) {
+                    workingGroups.filter { it.name.equals(groupNameHint, ignoreCase = true) }
                 } else {
-                    GroupAgentCommand.CreateGroup(name = targetGroupName)
+                    workingGroups
                 }
+                return candidateGroups
+                    .flatMap { group -> group.articles.map { article -> group to article } }
+                    .filter { (_, article) -> article.name.equals(name, ignoreCase = true) }
             }
 
-            ACTION_RENAME -> {
-                val group = findGroup(targetGroupName)
-                if (group == null) {
-                    GroupAgentCommand.Unresolved(
-                        context.getString(R.string.agent_group_not_found, targetGroupName)
-                    )
-                } else if (newGroupName.isBlank()) {
-                    GroupAgentCommand.Unresolved(context.getString(R.string.agent_could_not_understand))
-                } else {
-                    GroupAgentCommand.RenameGroup(group = group, newName = newGroupName)
+            val command = when (action) {
+                ACTION_CREATE_GROUP -> {
+                    if (groupName.isBlank()) {
+                        GroupAgentCommand.Unresolved(context.getString(R.string.agent_could_not_understand))
+                    } else if (findGroup(groupName) != null) {
+                        GroupAgentCommand.Unresolved(context.getString(R.string.group_already_exists))
+                    } else {
+                        val newGroup = UIGroup(name = groupName)
+                        workingGroups = workingGroups + newGroup
+                        GroupAgentCommand.CreateGroup(group = newGroup)
+                    }
                 }
+
+                ACTION_RENAME_GROUP -> {
+                    val group = findGroup(groupName)
+                    if (group == null) {
+                        GroupAgentCommand.Unresolved(context.getString(R.string.agent_group_not_found, groupName))
+                    } else if (newName.isBlank()) {
+                        GroupAgentCommand.Unresolved(context.getString(R.string.agent_could_not_understand))
+                    } else {
+                        workingGroups = workingGroups.map { if (it.id == group.id) it.copy(name = newName) else it }
+                        GroupAgentCommand.RenameGroup(group = group, newName = newName)
+                    }
+                }
+
+                ACTION_DELETE_GROUP -> {
+                    val group = findGroup(groupName)
+                    if (group == null) {
+                        GroupAgentCommand.Unresolved(context.getString(R.string.agent_group_not_found, groupName))
+                    } else {
+                        workingGroups = workingGroups.filter { it.id != group.id }
+                        GroupAgentCommand.DeleteGroup(group = group)
+                    }
+                }
+
+                ACTION_ADD_ARTICLE -> {
+                    val group = findGroup(groupName)
+                    if (group == null) {
+                        GroupAgentCommand.Unresolved(context.getString(R.string.agent_group_not_found, groupName))
+                    } else if (articleName.isBlank()) {
+                        GroupAgentCommand.Unresolved(context.getString(R.string.agent_could_not_understand))
+                    } else {
+                        val newArticle = UIArticle(name = articleName, groupId = group.id)
+                        workingGroups = workingGroups.map {
+                            if (it.id == group.id) it.copy(articles = it.articles + newArticle) else it
+                        }
+                        GroupAgentCommand.AddArticle(group = group, article = newArticle)
+                    }
+                }
+
+                ACTION_RENAME_ARTICLE -> {
+                    val matches = findArticleMatches(groupName, articleName)
+                    when {
+                        matches.isEmpty() ->
+                            GroupAgentCommand.Unresolved(context.getString(R.string.agent_article_not_found, articleName))
+                        matches.size > 1 ->
+                            GroupAgentCommand.Unresolved(context.getString(R.string.agent_article_ambiguous, articleName))
+                        newName.isBlank() ->
+                            GroupAgentCommand.Unresolved(context.getString(R.string.agent_could_not_understand))
+                        else -> {
+                            val (group, article) = matches.single()
+                            workingGroups = workingGroups.map { g ->
+                                if (g.id != group.id) g
+                                else g.copy(articles = g.articles.map { a -> if (a.id == article.id) a.copy(name = newName) else a })
+                            }
+                            GroupAgentCommand.RenameArticle(article = article, groupName = group.name, newName = newName)
+                        }
+                    }
+                }
+
+                ACTION_REMOVE_ARTICLE -> {
+                    val matches = findArticleMatches(groupName, articleName)
+                    when {
+                        matches.isEmpty() ->
+                            GroupAgentCommand.Unresolved(context.getString(R.string.agent_article_not_found, articleName))
+                        matches.size > 1 ->
+                            GroupAgentCommand.Unresolved(context.getString(R.string.agent_article_ambiguous, articleName))
+                        else -> {
+                            val (group, article) = matches.single()
+                            workingGroups = workingGroups.map { g ->
+                                if (g.id != group.id) g
+                                else g.copy(articles = g.articles.filter { it.id != article.id })
+                            }
+                            GroupAgentCommand.RemoveArticle(article = article, groupName = group.name)
+                        }
+                    }
+                }
+
+                else -> GroupAgentCommand.Unresolved(context.getString(R.string.agent_could_not_understand))
             }
 
-            ACTION_DELETE -> {
-                val group = findGroup(targetGroupName)
-                if (group == null) {
-                    GroupAgentCommand.Unresolved(
-                        context.getString(R.string.agent_group_not_found, targetGroupName)
-                    )
-                } else {
-                    GroupAgentCommand.DeleteGroup(group = group)
-                }
-            }
+            commands.add(command)
+        }
 
-            else -> GroupAgentCommand.Unresolved(context.getString(R.string.agent_could_not_understand))
+        return commands.ifEmpty {
+            listOf(GroupAgentCommand.Unresolved(context.getString(R.string.agent_could_not_understand)))
         }
     }
 
     private companion object {
         const val MODEL_NAME = "gemini-3.6-flash"
-        const val ACTION_CREATE = "create_group"
-        const val ACTION_RENAME = "rename_group"
-        const val ACTION_DELETE = "delete_group"
+        const val ACTION_CREATE_GROUP = "create_group"
+        const val ACTION_RENAME_GROUP = "rename_group"
+        const val ACTION_DELETE_GROUP = "delete_group"
+        const val ACTION_ADD_ARTICLE = "add_article"
+        const val ACTION_RENAME_ARTICLE = "rename_article"
+        const val ACTION_REMOVE_ARTICLE = "remove_article"
         const val ACTION_UNKNOWN = "unknown"
     }
 

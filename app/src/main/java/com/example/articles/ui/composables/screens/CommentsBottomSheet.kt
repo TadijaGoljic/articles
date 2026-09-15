@@ -1,5 +1,9 @@
 package com.example.articles.ui.composables.screens
 
+import android.Manifest
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -43,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -52,6 +58,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.articles.R
 import com.example.articles.models.UIComment
+import com.example.articles.utils.rememberSpeechRecognizerState
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -253,6 +260,29 @@ fun CommentComposer(
     onSend: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+
+    val speechRecognizerState = rememberSpeechRecognizerState(
+        onResult = { text -> onValueChange(text) },
+        onError = {
+            Toast.makeText(context, context.getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show()
+        }
+    )
+
+    val micPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            speechRecognizerState.startListening()
+        } else {
+            Toast.makeText(
+                context,
+                context.getString(R.string.ai_agent_mic_permission_denied),
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
@@ -260,12 +290,28 @@ fun CommentComposer(
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            placeholder = { Text(text = stringResource(id = R.string.write_a_comment)) },
+            placeholder = {
+                Text(
+                    text =
+                        if (speechRecognizerState.listening) stringResource(id = R.string.ai_agent_listening)
+                        else stringResource(id = R.string.write_a_comment)
+                )
+            },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier.weight(1f)
         )
-        Spacer(modifier = Modifier.width(8.dp))
+        IconButton(
+            onClick = { micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO) }
+        ) {
+            Icon(
+                imageVector = Icons.Default.Mic,
+                contentDescription = stringResource(id = R.string.ai_agent_listening),
+                tint =
+                    if (speechRecognizerState.listening) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
         IconButton(onClick = onSend) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.Send,

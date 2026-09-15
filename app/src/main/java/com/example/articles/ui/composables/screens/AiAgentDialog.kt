@@ -171,8 +171,11 @@ fun AiAgentDialog(
 
 @Composable
 private fun GroupAgentCommand.confirmationMessage(): String = when (this) {
-    is GroupAgentCommand.CreateGroup -> stringResource(id = R.string.agent_confirm_create, name)
+    is GroupAgentCommand.CreateGroup -> stringResource(id = R.string.agent_confirm_create, group.name)
     is GroupAgentCommand.RenameGroup -> stringResource(id = R.string.agent_confirm_rename, group.name, newName)
     is GroupAgentCommand.DeleteGroup -> stringResource(id = R.string.agent_confirm_delete, group.name)
+    is GroupAgentCommand.AddArticle -> stringResource(id = R.string.agent_confirm_add_article, article.name, group.name)
+    is GroupAgentCommand.RenameArticle -> stringResource(id = R.string.agent_confirm_rename_article, article.name, newName)
+    is GroupAgentCommand.RemoveArticle -> stringResource(id = R.string.agent_confirm_remove_article, article.name, groupName)
     is GroupAgentCommand.Unresolved -> message
 }

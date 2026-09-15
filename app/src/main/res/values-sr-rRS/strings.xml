@@ -102,6 +102,25 @@
     <string name="no_groups_title">Нема група за приказивање</string>
     <string name="no_groups_message">За креирање нове групе притисните иконицу \"+\"</string>
 
+    <!-- AI Agent -->
+    <string name="ai_agent">AI асистент</string>
+    <string name="ai_agent_prompt_hint">нпр. \"направи групу Намирнице\"</string>
+    <string name="ai_agent_listening">Слушам…</string>
+    <string name="ai_agent_mic_permission_denied">Потребна је дозвола за микрофон за гласовне команде</string>
+    <string name="agent_could_not_understand">Не разумем тај захтев</string>
+    <string name="agent_group_not_found">Група под именом \"%1$s\" није пронађена</string>
+    <string name="agent_article_not_found">Артикал под именом \"%1$s\" није пронађен</string>
+    <string name="agent_article_ambiguous">Постоји више артикала под именом \"%1$s\" — покушајте да поменете и групу</string>
+    <string name="agent_permission_denied_rename">Само власник групе може да преименује ову дељену групу</string>
+    <string name="agent_confirm_create">Направити групу \"%1$s\"?</string>
+    <string name="agent_confirm_rename">Преименовати групу \"%1$s\" у \"%2$s\"?</string>
+    <string name="agent_confirm_delete">Обрисати групу \"%1$s\"? Артикли и коментари у њој ће такође бити обрисани.</string>
+    <string name="agent_confirm_add_article">Додати \"%1$s\" у \"%2$s\"?</string>
+    <string name="agent_confirm_rename_article">Преименовати \"%1$s\" у \"%2$s\"?</string>
+    <string name="agent_confirm_remove_article">Уклонити \"%1$s\" из \"%2$s\"?</string>
+    <string name="confirm">Потврди</string>
+    <string name="confirm_ai_agent_actions">Потврди радње AI асистента</string>
+
     <!-- Sharing & Invitations -->
     <string name="share_group">Подели групу</string>
     <string name="invitations">Позивнице</string>

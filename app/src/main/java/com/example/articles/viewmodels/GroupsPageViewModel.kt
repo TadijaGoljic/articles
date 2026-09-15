@@ -372,6 +372,7 @@ class GroupsPageViewModel @Inject constructor(
                 agentPromptText = TextFieldState(),
                 agentError = null,
                 agentPendingCommand = null,
+                agentCommandQueue = emptyList(),
                 isAgentProcessing = false
             )
         }
@@ -381,22 +382,45 @@ class GroupsPageViewModel @Inject constructor(
         if (text.isBlank()) return
         state.update { currentState -> currentState.copy(isAgentProcessing = true, agentError = null) }
         viewModelScope.launch {
-            val command = groupAgentRepository.parseCommand(promptText = text, groups = state.value.groups)
+            val commands = groupAgentRepository.parseCommand(promptText = text, groups = state.value.groups)
             state.update { currentState -> currentState.copy(isAgentProcessing = false) }
-            when (command) {
-                is GroupAgentCommand.Unresolved ->
-                    state.update { currentState -> currentState.copy(agentError = command.message) }
-
-                is GroupAgentCommand.DeleteGroup ->
-                    state.update { currentState -> currentState.copy(agentPendingCommand = command) }
-
-                is GroupAgentCommand.CreateGroup, is GroupAgentCommand.RenameGroup ->
-                    if (userPreferences.confirmNonDestructiveAgentActions) {
-                        state.update { currentState -> currentState.copy(agentPendingCommand = command) }
-                    } else {
-                        executeAgentCommand(command)
-                    }
+            if (commands.all { it is GroupAgentCommand.Unresolved }) {
+                val message = (commands.firstOrNull() as? GroupAgentCommand.Unresolved)?.message
+                    ?: context.getString(R.string.agent_could_not_understand)
+                state.update { currentState -> currentState.copy(agentError = message) }
+                return@launch
             }
+            state.update { currentState -> currentState.copy(agentCommandQueue = commands) }
+            processNextQueuedAgentCommand()
+        }
+    }
+
+    private fun processNextQueuedAgentCommand() {
+        val queue = state.value.agentCommandQueue
+        val next = queue.firstOrNull()
+        if (next == null) {
+            closeAiAgentDialog()
+            return
+        }
+        state.update { currentState -> currentState.copy(agentCommandQueue = queue.drop(1)) }
+
+        if (next is GroupAgentCommand.Unresolved) {
+            processNextQueuedAgentCommand()
+            return
+        }
+
+        val needsConfirmation = when (next) {
+            is GroupAgentCommand.DeleteGroup, is GroupAgentCommand.RemoveArticle -> true
+            is GroupAgentCommand.CreateGroup,
+            is GroupAgentCommand.RenameGroup,
+            is GroupAgentCommand.AddArticle,
+            is GroupAgentCommand.RenameArticle -> userPreferences.confirmNonDestructiveAgentActions
+            is GroupAgentCommand.Unresolved -> false
+        }
+        if (needsConfirmation) {
+            state.update { currentState -> currentState.copy(agentPendingCommand = next) }
+        } else {
+            executeAgentCommand(next)
         }
     }
 
@@ -407,22 +431,26 @@ class GroupsPageViewModel @Inject constructor(
     }
 
     private fun cancelPendingAgentCommand() {
-        state.update { currentState -> currentState.copy(agentPendingCommand = null) }
+        state.update { currentState -> currentState.copy(agentPendingCommand = null, agentCommandQueue = emptyList()) }
+    }
+
+    private fun failAgentBatch(message: String) {
+        state.update { currentState ->
+            currentState.copy(agentError = message, agentCommandQueue = emptyList())
+        }
     }
 
     private fun executeAgentCommand(command: GroupAgentCommand) {
         when (command) {
             is GroupAgentCommand.CreateGroup -> {
-                if (command.name.uppercase() in state.value.groups.map { it.name.uppercase() }) {
-                    state.update { currentState ->
-                        currentState.copy(agentError = context.getString(R.string.group_already_exists))
-                    }
+                if (command.group.name.uppercase() in state.value.groups.map { it.name.uppercase() }) {
+                    failAgentBatch(context.getString(R.string.group_already_exists))
                     return
                 }
                 viewModelScope.launch {
-                    groupRepository.upsertGroup(group = UIGroup(name = command.name))
+                    groupRepository.upsertGroup(group = command.group)
                     triggerSync()
-                    closeAiAgentDialog()
+                    processNextQueuedAgentCommand()
                 }
             }
 
@@ -431,46 +459,68 @@ class GroupsPageViewModel @Inject constructor(
                 val isDuplicate = !command.newName.equals(group.name, ignoreCase = true) &&
                     command.newName.uppercase() in state.value.groups.map { it.name.uppercase() }
                 if (isDuplicate) {
-                    state.update { currentState ->
-                        currentState.copy(agentError = context.getString(R.string.group_already_exists))
-                    }
+                    failAgentBatch(context.getString(R.string.group_already_exists))
                     return
                 }
                 if (group.isShared) {
                     val uid = Firebase.auth.currentUser?.uid
                     if (!group.isGroupOwner(uid)) {
-                        state.update { currentState ->
-                            currentState.copy(agentError = context.getString(R.string.agent_permission_denied_rename))
-                        }
+                        failAgentBatch(context.getString(R.string.agent_permission_denied_rename))
                         return
                     }
                     val sharedGroupId = group.sharedGroupId
                     if (sharedGroupId == null) {
-                        state.update { currentState ->
-                            currentState.copy(agentError = context.getString(R.string.something_went_wrong))
-                        }
+                        failAgentBatch(context.getString(R.string.something_went_wrong))
                         return
                     }
                     viewModelScope.launch {
                         sharedGroupRepository.renameSharedGroup(sharedGroupId, command.newName)
                         triggerSync()
-                        closeAiAgentDialog()
+                        processNextQueuedAgentCommand()
                     }
                 } else {
                     viewModelScope.launch {
                         groupRepository.upsertGroup(group = group.copy(name = command.newName))
                         triggerSync()
-                        closeAiAgentDialog()
+                        processNextQueuedAgentCommand()
                     }
                 }
             }
 
             is GroupAgentCommand.DeleteGroup -> {
                 deleteGroup(group = command.group)
-                closeAiAgentDialog()
+                processNextQueuedAgentCommand()
             }
 
-            is GroupAgentCommand.Unresolved -> Unit
+            is GroupAgentCommand.AddArticle -> {
+                viewModelScope.launch {
+                    articleRepository.upsertArticle(article = command.article)
+                    triggerSync()
+                    processNextQueuedAgentCommand()
+                }
+            }
+
+            is GroupAgentCommand.RenameArticle -> {
+                viewModelScope.launch {
+                    articleRepository.upsertArticle(article = command.article.copy(name = command.newName))
+                    triggerSync()
+                    processNextQueuedAgentCommand()
+                }
+            }
+
+            is GroupAgentCommand.RemoveArticle -> {
+                viewModelScope.launch {
+                    articleRepository.deleteArticleById(articleId = command.article.id)
+                    commentRepository.deleteCommentsByArticleId(
+                        groupId = command.article.groupId,
+                        articleId = command.article.id
+                    )
+                    triggerSync()
+                    processNextQueuedAgentCommand()
+                }
+            }
+
+            is GroupAgentCommand.Unresolved -> processNextQueuedAgentCommand()
         }
     }
 
@@ -480,6 +530,7 @@ class GroupsPageViewModel @Inject constructor(
                 showAiAgentDialog = false,
                 agentPromptText = TextFieldState(),
                 agentPendingCommand = null,
+                agentCommandQueue = emptyList(),
                 agentError = null
             )
         }
@@ -516,6 +567,7 @@ data class GroupsPageState(
     val isAgentProcessing: Boolean = false,
     val agentError: String? = null,
     val agentPendingCommand: GroupAgentCommand? = null,
+    val agentCommandQueue: List<GroupAgentCommand> = emptyList(),
 )
 
 sealed interface GroupsPageAction {
