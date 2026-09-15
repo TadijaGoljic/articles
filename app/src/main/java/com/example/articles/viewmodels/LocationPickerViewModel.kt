@@ -17,6 +17,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.libraries.places.api.model.AutocompletePrediction
 import com.google.android.libraries.places.api.model.AutocompleteSessionToken
 import com.google.android.libraries.places.api.model.Place
+import com.google.android.libraries.places.api.model.RectangularBounds
 import com.google.android.libraries.places.api.net.FetchPlaceRequest
 import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
 import com.google.android.libraries.places.api.net.PlacesClient
@@ -30,12 +31,15 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
+import kotlin.math.cos
 import kotlin.time.Duration.Companion.milliseconds
 
 private val DEFAULT_LAT_LNG = LatLng(44.80567303794035, 20.476393389720563)
 private const val SEARCH_DEBOUNCE_MS = 300L
 private const val SELECTED_PLACE_ZOOM = 17f
 private const val CURRENT_LOCATION_ZOOM = 15f
+private const val LOCATION_BIAS_RADIUS_METERS = 100_000.0
+private const val METERS_PER_DEGREE_LATITUDE = 111_000.0
 
 @HiltViewModel
 class LocationPickerViewModel @Inject constructor(
@@ -126,9 +130,12 @@ class LocationPickerViewModel @Inject constructor(
 
         searchJob = viewModelScope.launch {
             delay(SEARCH_DEBOUNCE_MS.milliseconds)
+            val origin = state.value.selectedLocation
             val request = FindAutocompletePredictionsRequest.builder()
                 .setQuery(query)
                 .setSessionToken(sessionToken)
+                .setOrigin(origin)
+                .setLocationBias(boundsAround(origin, LOCATION_BIAS_RADIUS_METERS))
                 .build()
             try {
                 val response = placesClient.findAutocompletePredictions(request).await()
@@ -142,6 +149,14 @@ class LocationPickerViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    private fun boundsAround(center: LatLng, radiusMeters: Double): RectangularBounds {
+        val latDelta = radiusMeters / METERS_PER_DEGREE_LATITUDE
+        val lngDelta = radiusMeters / (METERS_PER_DEGREE_LATITUDE * cos(Math.toRadians(center.latitude)))
+        val southwest = LatLng(center.latitude - latDelta, center.longitude - lngDelta)
+        val northeast = LatLng(center.latitude + latDelta, center.longitude + lngDelta)
+        return RectangularBounds.newInstance(southwest, northeast)
     }
 
     private fun selectPrediction(prediction: AutocompletePrediction) {
