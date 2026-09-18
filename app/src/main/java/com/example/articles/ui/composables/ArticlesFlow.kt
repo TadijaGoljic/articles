@@ -13,6 +13,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navDeepLink
 import com.example.articles.models.UILocation
 import com.example.articles.ui.composables.screens.AddNewArticle
+import com.example.articles.ui.composables.screens.ArchivedGroupsPage
 import com.example.articles.ui.composables.screens.InvitationsPage
 import com.example.articles.ui.composables.screens.LocationPicker
 import com.example.articles.ui.composables.screens.SettingsScreen
@@ -123,8 +124,14 @@ fun ArticlesNavigationFlow(
             SettingsScreen(
                 onSignOut = onSignOut,
                 onBackClick = navController::popBackStack,
-                onAccountDelete = onAccountDelete
+                onAccountDelete = onAccountDelete,
+                onArchivedGroupsClick = {
+                    navController.navigate(ArticlesDestinations.ArchivedGroupsDestination)
+                }
             )
+        }
+        composable<ArticlesDestinations.ArchivedGroupsDestination> {
+            ArchivedGroupsPage(onBackClick = navController::popBackStack)
         }
     }
 
@@ -141,4 +148,5 @@ sealed interface ArticlesDestinations {
     @Serializable data object SettingsDestination : ArticlesDestinations
     @Serializable data class GroupDetailsDestination(val groupId: String) : ArticlesDestinations
     @Serializable data object InvitationsDestination : ArticlesDestinations
+    @Serializable data object ArchivedGroupsDestination : ArticlesDestinations
 }

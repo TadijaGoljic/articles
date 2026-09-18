@@ -69,6 +69,7 @@ fun SettingsScreen(
     onSignOut: () -> Unit,
     onAccountDelete: () -> Unit,
     onBackClick: () -> Unit,
+    onArchivedGroupsClick: () -> Unit,
     modifier: Modifier = Modifier,
     settingsViewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -298,6 +299,7 @@ fun SettingsScreen(
                     settingsViewModel.handleAction(SettingsAction.ExportGroups)
                 },
                 onImportGroups = { showImportConfirmationDialog = true },
+                onArchivedGroupsClick = onArchivedGroupsClick,
                 modifier = when (screenSize) {
                     ScreenSize.NORMAL -> Modifier
                     ScreenSize.LARGE -> Modifier.padding(horizontal = 40.dp)
@@ -325,6 +327,7 @@ fun SettingsItems(
     onSyncDataClick: (Boolean) -> Unit,
     onExportGroups: () -> Unit,
     onImportGroups: () -> Unit,
+    onArchivedGroupsClick: () -> Unit,
     isSyncDataChecked: Boolean,
     onConfirmAgentActionsClick: (Boolean) -> Unit,
     isConfirmAgentActionsChecked: Boolean,
@@ -367,6 +370,22 @@ fun SettingsItems(
             label = stringResource(id = R.string.change_password),
             onItemClick = showChangePasswordDialog,
             position = Position.BOTTOM,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = stringResource(id = R.string.groups),
+            color = Color.Gray,
+            fontSize = 18.sp,
+            modifier = Modifier
+                .padding(horizontal = 14.dp)
+                .padding(bottom = 2.dp)
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        SettingsItem(
+            label = stringResource(id = R.string.archived_groups),
+            onItemClick = onArchivedGroupsClick,
+            position = Position.SINGLE,
             modifier = Modifier.padding(horizontal = 16.dp)
         )
         Spacer(modifier = Modifier.height(8.dp))

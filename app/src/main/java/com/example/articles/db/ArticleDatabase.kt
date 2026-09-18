@@ -19,7 +19,7 @@ import com.example.articles.db.entities.GroupEntity
         GroupEntity::class,
         CommentEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class ArticleDatabase : RoomDatabase() {

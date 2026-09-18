@@ -52,6 +52,14 @@ class GroupRepository @Inject constructor(
         list.map { group -> group.toUIGroup() }
     }
 
+    fun getActiveGroups() = groupDao.getActiveGroups().map { list ->
+        list.map { group -> group.toUIGroup() }
+    }
+
+    fun getArchivedGroups() = groupDao.getArchivedGroups().map { list ->
+        list.map { group -> group.toUIGroup() }
+    }
+
     fun getGroupById(groupId: UUID) = groupDao.getGroupById(groupId)
         .mapNotNull { group -> group?.toUIGroup() }
 

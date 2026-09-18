@@ -103,6 +103,12 @@
     <string name="invalid_group_name">Group name must be between 1 and 16 characters</string>
     <string name="no_groups_title">No Groups to Show</string>
     <string name="no_groups_message">To Create a Group click on \"+\" icon</string>
+    <string name="archive_group">Archive group</string>
+    <string name="group_archived">\"%1$s\" archived</string>
+    <string name="unarchive_group">Unarchive group</string>
+    <string name="archived_groups">Archived groups</string>
+    <string name="no_archived_groups_title">No Archived Groups</string>
+    <string name="no_archived_groups_message">Groups you archive will show up here</string>
 
     <!-- AI Agent -->
     <string name="ai_agent">AI assistant</string>
@@ -178,6 +184,7 @@
     </plurals>
 
     <!-- Settings -->
+    <string name="groups">Groups</string>
     <string name="export_data">Export data</string>
     <string name="import_data">Import data</string>
     <string name="data">Data</string>

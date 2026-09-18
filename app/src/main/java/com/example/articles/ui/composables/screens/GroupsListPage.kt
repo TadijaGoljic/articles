@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -105,6 +106,13 @@ fun GroupsListPage(
         if (state.invitationSentEvent) {
             Toast.makeText(context, context.getString(R.string.invitation_sent), Toast.LENGTH_SHORT).show()
             groupsPageViewModel.handleAction(GroupsPageAction.ConsumeInvitationSentEvent)
+        }
+    }
+
+    LaunchedEffect(state.archivedGroupEvent) {
+        state.archivedGroupEvent?.let { groupName ->
+            Toast.makeText(context, context.getString(R.string.group_archived, groupName), Toast.LENGTH_SHORT).show()
+            groupsPageViewModel.handleAction(GroupsPageAction.ConsumeArchivedGroupEvent)
         }
     }
 
@@ -353,6 +361,18 @@ fun GroupsListPage(
                                     }
                             },
                             contentDescription = stringResource(id = R.string.share_group),
+                        )
+                        BottomSheetRowItem(
+                            icon = Icons.Default.Archive,
+                            text = stringResource(id = R.string.archive_group),
+                            onClick = {
+                                coroutineScope
+                                    .launch { sheetState.hide() }
+                                    .invokeOnCompletion {
+                                        groupsPageViewModel.handleAction(GroupsPageAction.ArchiveGroup(group = state.longPressedGroup ?: UIGroup()))
+                                    }
+                            },
+                            contentDescription = stringResource(id = R.string.archive_group),
                         )
                         val longPressedGroup = state.longPressedGroup
                         if (longPressedGroup != null &&

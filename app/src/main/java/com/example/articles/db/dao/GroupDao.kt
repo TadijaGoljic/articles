@@ -24,6 +24,12 @@ interface GroupDao {
     @Query("SELECT * FROM `groups`")
     fun getAllGroups(): Flow<List<GroupEntity>>
 
+    @Query("SELECT * FROM `groups` WHERE isArchived = 0")
+    fun getActiveGroups(): Flow<List<GroupEntity>>
+
+    @Query("SELECT * FROM `groups` WHERE isArchived = 1")
+    fun getArchivedGroups(): Flow<List<GroupEntity>>
+
     @Query("SELECT * FROM `groups` WHERE idGroup = :idGroup")
     fun getGroupById(idGroup: UUID): Flow<GroupEntity?>
 

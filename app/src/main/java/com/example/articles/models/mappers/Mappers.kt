@@ -48,7 +48,8 @@ fun GroupEntity.toUIGroup() = UIGroup(
     updatedAt = updatedAt,
     isShared = isShared,
     sharedGroupId = sharedGroupId,
-    ownerUid = ownerUid
+    ownerUid = ownerUid,
+    isArchived = isArchived
 )
 
 fun UIGroup.toGroupEntity() = GroupEntity(
@@ -57,7 +58,8 @@ fun UIGroup.toGroupEntity() = GroupEntity(
     updatedAt = updatedAt,
     isShared = isShared,
     sharedGroupId = sharedGroupId,
-    ownerUid = ownerUid
+    ownerUid = ownerUid,
+    isArchived = isArchived
 )
 
 fun CommentEntity.toUIComment() = UIComment(

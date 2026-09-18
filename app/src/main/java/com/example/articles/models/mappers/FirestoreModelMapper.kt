@@ -111,7 +111,8 @@ class FirestoreModelMapper @Inject constructor(
         "syncedAt" to System.currentTimeMillis(),
         "isShared" to groupEntity.isShared,
         "sharedGroupId" to groupEntity.sharedGroupId,
-        "ownerUid" to groupEntity.ownerUid
+        "ownerUid" to groupEntity.ownerUid,
+        "isArchived" to groupEntity.isArchived
     )
 
     fun toGroupEntity(snapshot: DocumentSnapshot) = GroupEntity(
@@ -120,7 +121,8 @@ class FirestoreModelMapper @Inject constructor(
         updatedAt = snapshot["updatedAt"] as? Long ?: 0L,
         isShared = snapshot["isShared"] as? Boolean ?: false,
         sharedGroupId = snapshot["sharedGroupId"] as? String,
-        ownerUid = snapshot["ownerUid"] as? String
+        ownerUid = snapshot["ownerUid"] as? String,
+        isArchived = snapshot["isArchived"] as? Boolean ?: false
     )
 
     fun toCommentsFirestoreMap(

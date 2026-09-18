@@ -50,7 +50,7 @@ class GroupsPageViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             combine(
-                flow = groupRepository.getAllGroups(),
+                flow = groupRepository.getActiveGroups(),
                 flow2 = articleRepository.getAllArticles()
             ) { groups, articles ->
                 groups.map { group ->
@@ -90,6 +90,8 @@ class GroupsPageViewModel @Inject constructor(
             is GroupsPageAction.HideEditGroupDialog -> updateEditGroupDialogVisibility(visible = false, group = null)
             is GroupsPageAction.EditGroup -> editGroup(group = action.group, name = action.name)
             is GroupsPageAction.DeleteGroup -> deleteGroup(group = action.group)
+            is GroupsPageAction.ArchiveGroup -> archiveGroup(group = action.group)
+            is GroupsPageAction.ConsumeArchivedGroupEvent -> consumeArchivedGroupEvent()
             is GroupsPageAction.LongClick -> updateEditDeleteBottomSheetVisibility(visible = true, group = action.group)
             is GroupsPageAction.DismissBottomSheet -> updateEditDeleteBottomSheetVisibility(visible = false, group = null)
             is GroupsPageAction.ExpandGroup -> updateGroupExpandedStatus(group = action.group, status = true)
@@ -223,6 +225,19 @@ class GroupsPageViewModel @Inject constructor(
                 groupRepository.deleteGroupById(group.id)
             }
         }
+    }
+
+    private fun archiveGroup(group: UIGroup) {
+        state.update { it.copy(showEditDeleteBottonSheet = false) }
+        viewModelScope.launch {
+            groupRepository.upsertGroup(group = group.copy(isArchived = true))
+            triggerSync()
+            state.update { it.copy(archivedGroupEvent = group.name) }
+        }
+    }
+
+    private fun consumeArchivedGroupEvent() = state.update { currentState ->
+        currentState.copy(archivedGroupEvent = null)
     }
 
     private fun updateEditDeleteBottomSheetVisibility(visible: Boolean, group: UIGroup?) {
@@ -555,6 +570,7 @@ data class GroupsPageState(
     val longPressedGroup: UIGroup? = null,
     val pendingInvitationsCount: Int = 0,
     val invitationSentEvent: Boolean = false,
+    val archivedGroupEvent: String? = null,
     val recentShareRecipients: List<String> = emptyList(),
     val currentUid: String? = null,
     val showGroupMembersDialog: Boolean = false,
@@ -578,6 +594,8 @@ sealed interface GroupsPageAction {
     data object HideEditGroupDialog : GroupsPageAction
     data class EditGroup(val group: UIGroup, val name: String) : GroupsPageAction
     data class DeleteGroup(val group: UIGroup) : GroupsPageAction
+    data class ArchiveGroup(val group: UIGroup) : GroupsPageAction
+    data object ConsumeArchivedGroupEvent : GroupsPageAction
     data class LongClick(val group: UIGroup) : GroupsPageAction
     data object DismissBottomSheet : GroupsPageAction
     data class ExpandGroup(val group: UIGroup) : GroupsPageAction

@@ -105,6 +105,12 @@
     <string name="invalid_group_name">Назив групе мора имати између 1 и 16 карактера</string>
     <string name="no_groups_title">Нема група за приказивање</string>
     <string name="no_groups_message">За креирање нове групе притисните иконицу \"+\"</string>
+    <string name="archive_group">Архивирај групу</string>
+    <string name="group_archived">\"%1$s\" је архивирана</string>
+    <string name="unarchive_group">Врати из архиве</string>
+    <string name="archived_groups">Архивиране групе</string>
+    <string name="no_archived_groups_title">Нема архивираних група</string>
+    <string name="no_archived_groups_message">Групе које архивирате ће се приказати овде</string>
 
     <!-- AI Agent -->
     <string name="ai_agent">AI асистент</string>
@@ -180,6 +186,7 @@
     </plurals>
 
     <!-- Settings -->
+    <string name="groups">Групе</string>
     <string name="export_data">Извези податке</string>
     <string name="import_data">Увези податке</string>
     <string name="data">Подаци</string>
