@@ -36,6 +36,10 @@
     <string name="take_a_photo">Отвори камеру</string>
     <string name="add_location">Додај локацију</string>
     <string name="change_location">Промени локацију</string>
+    <string name="add_deadline">Додај рок</string>
+    <string name="change_deadline">Промени рок</string>
+    <string name="deadline_reminder_title">Подсетник за рок</string>
+    <string name="deadline_reminder_body">\"%1$s\" треба купити сутра — не заборавите!</string>
     <string name="edit_article">Измени артикал</string>
     <string name="remove_article">Обриши артикал</string>
     <string name="expand">Рашири</string>

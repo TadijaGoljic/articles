@@ -7,6 +7,7 @@ import com.example.articles.models.mappers.FirestoreModelMapper
 import com.example.articles.models.UIArticle
 import com.example.articles.models.mappers.toArticleEntity
 import com.example.articles.models.mappers.toUIArticle
+import com.example.articles.reminders.DeadlineReminderScheduler
 import com.example.articles.utils.ARTICLES_COLLECTION
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
@@ -21,7 +22,8 @@ import javax.inject.Singleton
 class ArticleRepository @Inject constructor(
     private val articleDao: ArticleDao,
     private val groupDao: GroupDao,
-    private val firestoreModelMapper: FirestoreModelMapper
+    private val firestoreModelMapper: FirestoreModelMapper,
+    private val deadlineReminderScheduler: DeadlineReminderScheduler
 ) {
 
     private val firestore = Firebase.firestore
@@ -41,6 +43,7 @@ class ArticleRepository @Inject constructor(
     suspend fun upsertArticle(article: UIArticle) {
         val articleEntity = article.toArticleEntity()
         articleDao.upsertArticle(articleEntity)
+        deadlineReminderScheduler.scheduleOrCancel(articleEntity)
         val (ownerUid, sharedGroupId) = ownerContext(article.groupId) ?: return
         firestore.collection(ARTICLES_COLLECTION)
             .document(article.id.toString())
@@ -51,14 +54,17 @@ class ArticleRepository @Inject constructor(
     suspend fun deleteArticleById(articleId: UUID) {
         articleDao.getArticleByIdSuspend(articleId) ?: return
         articleDao.deleteArticleById(articleId)
+        deadlineReminderScheduler.cancel(articleId)
         firestore.collection(ARTICLES_COLLECTION)
             .document(articleId.toString())
             .delete()
             .await()
     }
 
-    suspend fun upsertAllArticlesLocal(articles: List<ArticleEntity>) =
+    suspend fun upsertAllArticlesLocal(articles: List<ArticleEntity>) {
         articleDao.upsertAllArticles(articles)
+        articles.forEach { deadlineReminderScheduler.scheduleOrCancel(it) }
+    }
 
     suspend fun getArticleByIdSuspend(id: UUID): ArticleEntity? =
         articleDao.getArticleByIdSuspend(id)
@@ -66,19 +72,25 @@ class ArticleRepository @Inject constructor(
     suspend fun getArticlesByGroupIdSuspend(groupId: UUID): List<ArticleEntity> =
         articleDao.getArticlesByGroupIdSuspend(groupId)
 
-    suspend fun hardDeleteLocalArticlesByGroupId(groupId: UUID) =
+    suspend fun hardDeleteLocalArticlesByGroupId(groupId: UUID) {
+        val articles = articleDao.getArticlesByGroupIdSuspend(groupId)
         articleDao.deleteArticlesByGroupId(groupId)
+        articles.forEach { deadlineReminderScheduler.cancel(it.idArticle) }
+    }
 
     suspend fun reassignArticlesGroupIdLocal(oldGroupId: UUID, newGroupId: UUID) =
         articleDao.reassignGroupId(oldGroupId, newGroupId)
 
-    suspend fun hardDeleteLocalArticlesByIds(ids: List<UUID>) =
+    suspend fun hardDeleteLocalArticlesByIds(ids: List<UUID>) {
         articleDao.deleteArticlesByIds(ids)
+        ids.forEach { deadlineReminderScheduler.cancel(it) }
+    }
 
     suspend fun deleteArticlesByGroupId(groupId: UUID) {
         Firebase.auth.currentUser ?: return
         val articles = articleDao.getArticlesByGroupIdSuspend(groupId)
         articleDao.deleteArticlesByGroupId(groupId)
+        articles.forEach { deadlineReminderScheduler.cancel(it.idArticle) }
         if (articles.isNotEmpty()) {
             val collection = firestore.collection(ARTICLES_COLLECTION)
             val batch = firestore.batch()

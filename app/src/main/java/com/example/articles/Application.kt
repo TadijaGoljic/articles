@@ -54,8 +54,15 @@ class ArticlesApplication : Application(), Configuration.Provider {
             ).apply {
                 description = "Notifications for changes in shared groups, such as comments and purchases"
             }
+            val deadlineReminderChannel = NotificationChannel(
+                DEADLINE_REMINDER_CHANNEL_ID,
+                "Deadline Reminders",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Reminders for articles with an upcoming deadline"
+            }
             getSystemService(NotificationManager::class.java)
-                .createNotificationChannels(listOf(invitationsChannel, groupActivityChannel))
+                .createNotificationChannels(listOf(invitationsChannel, groupActivityChannel, deadlineReminderChannel))
         }
     }
 
@@ -63,6 +70,7 @@ class ArticlesApplication : Application(), Configuration.Provider {
         const val LOG_TAG = "ArticlesApplication"
         const val INVITATION_CHANNEL_ID = "invitations"
         const val GROUP_ACTIVITY_CHANNEL_ID = "group_activity"
+        const val DEADLINE_REMINDER_CHANNEL_ID = "deadline_reminders"
     }
 
 }

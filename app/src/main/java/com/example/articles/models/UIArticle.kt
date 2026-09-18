@@ -24,6 +24,7 @@ data class UIArticle(
     val price: Double? = null,
     val bought: Boolean = false,
     val expanded: Boolean = true,
+    val dateTo: Date? = null,
 ) : Parcelable
 
 

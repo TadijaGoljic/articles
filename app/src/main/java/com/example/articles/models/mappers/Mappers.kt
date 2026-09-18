@@ -21,7 +21,8 @@ fun ArticleEntity.toUIArticle() = UIArticle(
     updatedAt = updatedAt,
     websiteLink = websiteLink,
     price = price,
-    bought = bought
+    bought = bought,
+    dateTo = dateTo?.let { Date(it) }
 )
 
 fun UIArticle.toArticleEntity() = ArticleEntity(
@@ -37,7 +38,8 @@ fun UIArticle.toArticleEntity() = ArticleEntity(
     description = description,
     websiteLink = websiteLink,
     price = price,
-    bought = bought
+    bought = bought,
+    dateTo = dateTo?.time
 )
 
 fun GroupEntity.toUIGroup() = UIGroup(

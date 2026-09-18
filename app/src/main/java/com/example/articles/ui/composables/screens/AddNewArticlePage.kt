@@ -33,6 +33,8 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -43,6 +45,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -78,6 +81,9 @@ import com.example.articles.viewmodels.AddNewArticleAction
 import com.example.articles.viewmodels.AddNewArticleState
 import com.example.articles.viewmodels.AddNewArticleViewModel
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -173,6 +179,12 @@ fun AddNewArticle(
                     onClearLocation = {
                         addNewArticleViewModel.handleAction(AddNewArticleAction.ClearLocation)
                     },
+                    onDeadlinePickerClick = {
+                        addNewArticleViewModel.handleAction(AddNewArticleAction.ShowDeadlineDatePicker)
+                    },
+                    onClearDateTo = {
+                        addNewArticleViewModel.handleAction(AddNewArticleAction.ClearDateTo)
+                    },
                     onPhotoClick = {
                         addNewArticleViewModel.handleAction(AddNewArticleAction.ShowBottomSheet)
                     },
@@ -216,6 +228,40 @@ fun AddNewArticle(
                             .weight(weight = 1f),
                     )
                 }
+            }
+        }
+        if (state.showDeadlineDatePicker) {
+            val datePickerState = rememberDatePickerState(
+                initialSelectedDateMillis = state.article.dateTo?.time
+            )
+            DatePickerDialog(
+                onDismissRequest = {
+                    addNewArticleViewModel.handleAction(AddNewArticleAction.HideDeadlineDatePicker)
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            datePickerState.selectedDateMillis?.let { millis ->
+                                addNewArticleViewModel.handleAction(
+                                    AddNewArticleAction.UpdateDateTo(Date(millis))
+                                )
+                            }
+                        }
+                    ) {
+                        Text(text = stringResource(id = R.string.ok))
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            addNewArticleViewModel.handleAction(AddNewArticleAction.HideDeadlineDatePicker)
+                        }
+                    ) {
+                        Text(text = stringResource(id = R.string.cancel))
+                    }
+                }
+            ) {
+                DatePicker(state = datePickerState)
             }
         }
         if (state.isBottomSheetVisible) {
@@ -264,6 +310,8 @@ fun AddNewArticleItem(
     state: AddNewArticleState,
     onLocationPickerClick: () -> Unit,
     onClearLocation: () -> Unit,
+    onDeadlinePickerClick: () -> Unit,
+    onClearDateTo: () -> Unit,
     showUnitsDropdownMenu: () -> Unit,
     hideUnitsDropdownMenu: () -> Unit,
     onArticleTypeChange: (ArticleUnit) -> Unit,
@@ -423,6 +471,22 @@ fun AddNewArticleItem(
                 },
                 labelTextLoading = state.isLocationStringLoading,
                 modifier = Modifier.padding(top = 16.dp)
+            )
+            DataRow(
+                labelText = state.article.dateTo?.let { dateTo ->
+                    remember(dateTo) {
+                        SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(dateTo)
+                    }
+                },
+                buttonText =
+                    if (state.article.dateTo != null) stringResource(id = R.string.change_deadline)
+                    else stringResource(id = R.string.add_deadline),
+                onButtonClick = onDeadlinePickerClick,
+                onDeleteClick = {
+                    if (state.article.dateTo != null) onClearDateTo()
+                },
+                labelTextLoading = false,
+                modifier = Modifier.padding(top = 8.dp)
             )
             DataRow(
                 labelText =

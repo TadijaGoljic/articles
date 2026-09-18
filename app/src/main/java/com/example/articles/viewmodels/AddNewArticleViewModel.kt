@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import android.net.Uri
 import android.util.Log
+import java.util.Date
 import com.example.articles.ArticlesApplication.Companion.LOG_TAG
 import com.example.articles.models.ArticleUnit
 import com.example.articles.models.UILocation
@@ -81,6 +82,10 @@ class AddNewArticleViewModel @Inject constructor(
             is AddNewArticleAction.UpdatePhoto -> updatePhoto(photoUri = action.photoUri)
             is AddNewArticleAction.ClearLocation -> updateLocation(null)
             is AddNewArticleAction.ClearPhoto -> updatePhoto(null)
+            is AddNewArticleAction.UpdateDateTo -> updateDateTo(dateTo = action.dateTo)
+            is AddNewArticleAction.ClearDateTo -> updateDateTo(dateTo = null)
+            is AddNewArticleAction.ShowDeadlineDatePicker -> updateDeadlineDatePickerVisibility(visible = true)
+            is AddNewArticleAction.HideDeadlineDatePicker -> updateDeadlineDatePickerVisibility(visible = false)
             is AddNewArticleAction.ShowUnitsDropdownMenu -> updateUnitsDropdownMenuVisibility(visible = true)
             is AddNewArticleAction.HideUnitsDropdownMenu -> updateUnitsDropdownMenuVisibility(visible = false)
             is AddNewArticleAction.UpdateArticleUnit -> updateArticleUnit(unit = action.unit)
@@ -172,6 +177,21 @@ class AddNewArticleViewModel @Inject constructor(
         }
     }
 
+    private fun updateDateTo(dateTo: Date?) {
+        state.update { currentState ->
+            currentState.copy(
+                article = currentState.article.copy(dateTo = dateTo),
+                showDeadlineDatePicker = false
+            )
+        }
+    }
+
+    private fun updateDeadlineDatePickerVisibility(visible: Boolean) {
+        state.update { currentState ->
+            currentState.copy(showDeadlineDatePicker = visible)
+        }
+    }
+
     private fun updatePhoto(photoUri: String?) {
         state.update { currentState ->
             currentState.copy(
@@ -220,6 +240,7 @@ data class AddNewArticleState(
     val isBottomSheetVisible: Boolean = false,
     val isLocationStringLoading: Boolean = false,
     val isEditMode: Boolean = false,
+    val showDeadlineDatePicker: Boolean = false,
 )
 
 sealed interface AddNewArticleAction {
@@ -228,6 +249,10 @@ sealed interface AddNewArticleAction {
     data class UpdatePhoto(val photoUri: String) : AddNewArticleAction
     data object ClearLocation : AddNewArticleAction
     data object ClearPhoto : AddNewArticleAction
+    data class UpdateDateTo(val dateTo: Date) : AddNewArticleAction
+    data object ClearDateTo : AddNewArticleAction
+    data object ShowDeadlineDatePicker : AddNewArticleAction
+    data object HideDeadlineDatePicker : AddNewArticleAction
     data object ShowUnitsDropdownMenu : AddNewArticleAction
     data object HideUnitsDropdownMenu : AddNewArticleAction
     data class UpdateArticleUnit(val unit: ArticleUnit) : AddNewArticleAction
