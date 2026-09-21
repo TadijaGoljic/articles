@@ -67,7 +67,8 @@ class InvitationRepository @Inject constructor(
             groupId = group.id.toString(),
             groupName = group.name,
             status = InvitationStatus.PENDING,
-            createdAt = System.currentTimeMillis()
+            createdAt = System.currentTimeMillis(),
+            existingSharedGroupId = if (group.isShared) group.sharedGroupId else null
         )
         firestore.collection(INVITATIONS_COLLECTION)
             .document(invitation.invitationId)
@@ -97,14 +98,15 @@ class InvitationRepository @Inject constructor(
 
     suspend fun respondToInvitation(invitation: UIInvitation, accepted: Boolean) {
         if (accepted) {
-            val sharedGroupId = sharedGroupRepository.createSharedGroup(
-                group = UIGroup(
-                    id = UUID.fromString(invitation.groupId),
-                    name = invitation.groupName
-                ),
-                fromUid = invitation.fromUid,
-                toUid = invitation.toUid
-            )
+            val sharedGroupId = invitation.existingSharedGroupId
+                ?: sharedGroupRepository.createSharedGroup(
+                    group = UIGroup(
+                        id = UUID.fromString(invitation.groupId),
+                        name = invitation.groupName
+                    ),
+                    fromUid = invitation.fromUid,
+                    toUid = invitation.toUid
+                )
 
             firestore.collection(INVITATIONS_COLLECTION)
                 .document(invitation.invitationId)

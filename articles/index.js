@@ -207,18 +207,24 @@ exports.onInvitationAccepted = onDocumentWritten(
     const after = event.data?.after?.data();
     if (!after || after.status !== "ACCEPTED") return;
     if (before?.status === "ACCEPTED") return;
-    if (!after.sharedGroupId || !after.groupId) return;
+    if (!after.sharedGroupId) return;
 
-    await Promise.all([
-      tagCollectionAsShared("articles", after.groupId, after.sharedGroupId),
-      tagCollectionAsShared("comments", after.groupId, after.sharedGroupId),
-      admin.firestore().collection("groups").doc(after.groupId).delete(),
-    ]);
+    const sharedGroupRef = admin.firestore().collection("sharedGroups").doc(after.sharedGroupId);
 
-    const sharedGroupDoc = await admin.firestore()
-      .collection("sharedGroups")
-      .doc(after.sharedGroupId)
-      .get();
+    if (after.existingSharedGroupId) {
+      await sharedGroupRef.update({
+        members: admin.firestore.FieldValue.arrayUnion(after.toUid),
+      });
+    } else {
+      if (!after.groupId) return;
+      await Promise.all([
+        tagCollectionAsShared("articles", after.groupId, after.sharedGroupId),
+        tagCollectionAsShared("comments", after.groupId, after.sharedGroupId),
+        admin.firestore().collection("groups").doc(after.groupId).delete(),
+      ]);
+    }
+
+    const sharedGroupDoc = await sharedGroupRef.get();
     const members = sharedGroupDoc.data()?.members;
     if (Array.isArray(members)) {
       await Promise.all(members.map((uid) => notifyDevices(uid)));

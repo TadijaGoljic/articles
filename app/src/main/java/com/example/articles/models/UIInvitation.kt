@@ -9,7 +9,8 @@ data class UIInvitation(
     val groupId: String,
     val groupName: String,
     val status: InvitationStatus,
-    val createdAt: Long
+    val createdAt: Long,
+    val existingSharedGroupId: String? = null
 )
 
 enum class InvitationStatus {

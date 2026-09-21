@@ -180,7 +180,8 @@ class FirestoreModelMapper @Inject constructor(
         "groupId" to invitation.groupId,
         "groupName" to invitation.groupName,
         "status" to invitation.status.name,
-        "createdAt" to invitation.createdAt
+        "createdAt" to invitation.createdAt,
+        "existingSharedGroupId" to invitation.existingSharedGroupId
     )
 
     fun toInvitation(snapshot: DocumentSnapshot): UIInvitation? {
@@ -194,7 +195,8 @@ class FirestoreModelMapper @Inject constructor(
             groupId = data["groupId"] as? String ?: return null,
             groupName = data["groupName"] as? String ?: return null,
             status = InvitationStatus.valueOf(data["status"] as? String ?: return null),
-            createdAt = data["createdAt"] as? Long ?: 0L
+            createdAt = data["createdAt"] as? Long ?: 0L,
+            existingSharedGroupId = data["existingSharedGroupId"] as? String
         )
     }
 
