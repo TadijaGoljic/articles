@@ -57,6 +57,10 @@ class ArticleRepository @Inject constructor(
         }
     }
 
+    suspend fun updateArticleAssignee(article: UIArticle, assignedToUid: String?) {
+        upsertArticle(article.copy(assignedToUid = assignedToUid))
+    }
+
     suspend fun getNextArticlePosition(groupId: UUID): Double =
         articleDao.getMaxArticlePosition(groupId)?.plus(GAP) ?: GAP
 
@@ -158,6 +162,10 @@ class ArticleRepository @Inject constructor(
     }
 
     fun getUnboughtArticlesByGroupId(groupId: UUID) = articleDao.getUnboughtArticlesByGroupId(groupId).map { list ->
+        list.map { it.toUIArticle() }
+    }
+
+    fun getArticlesAssignedToUser(groupId: UUID, uid: String) = articleDao.getArticlesAssignedToUser(groupId, uid).map { list ->
         list.map { it.toUIArticle() }
     }
 

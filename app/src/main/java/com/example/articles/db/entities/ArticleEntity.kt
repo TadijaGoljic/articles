@@ -33,5 +33,6 @@ data class ArticleEntity(
     val price: Double?,
     val bought: Boolean,
     val dateTo: Long? = null,
-    val position: Double? = null
+    val position: Double? = null,
+    val assignedToUid: String? = null
 )

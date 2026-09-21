@@ -23,7 +23,8 @@ fun ArticleEntity.toUIArticle() = UIArticle(
     price = price,
     bought = bought,
     dateTo = dateTo?.let { Date(it) },
-    position = position
+    position = position,
+    assignedToUid = assignedToUid
 )
 
 fun UIArticle.toArticleEntity() = ArticleEntity(
@@ -41,7 +42,8 @@ fun UIArticle.toArticleEntity() = ArticleEntity(
     price = price,
     bought = bought,
     dateTo = dateTo?.time,
-    position = position
+    position = position,
+    assignedToUid = assignedToUid
 )
 
 fun GroupEntity.toUIGroup() = UIGroup(

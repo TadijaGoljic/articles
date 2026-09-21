@@ -16,8 +16,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -34,7 +32,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Comment
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
@@ -45,10 +43,12 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.RemoveShoppingCart
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -65,6 +65,7 @@ import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.ui.window.Dialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -92,8 +93,11 @@ import com.example.articles.models.UIComment
 import com.example.articles.models.UILocation
 import com.example.articles.models.UIArticle
 import com.example.articles.models.UIGroup
+import com.example.articles.repositories.GroupMember
 import com.example.articles.ui.composables.utils.BottomSheetRowItem
+import com.example.articles.ui.composables.utils.EmailAvatar
 import com.example.articles.ui.composables.utils.Toolbar
+import com.example.articles.ui.composables.utils.UserInfoItem
 import com.example.articles.utils.ScreenSize
 import com.example.articles.viewmodels.FilterType
 import com.example.articles.viewmodels.GroupDetailsAction
@@ -176,6 +180,16 @@ fun GroupDetailsPage(
                         articleToEdit?.let { onEditArticle(it) }
                     }
                 )
+                if (state.group.isShared) {
+                    BottomSheetRowItem(
+                        icon = Icons.Default.Person,
+                        contentDescription = stringResource(id = R.string.assign_article),
+                        text = stringResource(id = R.string.assign_article),
+                        onClick = {
+                            groupDetailsViewModel.handleAction(GroupDetailsAction.ShowAssignDialog)
+                        }
+                    )
+                }
                 BottomSheetRowItem(
                     icon = Icons.Default.Delete,
                     contentDescription = stringResource(id = R.string.remove_article),
@@ -209,6 +223,20 @@ fun GroupDetailsPage(
             },
             onDeleteComment = { comment ->
                 groupDetailsViewModel.handleAction(GroupDetailsAction.DeleteComment(comment))
+            }
+        )
+    }
+
+    if (state.showAssignDialog) {
+        AssignArticleDialog(
+            members = state.groupMembers,
+            isLoading = state.isLoadingGroupMembers,
+            currentAssigneeUid = state.articleToEditOrDelete?.assignedToUid,
+            onAssign = { uid ->
+                groupDetailsViewModel.handleAction(GroupDetailsAction.AssignArticle(assignedToUid = uid))
+            },
+            onDismiss = {
+                groupDetailsViewModel.handleAction(GroupDetailsAction.HideAssignDialog)
             }
         )
     }
@@ -331,6 +359,7 @@ private fun ArticlesModeContent(
     modifier: Modifier = Modifier
 ) {
     var orderedArticles by remember(state.articles) { mutableStateOf(state.articles) }
+    val membersByUid = remember(state.groupMembers) { state.groupMembers.associateBy { it.uid } }
     val lazyListState = rememberLazyListState()
     val reorderableLazyListState = rememberReorderableLazyListState(lazyListState) { from, to ->
         orderedArticles = orderedArticles.toMutableList().apply {
@@ -409,6 +438,16 @@ private fun ArticlesModeContent(
                                 onAction(GroupDetailsAction.FilterSelected(FilterType.UNBOUGHT))
                             }
                         )
+                        if (state.group.isShared) {
+                            DropdownMenuItem(
+                                text = {
+                                    Text(text = stringResource(id = R.string.filters_assigned_to_me))
+                                },
+                                onClick = {
+                                    onAction(GroupDetailsAction.FilterSelected(FilterType.ASSIGNED_TO_ME))
+                                }
+                            )
+                        }
                     }
                 }
                 Spacer(modifier = Modifier.weight(1f))
@@ -449,6 +488,7 @@ private fun ArticlesModeContent(
                             ArticleItem(
                                 article = article,
                                 commentCount = state.articleCommentCounts[article.id] ?: 0,
+                                assigneeEmail = article.assignedToUid?.let { membersByUid[it]?.email },
                                 onLongClick = {
                                     onAction(GroupDetailsAction.ArticleLongClick(article = article))
                                 },
@@ -557,6 +597,105 @@ private fun GroupCommentsContent(
 }
 
 @Composable
+private fun AssignArticleDialog(
+    members: List<GroupMember>,
+    isLoading: Boolean,
+    currentAssigneeUid: String?,
+    onAssign: (String?) -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(8.dp),
+            modifier = modifier
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(bottom = 16.dp)
+            ) {
+                Toolbar(title = stringResource(id = R.string.assign_article_title))
+                if (isLoading) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(80.dp)
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                } else {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                    ) {
+                        if (currentAssigneeUid != null) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .clickable { onAssign(null) }
+                                    .padding(horizontal = 14.dp, vertical = 12.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = stringResource(id = R.string.unassign),
+                                    fontSize = 16.sp,
+                                    modifier = Modifier.padding(start = 12.dp)
+                                )
+                            }
+                        }
+                        members.forEach { member ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .clickable { onAssign(member.uid) }
+                            ) {
+                                UserInfoItem(
+                                    email = member.email,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                if (member.uid == currentAssigneeUid) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.padding(end = 12.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                Button(
+                    onClick = onDismiss,
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Transparent,
+                        contentColor = MaterialTheme.colorScheme.primary
+                    ),
+                    modifier = Modifier
+                        .padding(top = 16.dp)
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                ) {
+                    Text(text = stringResource(id = R.string.close), fontSize = 14.sp)
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun ArticleItem(
     article: UIArticle,
     onLongClick: (UIArticle) -> Unit,
@@ -565,6 +704,7 @@ fun ArticleItem(
     onChangeExpandedStatus: () -> Unit,
     modifier: Modifier = Modifier,
     commentCount: Int = 0,
+    assigneeEmail: String? = null,
     onCommentsClick: () -> Unit = {},
     dragHandleModifier: Modifier = Modifier,
 ) {
@@ -620,6 +760,14 @@ fun ArticleItem(
                     modifier = Modifier
                         .align(Alignment.CenterEnd)
                 ) {
+                    if (!assigneeEmail.isNullOrBlank()) {
+                        EmailAvatar(
+                            email = assigneeEmail,
+                            size = 24.dp,
+                            fontSize = 11.sp
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
                     IconButton(
                         onClick = onCommentsClick
                     ) {

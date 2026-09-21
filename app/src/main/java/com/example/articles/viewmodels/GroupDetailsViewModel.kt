@@ -9,7 +9,9 @@ import com.example.articles.models.UIComment
 import com.example.articles.models.UIGroup
 import com.example.articles.repositories.ArticleRepository
 import com.example.articles.repositories.CommentRepository
+import com.example.articles.repositories.GroupMember
 import com.example.articles.repositories.GroupRepository
+import com.example.articles.repositories.SharedGroupRepository
 import com.example.articles.ui.composables.ArticlesDestinations
 import com.example.articles.utils.PositionResolver
 import com.example.articles.utils.TriggerSync
@@ -31,6 +33,7 @@ class GroupDetailsViewModel @Inject constructor(
     private val groupRepository: GroupRepository,
     private val articleRepository: ArticleRepository,
     private val commentRepository: CommentRepository,
+    private val sharedGroupRepository: SharedGroupRepository,
     private val triggerSync: TriggerSync,
 ) : ViewModel() {
 
@@ -41,6 +44,7 @@ class GroupDetailsViewModel @Inject constructor(
     val uiState = state.asStateFlow()
 
     private var latestGroupComments: List<UIComment> = emptyList()
+    private var lastLoadedMembersForSharedGroupId: String? = null
 
     init {
         viewModelScope.launch {
@@ -54,6 +58,11 @@ class GroupDetailsViewModel @Inject constructor(
                             articles = articles,
                             group = group
                         )
+                    }
+                    val sharedGroupId = group.sharedGroupId
+                    if (group.isShared && sharedGroupId != null && sharedGroupId != lastLoadedMembersForSharedGroupId) {
+                        lastLoadedMembersForSharedGroupId = sharedGroupId
+                        refreshGroupMembers(sharedGroupId)
                     }
             }
         }
@@ -97,6 +106,54 @@ class GroupDetailsViewModel @Inject constructor(
                 previousPosition = action.previousPosition,
                 nextPosition = action.nextPosition
             )
+            is GroupDetailsAction.ShowAssignDialog -> showAssignDialog()
+            is GroupDetailsAction.HideAssignDialog -> hideAssignDialog()
+            is GroupDetailsAction.AssignArticle -> assignArticle(assignedToUid = action.assignedToUid)
+        }
+    }
+
+    private fun showAssignDialog() {
+        state.update { currentState ->
+            currentState.copy(
+                showEditDeleteBottonSheet = false,
+                showAssignDialog = true
+            )
+        }
+        state.value.group.sharedGroupId?.let { refreshGroupMembers(it) }
+    }
+
+    private fun hideAssignDialog() {
+        state.update { currentState ->
+            currentState.copy(
+                showAssignDialog = false,
+                articleToEditOrDelete = null
+            )
+        }
+    }
+
+    private fun refreshGroupMembers(sharedGroupId: String) {
+        state.update { it.copy(isLoadingGroupMembers = true) }
+        viewModelScope.launch {
+            val members = sharedGroupRepository.getMembers(sharedGroupId)
+            state.update { currentState ->
+                currentState.copy(
+                    groupMembers = members,
+                    isLoadingGroupMembers = false
+                )
+            }
+        }
+    }
+
+    private fun assignArticle(assignedToUid: String?) {
+        val article = state.value.articleToEditOrDelete ?: return
+        state.update { currentState ->
+            currentState.copy(
+                showAssignDialog = false,
+                articleToEditOrDelete = null
+            )
+        }
+        viewModelScope.launch {
+            articleRepository.updateArticleAssignee(article = article, assignedToUid = assignedToUid)
         }
     }
 
@@ -240,6 +297,11 @@ class GroupDetailsViewModel @Inject constructor(
                 FilterType.ALL -> articleRepository.getArticlesByGroupId(groupId)
                 FilterType.BOUGHT -> articleRepository.getBoughtArticlesByGroupId(groupId)
                 FilterType.UNBOUGHT -> articleRepository.getUnboughtArticlesByGroupId(groupId)
+                FilterType.ASSIGNED_TO_ME -> {
+                    val uid = Firebase.auth.currentUser?.uid
+                    if (uid == null) articleRepository.getArticlesByGroupId(groupId)
+                    else articleRepository.getArticlesAssignedToUser(groupId, uid)
+                }
             }
             articlesFlow.collectLatest { articles ->
                 state.update {
@@ -255,6 +317,7 @@ enum class FilterType {
     ALL,
     BOUGHT,
     UNBOUGHT,
+    ASSIGNED_TO_ME,
 }
 
 enum class GroupDetailsMode {
@@ -274,6 +337,9 @@ data class GroupDetailsState(
     val showCommentsSheet: Boolean = false,
     val articleCommentsTarget: UIArticle? = null,
     val articleComments: List<UIComment> = emptyList(),
+    val showAssignDialog: Boolean = false,
+    val groupMembers: List<GroupMember> = emptyList(),
+    val isLoadingGroupMembers: Boolean = false,
 )
 
 sealed interface GroupDetailsAction {
@@ -298,4 +364,7 @@ sealed interface GroupDetailsAction {
         val previousPosition: Double?,
         val nextPosition: Double?
     ): GroupDetailsAction
+    data object ShowAssignDialog: GroupDetailsAction
+    data object HideAssignDialog: GroupDetailsAction
+    data class AssignArticle(val assignedToUid: String?): GroupDetailsAction
 }

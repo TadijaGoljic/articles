@@ -64,7 +64,8 @@ class FirestoreModelMapper @Inject constructor(
             "bought" to articleEntity.bought,
             "dateTo" to articleEntity.dateTo,
             "ownerUid" to ownerUid,
-            "sharedGroupId" to sharedGroupId
+            "sharedGroupId" to sharedGroupId,
+            "assignedToUid" to articleEntity.assignedToUid
         )
     }
 
@@ -100,7 +101,8 @@ class FirestoreModelMapper @Inject constructor(
             websiteLink = data["websiteLink"] as? String,
             price = data["price"] as? Double,
             bought = data["bought"] as? Boolean ?: false,
-            dateTo = data["dateTo"] as? Long
+            dateTo = data["dateTo"] as? Long,
+            assignedToUid = data["assignedToUid"] as? String
         )
     }
 

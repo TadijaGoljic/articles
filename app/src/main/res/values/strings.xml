@@ -92,6 +92,7 @@
     <string name="filters_all">All</string>
     <string name="filters_bought">Bought</string>
     <string name="filters_unbought">Unbought</string>
+    <string name="filters_assigned_to_me">Assigned to me</string>
 
     <!-- Groups -->
     <string name="create_group">Create a group</string>
@@ -144,6 +145,9 @@
     <string name="group_members">Shared with</string>
     <string name="remove_member">Remove member</string>
     <string name="group_activity_notification_fallback_title">Group activity</string>
+    <string name="assign_article">Assign to member</string>
+    <string name="assign_article_title">Assign to</string>
+    <string name="unassign">Unassign</string>
 
     <!-- Units -->
     <string name="unit">Unit</string>

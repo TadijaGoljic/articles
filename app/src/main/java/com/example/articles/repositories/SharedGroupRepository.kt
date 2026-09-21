@@ -158,6 +158,7 @@ class SharedGroupRepository @Inject constructor(
                 .commit()
                 .await()
         } else {
+            clearAssignmentsForMember(sharedGroupId, uid)
             docRef.update("members", remaining).await()
         }
     }
@@ -197,9 +198,25 @@ class SharedGroupRepository @Inject constructor(
             .get()
             .await()
         val members = (snapshot.get("members") as? List<*>)?.filterIsInstance<String>() ?: return
+        clearAssignmentsForMember(sharedGroupId, memberUid)
         docRef
             .update("members", members - memberUid)
             .await()
+    }
+
+    private suspend fun clearAssignmentsForMember(sharedGroupId: String, memberUid: String) {
+        val assignedArticles = firestore
+            .collection(ARTICLES_COLLECTION)
+            .whereEqualTo("sharedGroupId", sharedGroupId)
+            .whereEqualTo("assignedToUid", memberUid)
+            .get()
+            .await()
+        if (assignedArticles.isEmpty) return
+        val batch = firestore.batch()
+        assignedArticles.documents.forEach { doc ->
+            batch.update(doc.reference, mapOf("assignedToUid" to null, "updatedAt" to System.currentTimeMillis()))
+        }
+        batch.commit().await()
     }
 
     suspend fun renameSharedGroup(sharedGroupId: String, newName: String) {

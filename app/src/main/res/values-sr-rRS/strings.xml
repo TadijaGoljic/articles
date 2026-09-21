@@ -94,6 +94,7 @@
     <string name="filters_all">Сви</string>
     <string name="filters_bought">Купљени</string>
     <string name="filters_unbought">Некупљени</string>
+    <string name="filters_assigned_to_me">Задужено мени</string>
 
     <!-- Groups -->
     <string name="create_group">Направи групу</string>
@@ -146,6 +147,9 @@
     <string name="group_members">Дели се са</string>
     <string name="remove_member">Уклони члана</string>
     <string name="group_activity_notification_fallback_title">Активност у групи</string>
+    <string name="assign_article">Задужи члана</string>
+    <string name="assign_article_title">Задужи</string>
+    <string name="unassign">Уклони задужење</string>
 
     <!-- Units -->
     <string name="unit">Јединица мере</string>

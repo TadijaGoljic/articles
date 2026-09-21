@@ -44,6 +44,9 @@ interface ArticleDao {
     @Query("SELECT * FROM articles WHERE groupId = :groupId AND bought = 0 ORDER BY position IS NULL, position ASC")
     fun getUnboughtArticlesByGroupId(groupId: UUID): Flow<List<ArticleEntity>>
 
+    @Query("SELECT * FROM articles WHERE groupId = :groupId AND assignedToUid = :uid ORDER BY position IS NULL, position ASC")
+    fun getArticlesAssignedToUser(groupId: UUID, uid: String): Flow<List<ArticleEntity>>
+
     @Query("SELECT MAX(position) FROM articles WHERE groupId = :groupId")
     suspend fun getMaxArticlePosition(groupId: UUID): Double?
 
