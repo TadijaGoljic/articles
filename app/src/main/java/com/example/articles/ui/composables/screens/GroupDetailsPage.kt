@@ -23,9 +23,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -36,6 +38,7 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -100,6 +103,8 @@ import com.example.articles.viewmodels.GroupDetailsViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import kotlinx.coroutines.launch
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 
 @SuppressLint("CoroutineCreationDuringComposition")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -325,6 +330,14 @@ private fun ArticlesModeContent(
     onAction: (GroupDetailsAction) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var orderedArticles by remember(state.articles) { mutableStateOf(state.articles) }
+    val lazyListState = rememberLazyListState()
+    val reorderableLazyListState = rememberReorderableLazyListState(lazyListState) { from, to ->
+        orderedArticles = orderedArticles.toMutableList().apply {
+            add(to.index, removeAt(from.index))
+        }
+    }
+
     Box(
         modifier = modifier
     ) {
@@ -420,6 +433,7 @@ private fun ArticlesModeContent(
             Spacer(modifier = Modifier.height(8.dp))
             if (state.articles.isNotEmpty()) {
                 LazyColumn(
+                    state = lazyListState,
                     modifier = Modifier
                         .padding(bottom = 60.dp)
                         .then(
@@ -430,27 +444,43 @@ private fun ArticlesModeContent(
                             }
                         )
                 ) {
-                    items(items = state.articles, key = { it.id }) { article ->
-                        ArticleItem(
-                            article = article,
-                            commentCount = state.articleCommentCounts[article.id] ?: 0,
-                            onLongClick = {
-                                onAction(GroupDetailsAction.ArticleLongClick(article = article))
-                            },
-                            onCommentsClick = {
-                                onAction(GroupDetailsAction.ShowArticleComments(article = article))
-                            },
-                            onOpenNavigation = onOpenNavigation,
-                            onOpenLink = onOpenLink,
-                            onChangeExpandedStatus = {
-                                onAction(
-                                    GroupDetailsAction.UpdateExpandedStatus(
-                                        article = article,
-                                        expanded = !article.expanded
+                    items(items = orderedArticles, key = { it.id }) { article ->
+                        ReorderableItem(reorderableLazyListState, key = article.id) {
+                            ArticleItem(
+                                article = article,
+                                commentCount = state.articleCommentCounts[article.id] ?: 0,
+                                onLongClick = {
+                                    onAction(GroupDetailsAction.ArticleLongClick(article = article))
+                                },
+                                onCommentsClick = {
+                                    onAction(GroupDetailsAction.ShowArticleComments(article = article))
+                                },
+                                onOpenNavigation = onOpenNavigation,
+                                onOpenLink = onOpenLink,
+                                onChangeExpandedStatus = {
+                                    onAction(
+                                        GroupDetailsAction.UpdateExpandedStatus(
+                                            article = article,
+                                            expanded = !article.expanded
+                                        )
                                     )
+                                },
+                                dragHandleModifier = Modifier.draggableHandle(
+                                    onDragStopped = {
+                                        val index = orderedArticles.indexOfFirst { it.id == article.id }
+                                        if (index != -1) {
+                                            onAction(
+                                                GroupDetailsAction.ReorderArticle(
+                                                    articleId = article.id,
+                                                    previousPosition = orderedArticles.getOrNull(index - 1)?.position,
+                                                    nextPosition = orderedArticles.getOrNull(index + 1)?.position
+                                                )
+                                            )
+                                        }
+                                    }
                                 )
-                            }
-                        )
+                            )
+                        }
                     }
                 }
             } else {
@@ -536,6 +566,7 @@ fun ArticleItem(
     modifier: Modifier = Modifier,
     commentCount: Int = 0,
     onCommentsClick: () -> Unit = {},
+    dragHandleModifier: Modifier = Modifier,
 ) {
 
     val hasDescription = !article.description.isNullOrBlank()
@@ -559,16 +590,30 @@ fun ArticleItem(
     ) {
         Column {
             Box {
-                Text(
-                    text = article.name,
-                    textAlign = TextAlign.Start,
-                    fontSize = 20.sp,
-                    overflow = TextOverflow.Ellipsis,
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 12.dp)
-                        .align(Alignment.Center)
-                )
+                        .align(Alignment.CenterStart)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DragHandle,
+                        contentDescription = null,
+                        modifier = dragHandleModifier
+                            .padding(start = 4.dp)
+                            .size(20.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = article.name,
+                        textAlign = TextAlign.Start,
+                        fontSize = 20.sp,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 12.dp)
+                    )
+                }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center,

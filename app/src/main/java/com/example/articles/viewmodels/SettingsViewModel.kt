@@ -283,7 +283,8 @@ class SettingsViewModel @Inject constructor(
             for (i in 0 until groupsArray.length()) {
                 val groupJson = groupsArray.getJSONObject(i)
                 val groupId = UUID.fromString(groupJson.getString("id"))
-                val groupAlreadyExistsLocally = groupRepository.getGroupByIdSuspend(groupId) != null
+                val existingLocalGroup = groupRepository.getGroupByIdSuspend(groupId)
+                val groupAlreadyExistsLocally = existingLocalGroup != null
 
                 val articlesArray = groupJson.getJSONArray("articles")
                 val articlesToImport = (0 until articlesArray.length())
@@ -300,7 +301,9 @@ class SettingsViewModel @Inject constructor(
                 groupRepository.upsertGroup(
                     UIGroup(
                         id = groupId,
-                        name = groupJson.getString("name")
+                        name = groupJson.getString("name"),
+                        position = existingLocalGroup?.position
+                            ?: groupRepository.getNextGroupPosition()
                     )
                 )
 
@@ -318,9 +321,11 @@ class SettingsViewModel @Inject constructor(
                         destUri.toString()
                     }
 
+                    val articleId = UUID.fromString(articleJson.getString("id"))
+                    val existingPosition = articleRepository.getArticleByIdSuspend(articleId)?.position
                     articleRepository.upsertArticle(
                         UIArticle(
-                            id = UUID.fromString(articleJson.getString("id")),
+                            id = articleId,
                             name = articleJson.getString("name"),
                             quantity = if (articleJson.has("quantity")) articleJson.getDouble("quantity") else null,
                             unit = unit,
@@ -329,7 +334,8 @@ class SettingsViewModel @Inject constructor(
                             price = if (articleJson.has("price")) articleJson.getDouble("price") else null,
                             bought = articleJson.optBoolean("bought", false),
                             photoUri = photoUri,
-                            groupId = groupId
+                            groupId = groupId,
+                            position = existingPosition ?: articleRepository.getNextArticlePosition(groupId)
                         )
                     )
                 }

@@ -91,6 +91,7 @@ dependencies {
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.compose.material.icons.extended)
+    implementation(libs.reorderable)
     implementation(libs.androidx.compose.runtime.livedata)
     implementation(libs.androidx.hilt.work)
 

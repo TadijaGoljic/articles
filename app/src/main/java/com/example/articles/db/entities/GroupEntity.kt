@@ -12,5 +12,6 @@ data class GroupEntity(
     val isShared: Boolean = false,
     val sharedGroupId: String? = null,
     val ownerUid: String? = null,
-    val isArchived: Boolean = false
+    val isArchived: Boolean = false,
+    val position: Double? = null
 )

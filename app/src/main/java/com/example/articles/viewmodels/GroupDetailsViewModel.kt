@@ -11,6 +11,7 @@ import com.example.articles.repositories.ArticleRepository
 import com.example.articles.repositories.CommentRepository
 import com.example.articles.repositories.GroupRepository
 import com.example.articles.ui.composables.ArticlesDestinations
+import com.example.articles.utils.PositionResolver
 import com.example.articles.utils.TriggerSync
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
@@ -91,6 +92,22 @@ class GroupDetailsViewModel @Inject constructor(
             is GroupDetailsAction.HideCommentsSheet -> hideArticleComments()
             is GroupDetailsAction.AddComment -> addComment(text = action.text)
             is GroupDetailsAction.DeleteComment -> deleteComment(comment = action.comment)
+            is GroupDetailsAction.ReorderArticle -> reorderArticle(
+                articleId = action.articleId,
+                previousPosition = action.previousPosition,
+                nextPosition = action.nextPosition
+            )
+        }
+    }
+
+    private fun reorderArticle(articleId: UUID, previousPosition: Double?, nextPosition: Double?) {
+        viewModelScope.launch {
+            val newPosition = PositionResolver.resolve(previousPosition, nextPosition)
+            if (newPosition == null) {
+                articleRepository.renumberArticlePositions(groupId)
+            } else {
+                articleRepository.updateArticlePosition(articleId, groupId, newPosition)
+            }
         }
     }
 
@@ -276,4 +293,9 @@ sealed interface GroupDetailsAction {
     data object HideCommentsSheet: GroupDetailsAction
     data class AddComment(val text: String): GroupDetailsAction
     data class DeleteComment(val comment: UIComment): GroupDetailsAction
+    data class ReorderArticle(
+        val articleId: UUID,
+        val previousPosition: Double?,
+        val nextPosition: Double?
+    ): GroupDetailsAction
 }

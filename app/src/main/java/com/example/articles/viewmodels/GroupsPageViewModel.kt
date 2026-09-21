@@ -18,6 +18,7 @@ import com.example.articles.repositories.GroupMember
 import com.example.articles.repositories.GroupRepository
 import com.example.articles.repositories.InvitationRepository
 import com.example.articles.repositories.SharedGroupRepository
+import com.example.articles.utils.PositionResolver
 import com.example.articles.utils.TriggerSync
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
@@ -29,6 +30,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -91,6 +93,10 @@ class GroupsPageViewModel @Inject constructor(
             is GroupsPageAction.EditGroup -> editGroup(group = action.group, name = action.name)
             is GroupsPageAction.DeleteGroup -> deleteGroup(group = action.group)
             is GroupsPageAction.ArchiveGroup -> archiveGroup(group = action.group)
+            is GroupsPageAction.ReorderGroup -> reorderGroup(
+                groupId = action.groupId,
+                orderedGroupIds = action.orderedGroupIds
+            )
             is GroupsPageAction.ConsumeArchivedGroupEvent -> consumeArchivedGroupEvent()
             is GroupsPageAction.LongClick -> updateEditDeleteBottomSheetVisibility(visible = true, group = action.group)
             is GroupsPageAction.DismissBottomSheet -> updateEditDeleteBottomSheetVisibility(visible = false, group = null)
@@ -141,7 +147,8 @@ class GroupsPageViewModel @Inject constructor(
             return
         } else {
             viewModelScope.launch {
-                groupRepository.upsertGroup(group = UIGroup(name = name))
+                val position = groupRepository.getNextGroupPosition()
+                groupRepository.upsertGroup(group = UIGroup(name = name, position = position))
                 state.update { currentState ->
                     currentState.copy(
                         isCreateGroupDialogLoading = false,
@@ -230,7 +237,7 @@ class GroupsPageViewModel @Inject constructor(
     private fun archiveGroup(group: UIGroup) {
         state.update { it.copy(showEditDeleteBottonSheet = false) }
         viewModelScope.launch {
-            groupRepository.upsertGroup(group = group.copy(isArchived = true))
+            groupRepository.upsertGroup(group = group.copy(isArchived = true, position = null))
             triggerSync()
             state.update { it.copy(archivedGroupEvent = group.name) }
         }
@@ -238,6 +245,25 @@ class GroupsPageViewModel @Inject constructor(
 
     private fun consumeArchivedGroupEvent() = state.update { currentState ->
         currentState.copy(archivedGroupEvent = null)
+    }
+
+    private fun reorderGroup(groupId: UUID, orderedGroupIds: List<UUID>) {
+        viewModelScope.launch {
+            val index = orderedGroupIds.indexOf(groupId)
+            if (index == -1) return@launch
+            val positionById = state.value.groups.associate { it.id to it.position }
+            val previousPosition = orderedGroupIds.getOrNull(index - 1)?.let { positionById[it] }
+            val nextPosition = orderedGroupIds.getOrNull(index + 1)?.let { positionById[it] }
+            val newPosition = PositionResolver.resolve(previousPosition, nextPosition)
+            if (newPosition == null) {
+                // Neighbors are too close to fit a midpoint between them: renumber using the order
+                // the user just dropped into, not the stale DB order, or the drag would be silently
+                // discarded whenever two adjacent positions had already converged.
+                groupRepository.renumberGroups(orderedGroupIds)
+            } else {
+                groupRepository.updateGroupPosition(groupId, newPosition)
+            }
+        }
     }
 
     private fun updateEditDeleteBottomSheetVisibility(visible: Boolean, group: UIGroup?) {
@@ -463,7 +489,8 @@ class GroupsPageViewModel @Inject constructor(
                     return
                 }
                 viewModelScope.launch {
-                    groupRepository.upsertGroup(group = command.group)
+                    val position = groupRepository.getNextGroupPosition()
+                    groupRepository.upsertGroup(group = command.group.copy(position = position))
                     triggerSync()
                     processNextQueuedAgentCommand()
                 }
@@ -509,7 +536,8 @@ class GroupsPageViewModel @Inject constructor(
 
             is GroupAgentCommand.AddArticle -> {
                 viewModelScope.launch {
-                    articleRepository.upsertArticle(article = command.article)
+                    val position = articleRepository.getNextArticlePosition(command.article.groupId)
+                    articleRepository.upsertArticle(article = command.article.copy(position = position))
                     triggerSync()
                     processNextQueuedAgentCommand()
                 }
@@ -596,6 +624,10 @@ sealed interface GroupsPageAction {
     data class DeleteGroup(val group: UIGroup) : GroupsPageAction
     data class ArchiveGroup(val group: UIGroup) : GroupsPageAction
     data object ConsumeArchivedGroupEvent : GroupsPageAction
+    data class ReorderGroup(
+        val groupId: UUID,
+        val orderedGroupIds: List<UUID>
+    ) : GroupsPageAction
     data class LongClick(val group: UIGroup) : GroupsPageAction
     data object DismissBottomSheet : GroupsPageAction
     data class ExpandGroup(val group: UIGroup) : GroupsPageAction

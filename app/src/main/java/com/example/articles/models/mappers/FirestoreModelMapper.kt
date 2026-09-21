@@ -125,6 +125,17 @@ class FirestoreModelMapper @Inject constructor(
         isArchived = snapshot["isArchived"] as? Boolean ?: false
     )
 
+    fun toGroupOrderFirestoreMap(position: Double) = mapOf(
+        "position" to position,
+        "updatedAt" to System.currentTimeMillis()
+    )
+
+    fun toArticleOrderFirestoreMap(position: Double, groupId: UUID) = mapOf(
+        "position" to position,
+        "groupId" to groupId.toString(),
+        "updatedAt" to System.currentTimeMillis()
+    )
+
     fun toCommentsFirestoreMap(
         commentEntity: CommentEntity,
         ownerUid: String? = null,

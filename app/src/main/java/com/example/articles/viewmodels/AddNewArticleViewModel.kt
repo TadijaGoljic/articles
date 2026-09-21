@@ -130,7 +130,9 @@ class AddNewArticleViewModel @Inject constructor(
             websiteLink = articleWebsiteLink,
         )
         viewModelScope.launch {
-            articleRepository.upsertArticle(article)
+            val articleToSave = if (state.value.isEditMode) article
+                else article.copy(position = articleRepository.getNextArticlePosition(groupId))
+            articleRepository.upsertArticle(articleToSave)
             triggerSync()
             state.update { currentState ->
                 currentState.copy(

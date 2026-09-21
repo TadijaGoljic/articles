@@ -22,7 +22,8 @@ fun ArticleEntity.toUIArticle() = UIArticle(
     websiteLink = websiteLink,
     price = price,
     bought = bought,
-    dateTo = dateTo?.let { Date(it) }
+    dateTo = dateTo?.let { Date(it) },
+    position = position
 )
 
 fun UIArticle.toArticleEntity() = ArticleEntity(
@@ -39,7 +40,8 @@ fun UIArticle.toArticleEntity() = ArticleEntity(
     websiteLink = websiteLink,
     price = price,
     bought = bought,
-    dateTo = dateTo?.time
+    dateTo = dateTo?.time,
+    position = position
 )
 
 fun GroupEntity.toUIGroup() = UIGroup(
@@ -49,7 +51,8 @@ fun GroupEntity.toUIGroup() = UIGroup(
     isShared = isShared,
     sharedGroupId = sharedGroupId,
     ownerUid = ownerUid,
-    isArchived = isArchived
+    isArchived = isArchived,
+    position = position
 )
 
 fun UIGroup.toGroupEntity() = GroupEntity(
@@ -59,7 +62,8 @@ fun UIGroup.toGroupEntity() = GroupEntity(
     isShared = isShared,
     sharedGroupId = sharedGroupId,
     ownerUid = ownerUid,
-    isArchived = isArchived
+    isArchived = isArchived,
+    position = position
 )
 
 fun CommentEntity.toUIComment() = UIComment(

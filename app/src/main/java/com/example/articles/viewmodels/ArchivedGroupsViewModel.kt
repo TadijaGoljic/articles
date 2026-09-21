@@ -48,7 +48,8 @@ class ArchivedGroupsViewModel @Inject constructor(
 
     private fun unarchiveGroup(group: UIGroup) {
         viewModelScope.launch {
-            groupRepository.upsertGroup(group = group.copy(isArchived = false))
+            val position = groupRepository.getPositionForRestore()
+            groupRepository.upsertGroup(group = group.copy(isArchived = false, position = position))
             triggerSync()
         }
     }

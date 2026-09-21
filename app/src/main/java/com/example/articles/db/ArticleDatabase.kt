@@ -3,8 +3,6 @@ package com.example.articles.db
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.articles.db.dao.ArticleDao
 import com.example.articles.db.dao.CommentDao
 import com.example.articles.db.dao.GroupDao
@@ -19,7 +17,7 @@ import com.example.articles.db.entities.GroupEntity
         GroupEntity::class,
         CommentEntity::class
     ],
-    version = 2,
+    version = 1,
     exportSchema = false
 )
 abstract class ArticleDatabase : RoomDatabase() {

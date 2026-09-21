@@ -32,5 +32,6 @@ data class ArticleEntity(
     val websiteLink: String?,
     val price: Double?,
     val bought: Boolean,
-    val dateTo: Long? = null
+    val dateTo: Long? = null,
+    val position: Double? = null
 )

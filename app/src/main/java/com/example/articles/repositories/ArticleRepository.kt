@@ -9,6 +9,8 @@ import com.example.articles.models.mappers.toArticleEntity
 import com.example.articles.models.mappers.toUIArticle
 import com.example.articles.reminders.DeadlineReminderScheduler
 import com.example.articles.utils.ARTICLES_COLLECTION
+import com.example.articles.utils.ARTICLE_ORDER_SUBCOLLECTION
+import com.example.articles.utils.USERS_COLLECTION
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
@@ -48,6 +50,44 @@ class ArticleRepository @Inject constructor(
         firestore.collection(ARTICLES_COLLECTION)
             .document(article.id.toString())
             .set(firestoreModelMapper.toArticlesFirestoreMap(articleEntity, ownerUid, sharedGroupId))
+            .await()
+        if (article.position != null) {
+            val currentUid = Firebase.auth.currentUser?.uid ?: return
+            pushArticlePosition(currentUid, article.id, article.groupId, article.position)
+        }
+    }
+
+    suspend fun getNextArticlePosition(groupId: UUID): Double =
+        articleDao.getMaxArticlePosition(groupId)?.plus(GAP) ?: GAP
+
+    suspend fun applyPulledArticlePosition(articleId: UUID, position: Double, updatedAt: Long) {
+        articleDao.updatePositionIfNewer(articleId, position, updatedAt)
+    }
+
+    suspend fun updateArticlePosition(articleId: UUID, groupId: UUID, position: Double) {
+        val uid = Firebase.auth.currentUser?.uid ?: return
+        articleDao.updatePosition(articleId, position, System.currentTimeMillis())
+        pushArticlePosition(uid, articleId, groupId, position)
+    }
+
+    suspend fun renumberArticlePositions(groupId: UUID) {
+        val uid = Firebase.auth.currentUser?.uid ?: return
+        val articles = articleDao.getArticlesByGroupIdSuspend(groupId)
+            .sortedBy { it.position ?: Double.MAX_VALUE }
+        articles.forEachIndexed { index, article ->
+            val position = index * GAP
+            articleDao.updatePosition(article.idArticle, position, System.currentTimeMillis())
+            pushArticlePosition(uid, article.idArticle, groupId, position)
+        }
+    }
+
+    private suspend fun pushArticlePosition(uid: String, articleId: UUID, groupId: UUID, position: Double) {
+        firestore
+            .collection(USERS_COLLECTION)
+            .document(uid)
+            .collection(ARTICLE_ORDER_SUBCOLLECTION)
+            .document(articleId.toString())
+            .set(firestoreModelMapper.toArticleOrderFirestoreMap(position, groupId))
             .await()
     }
 
@@ -119,6 +159,10 @@ class ArticleRepository @Inject constructor(
 
     fun getUnboughtArticlesByGroupId(groupId: UUID) = articleDao.getUnboughtArticlesByGroupId(groupId).map { list ->
         list.map { it.toUIArticle() }
+    }
+
+    companion object {
+        private const val GAP = 1000.0
     }
 
 }

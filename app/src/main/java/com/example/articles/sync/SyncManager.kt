@@ -21,8 +21,11 @@ import com.example.articles.repositories.CommentRepository
 import com.example.articles.repositories.GroupRepository
 import com.example.articles.repositories.SharedGroupRepository
 import com.example.articles.utils.ARTICLES_COLLECTION
+import com.example.articles.utils.ARTICLE_ORDER_SUBCOLLECTION
 import com.example.articles.utils.COMMENTS_COLLECTION
 import com.example.articles.utils.GROUPS_COLLECTION
+import com.example.articles.utils.GROUP_ORDER_SUBCOLLECTION
+import com.example.articles.utils.USERS_COLLECTION
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.CollectionReference
@@ -61,6 +64,7 @@ class SyncManager(
             syncGroups(groupsCollection, uid, syncTimestamp)
             syncArticles(articlesCollection, uid, syncTimestamp)
             syncComments(commentsCollection, uid, syncTimestamp)
+            syncOrdering(uid)
             userPreferences.lastSyncTimestamp = System.currentTimeMillis()
             Log.d(ArticlesApplication.LOG_TAG, "Sync completed successfully")
             Result.success()
@@ -100,7 +104,10 @@ class SyncManager(
             }
         Log.d(ArticlesApplication.LOG_TAG, "Fetched ${remoteEntities.size} articles from remote")
         if (remoteEntities.isNotEmpty()) {
-            articleRepository.upsertAllArticlesLocal(remoteEntities)
+            val positionById = localArticles.associate { it.idArticle to it.position }
+            articleRepository.upsertAllArticlesLocal(
+                remoteEntities.map { it.copy(position = positionById[it.idArticle]) }
+            )
         }
         val remoteIds = remoteEntities.map { it.idArticle }.toSet()
         val staleLocalIds = localArticles.map { it.idArticle }.filterNot { it in remoteIds }
@@ -167,8 +174,9 @@ class SyncManager(
             .filter { it.idGroup !in locallySharedIds }
         Log.d(ArticlesApplication.LOG_TAG, "Fetched ${remoteEntities.size} groups from remote")
         if (remoteEntities.isNotEmpty()) {
+            val positionById = allLocalGroups.associate { it.idGroup to it.position }
             groupRepository.upsertAllGroupsLocal(
-                remoteEntities.map { it.toUIGroup() }
+                remoteEntities.map { it.toUIGroup().copy(position = positionById[it.idGroup]) }
             )
         }
         val remoteIds = remoteEntities.map { it.idGroup }.toSet()
@@ -260,11 +268,20 @@ class SyncManager(
 
             val (groupEntity, articles) = sharedGroupRepository.syncSharedGroup(sharedGroupId)
             groupRepository.upsertGroupLocal(
-                groupEntity.copy(idGroup = localGroupId, sharedGroupId = sharedGroupId).toUIGroup()
+                groupEntity.copy(
+                    idGroup = localGroupId,
+                    sharedGroupId = sharedGroupId,
+                    position = existingLocalGroup?.position
+                ).toUIGroup()
             )
             if (articles.isNotEmpty()) {
+                val existingArticlePositions = articleRepository
+                    .getArticlesByGroupIdSuspend(localGroupId)
+                    .associate { it.idArticle to it.position }
                 articleRepository.upsertAllArticlesLocal(
-                    articles.map { it.copy(groupId = localGroupId) }
+                    articles.map {
+                        it.copy(groupId = localGroupId, position = existingArticlePositions[it.idArticle])
+                    }
                 )
             }
 
@@ -296,6 +313,45 @@ class SyncManager(
             if (staleCommentIds.isNotEmpty()) {
                 Log.d(ArticlesApplication.LOG_TAG, "Removing ${staleCommentIds.size} shared comments deleted remotely for group $sharedGroupId")
                 commentRepository.hardDeleteLocalCommentsByIds(staleCommentIds)
+            }
+        }
+    }
+
+    private suspend fun syncOrdering(uid: String) {
+        val userDoc = firestore.collection(USERS_COLLECTION).document(uid)
+        val groupOrderSnapshot = userDoc.collection(GROUP_ORDER_SUBCOLLECTION)
+            .get()
+            .await()
+        groupOrderSnapshot.documents.forEach { doc ->
+            val position = doc.getDouble("position") ?: return@forEach
+            val groupId = runCatching { UUID.fromString(doc.id) }.getOrNull() ?: return@forEach
+            val updatedAt = doc.getLong("updatedAt") ?: System.currentTimeMillis()
+            groupRepository.applyPulledGroupPosition(groupId, position, updatedAt)
+        }
+
+        val articleOrderSnapshot = userDoc.collection(ARTICLE_ORDER_SUBCOLLECTION)
+            .get()
+            .await()
+        articleOrderSnapshot.documents.forEach { doc ->
+            val position = doc.getDouble("position") ?: return@forEach
+            val articleId = runCatching { UUID.fromString(doc.id) }.getOrNull() ?: return@forEach
+            val updatedAt = doc.getLong("updatedAt") ?: System.currentTimeMillis()
+            articleRepository.applyPulledArticlePosition(articleId, position, updatedAt)
+        }
+
+        val unresolvedGroups = groupRepository.getAllGroupsNoMapping().first()
+            .filter { it.position == null && !it.isArchived }
+        unresolvedGroups.forEach { group ->
+            groupRepository.updateGroupPosition(group.idGroup, groupRepository.getNextGroupPosition())
+        }
+
+        val unresolvedArticlesByGroup = articleRepository.getAllArticlesNoMapping().first()
+            .filter { it.position == null }
+            .groupBy { it.groupId }
+        unresolvedArticlesByGroup.forEach { (groupId, articles) ->
+            articles.forEach { article ->
+                val position = articleRepository.getNextArticlePosition(groupId)
+                articleRepository.updateArticlePosition(article.idArticle, groupId, position)
             }
         }
     }

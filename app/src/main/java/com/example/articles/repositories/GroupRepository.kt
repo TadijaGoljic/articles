@@ -7,6 +7,8 @@ import com.example.articles.models.UIGroup
 import com.example.articles.models.mappers.toGroupEntity
 import com.example.articles.models.mappers.toUIGroup
 import com.example.articles.utils.GROUPS_COLLECTION
+import com.example.articles.utils.GROUP_ORDER_SUBCOLLECTION
+import com.example.articles.utils.USERS_COLLECTION
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
@@ -33,6 +35,57 @@ class GroupRepository @Inject constructor(
             .collection(GROUPS_COLLECTION)
             .document(group.id.toString())
             .set(firestoreModelMapper.toGroupsFirestoreMap(groupEntity.copy(ownerUid = uid)))
+            .await()
+        if (group.position != null) {
+            pushGroupPosition(uid, group.id, group.position)
+        } else if (group.isArchived) {
+            deleteGroupPositionDoc(uid, group.id)
+        }
+    }
+
+    suspend fun getNextGroupPosition(): Double =
+        groupDao.getMaxActiveGroupPosition()?.plus(GAP) ?: GAP
+
+    suspend fun getPositionForRestore(): Double =
+        groupDao.getMinActiveGroupPosition()?.minus(GAP) ?: GAP
+
+    suspend fun applyPulledGroupPosition(groupId: UUID, position: Double, updatedAt: Long) {
+        groupDao.updatePositionIfNewer(groupId, position, updatedAt)
+    }
+
+    suspend fun updateGroupPosition(groupId: UUID, position: Double) {
+        val uid = Firebase.auth.currentUser?.uid ?: return
+        groupDao.updatePosition(groupId, position, System.currentTimeMillis())
+        pushGroupPosition(uid, groupId, position)
+    }
+
+    suspend fun renumberGroups(orderedIds: List<UUID>) {
+        val uid = Firebase.auth.currentUser?.uid ?: return
+        val updatedAt = System.currentTimeMillis()
+        orderedIds.forEachIndexed { index, groupId ->
+            val position = index * GAP
+            groupDao.updatePosition(groupId, position, updatedAt)
+            pushGroupPosition(uid, groupId, position)
+        }
+    }
+
+    private suspend fun pushGroupPosition(uid: String, groupId: UUID, position: Double) {
+        firestore
+            .collection(USERS_COLLECTION)
+            .document(uid)
+            .collection(GROUP_ORDER_SUBCOLLECTION)
+            .document(groupId.toString())
+            .set(firestoreModelMapper.toGroupOrderFirestoreMap(position))
+            .await()
+    }
+
+    private suspend fun deleteGroupPositionDoc(uid: String, groupId: UUID) {
+        firestore
+            .collection(USERS_COLLECTION)
+            .document(uid)
+            .collection(GROUP_ORDER_SUBCOLLECTION)
+            .document(groupId.toString())
+            .delete()
             .await()
     }
 
@@ -76,5 +129,9 @@ class GroupRepository @Inject constructor(
 
     suspend fun getGroupByIdSuspend(groupId: UUID): GroupEntity? =
         groupDao.getGroupByIdSuspend(groupId)
+
+    companion object {
+        private const val GAP = 1000.0
+    }
 
 }
