@@ -15,10 +15,15 @@ import com.example.articles.repositories.SharedGroupRepository
 import com.example.articles.ui.composables.ArticlesDestinations
 import com.example.articles.utils.PositionResolver
 import com.example.articles.utils.TriggerSync
+import com.example.articles.utils.launchCatching
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -27,6 +32,7 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class GroupDetailsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
@@ -45,12 +51,16 @@ class GroupDetailsViewModel @Inject constructor(
 
     private var latestGroupComments: List<UIComment> = emptyList()
     private var lastLoadedMembersForSharedGroupId: String? = null
+    private val selectedFilter = MutableStateFlow(FilterType.ALL)
+    private var articleCommentsJob: Job? = null
 
     init {
         viewModelScope.launch {
+            // One articles subscription that switches with the filter: separate collectors per
+            // filter would all keep receiving Room invalidations and overwrite each other.
             combine(
                 groupRepository.getGroupById(groupId),
-                articleRepository.getArticlesByGroupId(groupId)
+                selectedFilter.flatMapLatest { filter -> articlesFor(filter) }
             ) { group, articles -> group to articles }
                 .collectLatest { (group, articles) ->
                     state.update { currentState ->
@@ -133,7 +143,10 @@ class GroupDetailsViewModel @Inject constructor(
 
     private fun refreshGroupMembers(sharedGroupId: String) {
         state.update { it.copy(isLoadingGroupMembers = true) }
-        viewModelScope.launch {
+        launchCatching(
+            operation = "refreshGroupMembers",
+            onError = { state.update { it.copy(isLoadingGroupMembers = false) } }
+        ) {
             val members = sharedGroupRepository.getMembers(sharedGroupId)
             state.update { currentState ->
                 currentState.copy(
@@ -152,13 +165,13 @@ class GroupDetailsViewModel @Inject constructor(
                 articleToEditOrDelete = null
             )
         }
-        viewModelScope.launch {
+        launchCatching(operation = "assignArticle") {
             articleRepository.updateArticleAssignee(article = article, assignedToUid = assignedToUid)
         }
     }
 
     private fun reorderArticle(articleId: UUID, previousPosition: Double?, nextPosition: Double?) {
-        viewModelScope.launch {
+        launchCatching(operation = "reorderArticle") {
             val newPosition = PositionResolver.resolve(previousPosition, nextPosition)
             if (newPosition == null) {
                 articleRepository.renumberArticlePositions(groupId)
@@ -187,7 +200,7 @@ class GroupDetailsViewModel @Inject constructor(
     }
 
     private fun removeArticle(article: UIArticle) {
-        viewModelScope.launch {
+        launchCatching(operation = "removeArticle") {
             articleRepository.deleteArticleById(articleId = article.id)
             commentRepository.deleteCommentsByArticleId(groupId = article.groupId, articleId = article.id)
         }
@@ -206,7 +219,8 @@ class GroupDetailsViewModel @Inject constructor(
                 articleComments = emptyList()
             )
         }
-        viewModelScope.launch {
+        articleCommentsJob?.cancel()
+        articleCommentsJob = viewModelScope.launch {
             commentRepository.getCommentsForArticle(articleId = article.id).collectLatest { comments ->
                 state.update { it.copy(articleComments = comments) }
             }
@@ -214,6 +228,8 @@ class GroupDetailsViewModel @Inject constructor(
     }
 
     private fun hideArticleComments() {
+        articleCommentsJob?.cancel()
+        articleCommentsJob = null
         state.update { currentState ->
             currentState.copy(
                 showCommentsSheet = false,
@@ -227,7 +243,7 @@ class GroupDetailsViewModel @Inject constructor(
         if (text.isBlank()) return
         val currentUser = Firebase.auth.currentUser ?: return
         val articleId = state.value.articleCommentsTarget?.id
-        viewModelScope.launch {
+        launchCatching(operation = "addComment") {
             commentRepository.upsertComment(
                 UIComment(
                     groupId = groupId,
@@ -242,14 +258,14 @@ class GroupDetailsViewModel @Inject constructor(
     }
 
     private fun deleteComment(comment: UIComment) {
-        viewModelScope.launch {
+        launchCatching(operation = "deleteComment") {
             commentRepository.deleteCommentById(comment.id)
             triggerSync()
         }
     }
 
     private fun updateArticleStatus(article: UIArticle, status: Boolean) {
-        viewModelScope.launch {
+        launchCatching(operation = "updateArticleStatus") {
             articleRepository.upsertArticle(article.copy(bought = status))
         }
     }
@@ -292,22 +308,17 @@ class GroupDetailsViewModel @Inject constructor(
         state.update {
             it.copy(filterDropdownMenuVisible = false)
         }
-        viewModelScope.launch {
-            val articlesFlow = when (filter) {
-                FilterType.ALL -> articleRepository.getArticlesByGroupId(groupId)
-                FilterType.BOUGHT -> articleRepository.getBoughtArticlesByGroupId(groupId)
-                FilterType.UNBOUGHT -> articleRepository.getUnboughtArticlesByGroupId(groupId)
-                FilterType.ASSIGNED_TO_ME -> {
-                    val uid = Firebase.auth.currentUser?.uid
-                    if (uid == null) articleRepository.getArticlesByGroupId(groupId)
-                    else articleRepository.getArticlesAssignedToUser(groupId, uid)
-                }
-            }
-            articlesFlow.collectLatest { articles ->
-                state.update {
-                    it.copy(articles = articles)
-                }
-            }
+        selectedFilter.value = filter
+    }
+
+    private fun articlesFor(filter: FilterType): Flow<List<UIArticle>> = when (filter) {
+        FilterType.ALL -> articleRepository.getArticlesByGroupId(groupId)
+        FilterType.BOUGHT -> articleRepository.getBoughtArticlesByGroupId(groupId)
+        FilterType.UNBOUGHT -> articleRepository.getUnboughtArticlesByGroupId(groupId)
+        FilterType.ASSIGNED_TO_ME -> {
+            val uid = Firebase.auth.currentUser?.uid
+            if (uid == null) articleRepository.getArticlesByGroupId(groupId)
+            else articleRepository.getArticlesAssignedToUser(groupId, uid)
         }
     }
 

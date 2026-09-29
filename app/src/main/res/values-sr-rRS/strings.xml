@@ -199,5 +199,10 @@
     <string name="import_successful">Подаци су успешно увезени.</string>
     <string name="import_failed">Увоз није успео: %1$s</string>
     <string name="invalid_backup_file">Неисправан фајл резервне копије.</string>
+    <string name="group_name_blank">Назив групе не може бити празан</string>
+    <string name="cannot_share_with_yourself">Не можете поделити групу са самим собом</string>
+    <string name="user_already_member">Овај корисник је већ члан групе</string>
+    <string name="agent_service_busy">AI асистент је тренутно заузет. Покушајте поново за тренутак.</string>
+    <string name="agent_network_error">Није могуће повезати се са AI асистентом. Проверите конекцију и покушајте поново.</string>
 
 </resources>

@@ -8,6 +8,7 @@ import android.util.Log
 import com.example.articles.ArticlesApplication
 import com.example.articles.utils.INVITATIONS_COLLECTION
 import com.example.articles.utils.PROFILES_COLLECTION
+import com.example.articles.utils.normalizeEmail
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.channels.awaitClose
@@ -30,7 +31,7 @@ class InvitationRepository @Inject constructor(
     suspend fun lookupUidByEmail(email: String): String? {
         val snapshot = firestore
             .collection(PROFILES_COLLECTION)
-            .whereEqualTo("email", email)
+            .whereEqualTo("email", email.normalizeEmail())
             .get()
             .await()
         return snapshot.documents.firstOrNull()?.getString("uid")

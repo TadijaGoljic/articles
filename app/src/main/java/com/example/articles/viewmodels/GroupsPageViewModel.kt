@@ -21,6 +21,8 @@ import com.example.articles.repositories.SharedGroupRepository
 import com.example.articles.utils.CurrentLocationProvider
 import com.example.articles.utils.PositionResolver
 import com.example.articles.utils.TriggerSync
+import com.example.articles.utils.launchCatching
+import com.example.articles.utils.normalizeEmail
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -129,7 +131,26 @@ class GroupsPageViewModel @Inject constructor(
         }
     }
 
+    private fun isGroupNameTaken(name: String, exceptGroupId: UUID? = null) =
+        state.value.groups.any { it.id != exceptGroupId && it.name.trim().equals(name.trim(), ignoreCase = true) }
+
     private fun saveGroup(name: String) {
+        val trimmedName = name.trim()
+        val errorResource = when {
+            trimmedName.isEmpty() -> R.string.group_name_blank
+            isGroupNameTaken(trimmedName) -> R.string.group_already_exists
+            else -> null
+        }
+        if (errorResource != null) {
+            state.update { currentState ->
+                currentState.copy(
+                    isCreateGroupDialogLoading = false,
+                    isGroupCreationError = true,
+                    groupCreationErrorResource = errorResource
+                )
+            }
+            return
+        }
         state.update { currentState ->
             currentState.copy(
                 isCreateGroupDialogLoading = true,
@@ -138,27 +159,19 @@ class GroupsPageViewModel @Inject constructor(
                 groupCreationErrorResource = null
             )
         }
-        if (name.isEmpty() || name.uppercase() in state.value.groups.map { it.name.uppercase() }) {
+        launchCatching(
+            operation = "saveGroup",
+            onError = { state.update { it.copy(isCreateGroupDialogLoading = false) } }
+        ) {
+            val position = groupRepository.getNextGroupPosition()
+            groupRepository.upsertGroup(group = UIGroup(name = trimmedName, position = position))
             state.update { currentState ->
                 currentState.copy(
                     isCreateGroupDialogLoading = false,
-                    isGroupCreationError = true,
-                    groupCreationErrorResource = R.string.group_already_exists
+                    groupToCreateName = TextFieldState(),
+                    showAddNewGroupDialog = false,
+                    isGroupCreationError = false,
                 )
-            }
-            return
-        } else {
-            viewModelScope.launch {
-                val position = groupRepository.getNextGroupPosition()
-                groupRepository.upsertGroup(group = UIGroup(name = name, position = position))
-                state.update { currentState ->
-                    currentState.copy(
-                        isCreateGroupDialogLoading = false,
-                        groupToCreateName = TextFieldState(),
-                        showAddNewGroupDialog = false,
-                        isGroupCreationError = false,
-                    )
-                }
             }
             triggerSync()
         }
@@ -178,7 +191,10 @@ class GroupsPageViewModel @Inject constructor(
     }
 
     private fun editGroup(group: UIGroup, name: String) {
-        if (name.equals(group.name, ignoreCase = true)) {
+        val trimmedName = name.trim()
+        val isUnchanged = trimmedName == group.name
+        val isNotAllowed = group.isShared && !group.isGroupOwner(Firebase.auth.currentUser?.uid)
+        if (isUnchanged || isNotAllowed) {
             state.update { currentState ->
                 currentState.copy(
                     showEditGroupDialog = false,
@@ -186,40 +202,45 @@ class GroupsPageViewModel @Inject constructor(
             }
             return
         }
+        if (trimmedName.isEmpty() || isGroupNameTaken(trimmedName, exceptGroupId = group.id)) return
         state.update { currentState ->
             currentState.copy(
                 isEditDialogLoading = true,
             )
         }
-        if (name.isEmpty() || name.uppercase() in state.value.groups.map { it.name.uppercase() }) {
+        launchCatching(
+            operation = "editGroup",
+            onError = { state.update { it.copy(isEditDialogLoading = false) } }
+        ) {
+            renameGroup(group = group, newName = trimmedName)
             state.update { currentState ->
                 currentState.copy(
                     isEditDialogLoading = false,
+                    groupToCreateName = TextFieldState(),
+                    showEditGroupDialog = false,
                 )
             }
-            return
+            triggerSync()
+        }
+    }
+
+    private suspend fun renameGroup(group: UIGroup, newName: String) {
+        val sharedGroupId = group.sharedGroupId
+        if (group.isShared && sharedGroupId != null) {
+            // A shared group's name lives in sharedGroups/{id}; writing the personal groups/ doc
+            // instead is rejected by the security rules and would be reverted by the next sync.
+            sharedGroupRepository.renameSharedGroup(sharedGroupId, newName)
+            groupRepository.upsertGroupLocal(group.copy(name = newName))
         } else {
-            viewModelScope.launch {
-                groupRepository.upsertGroup(
-                    group = group.copy(name = name)
-                )
-                state.update { currentState ->
-                    currentState.copy(
-                        isEditDialogLoading = false,
-                        groupToCreateName = TextFieldState(),
-                        showEditGroupDialog = false,
-                    )
-                }
-                triggerSync()
-            }
+            groupRepository.upsertGroup(group = group.copy(name = newName))
         }
     }
 
     private fun deleteGroup(group: UIGroup) {
         state.update { it.copy(showEditDeleteBottonSheet = false) }
-        viewModelScope.launch {
+        launchCatching(operation = "deleteGroup") {
             if (group.isShared && group.sharedGroupId != null) {
-                val uid = Firebase.auth.currentUser?.uid ?: return@launch
+                val uid = Firebase.auth.currentUser?.uid ?: return@launchCatching
                 if (group.isGroupOwner(uid)) {
                     sharedGroupRepository.deleteSharedGroup(group.sharedGroupId)
                 } else {
@@ -238,8 +259,19 @@ class GroupsPageViewModel @Inject constructor(
 
     private fun archiveGroup(group: UIGroup) {
         state.update { it.copy(showEditDeleteBottonSheet = false) }
-        viewModelScope.launch {
-            groupRepository.upsertGroup(group = group.copy(isArchived = true, position = null))
+        // Archiving a shared group archives it for every member, so only its owner may do it;
+        // other members can leave the group instead.
+        if (!group.isGroupOwner(Firebase.auth.currentUser?.uid)) return
+        launchCatching(operation = "archiveGroup") {
+            articleRepository.resetBoughtArticles(group.id)
+            val archived = group.copy(isArchived = true, position = null)
+            val sharedGroupId = group.sharedGroupId
+            if (group.isShared && sharedGroupId != null) {
+                sharedGroupRepository.setSharedGroupArchived(sharedGroupId, archived = true)
+                groupRepository.upsertSharedGroupLocal(archived)
+            } else {
+                groupRepository.upsertGroup(group = archived)
+            }
             triggerSync()
             state.update { it.copy(archivedGroupEvent = group.name) }
         }
@@ -250,9 +282,9 @@ class GroupsPageViewModel @Inject constructor(
     }
 
     private fun reorderGroup(groupId: UUID, orderedGroupIds: List<UUID>) {
-        viewModelScope.launch {
+        launchCatching(operation = "reorderGroup") {
             val index = orderedGroupIds.indexOf(groupId)
-            if (index == -1) return@launch
+            if (index == -1) return@launchCatching
             val positionById = state.value.groups.associate { it.id to it.position }
             val previousPosition = orderedGroupIds.getOrNull(index - 1)?.let { positionById[it] }
             val nextPosition = orderedGroupIds.getOrNull(index + 1)?.let { positionById[it] }
@@ -296,7 +328,7 @@ class GroupsPageViewModel @Inject constructor(
         }
         if (!visible) return
         val uid = Firebase.auth.currentUser?.uid ?: return
-        viewModelScope.launch {
+        launchCatching(operation = "getRecentShareRecipients") {
             val recents = invitationRepository.getRecentShareRecipients(uid)
             state.update { it.copy(recentShareRecipients = recents) }
         }
@@ -316,7 +348,10 @@ class GroupsPageViewModel @Inject constructor(
     private fun refreshGroupMembers(sharedGroupId: String) {
         if (sharedGroupId in state.value.loadingGroupMembersFor) return
         state.update { it.copy(loadingGroupMembersFor = it.loadingGroupMembersFor + sharedGroupId) }
-        viewModelScope.launch {
+        launchCatching(
+            operation = "refreshGroupMembers",
+            onError = { state.update { it.copy(loadingGroupMembersFor = it.loadingGroupMembersFor - sharedGroupId) } }
+        ) {
             val members = sharedGroupRepository.getMembers(sharedGroupId)
             state.update { currentState ->
                 currentState.copy(
@@ -335,7 +370,7 @@ class GroupsPageViewModel @Inject constructor(
                     (sharedGroupId to currentState.groupMembers[sharedGroupId].orEmpty().filter { it.uid != member.uid })
             )
         }
-        viewModelScope.launch {
+        launchCatching(operation = "removeGroupMember") {
             sharedGroupRepository.removeMember(sharedGroupId, member.uid)
         }
     }
@@ -366,23 +401,40 @@ class GroupsPageViewModel @Inject constructor(
                 isShareGroupError = false,
             )
         }
+        fun showShareError(@StringRes errorResource: Int) = state.update { currentState ->
+            currentState.copy(
+                isShareGroupLoading = false,
+                groupSharingErrorResource = errorResource,
+                isShareGroupError = true,
+            )
+        }
+        val normalizedEmail = email.normalizeEmail()
+        if (normalizedEmail == currentUser.email?.normalizeEmail()) {
+            showShareError(R.string.cannot_share_with_yourself)
+            return
+        }
         viewModelScope.launch {
             try {
-                val toUid = invitationRepository.lookupUidByEmail(email)
+                val toUid = invitationRepository.lookupUidByEmail(normalizedEmail)
                 if (toUid == null) {
-                    state.update { currentState ->
-                        currentState.copy(
-                            isShareGroupLoading = false,
-                            groupSharingErrorResource = R.string.user_not_found,
-                            isShareGroupError = true,
-                        )
-                    }
+                    showShareError(R.string.user_not_found)
+                    return@launch
+                }
+                if (toUid == currentUser.uid) {
+                    showShareError(R.string.cannot_share_with_yourself)
+                    return@launch
+                }
+                val sharedGroupId = group.sharedGroupId
+                if (group.isShared && sharedGroupId != null &&
+                    sharedGroupRepository.getMembers(sharedGroupId).any { it.uid == toUid }
+                ) {
+                    showShareError(R.string.user_already_member)
                     return@launch
                 }
                 invitationRepository.sendInvitation(
                     fromUid = currentUser.uid,
                     fromEmail = currentUser.email ?: "",
-                    toEmail = email,
+                    toEmail = normalizedEmail,
                     toUid = toUid,
                     group = group
                 )
@@ -489,26 +541,36 @@ class GroupsPageViewModel @Inject constructor(
         }
     }
 
+    /** Runs one agent command's side effects, then advances the queue; a failure stops the batch. */
+    private fun runAgentStep(operation: String, block: suspend () -> Unit) {
+        launchCatching(
+            operation = operation,
+            onError = { failAgentBatch(context.getString(R.string.something_went_wrong)) }
+        ) {
+            block()
+            triggerSync()
+            processNextQueuedAgentCommand()
+        }
+    }
+
     private fun executeAgentCommand(command: GroupAgentCommand) {
         when (command) {
             is GroupAgentCommand.CreateGroup -> {
-                if (command.group.name.uppercase() in state.value.groups.map { it.name.uppercase() }) {
+                val name = command.group.name.trim()
+                if (name.isEmpty() || isGroupNameTaken(name)) {
                     failAgentBatch(context.getString(R.string.group_already_exists))
                     return
                 }
-                viewModelScope.launch {
+                runAgentStep("agentCreateGroup") {
                     val position = groupRepository.getNextGroupPosition()
-                    groupRepository.upsertGroup(group = command.group.copy(position = position))
-                    triggerSync()
-                    processNextQueuedAgentCommand()
+                    groupRepository.upsertGroup(group = command.group.copy(name = name, position = position))
                 }
             }
 
             is GroupAgentCommand.RenameGroup -> {
                 val group = command.group
-                val isDuplicate = !command.newName.equals(group.name, ignoreCase = true) &&
-                    command.newName.uppercase() in state.value.groups.map { it.name.uppercase() }
-                if (isDuplicate) {
+                val newName = command.newName.trim()
+                if (isGroupNameTaken(newName, exceptGroupId = group.id)) {
                     failAgentBatch(context.getString(R.string.group_already_exists))
                     return
                 }
@@ -518,23 +580,12 @@ class GroupsPageViewModel @Inject constructor(
                         failAgentBatch(context.getString(R.string.agent_permission_denied_rename))
                         return
                     }
-                    val sharedGroupId = group.sharedGroupId
-                    if (sharedGroupId == null) {
+                    if (group.sharedGroupId == null) {
                         failAgentBatch(context.getString(R.string.something_went_wrong))
                         return
                     }
-                    viewModelScope.launch {
-                        sharedGroupRepository.renameSharedGroup(sharedGroupId, command.newName)
-                        triggerSync()
-                        processNextQueuedAgentCommand()
-                    }
-                } else {
-                    viewModelScope.launch {
-                        groupRepository.upsertGroup(group = group.copy(name = command.newName))
-                        triggerSync()
-                        processNextQueuedAgentCommand()
-                    }
                 }
+                runAgentStep("agentRenameGroup") { renameGroup(group = group, newName = newName) }
             }
 
             is GroupAgentCommand.DeleteGroup -> {
@@ -542,33 +593,21 @@ class GroupsPageViewModel @Inject constructor(
                 processNextQueuedAgentCommand()
             }
 
-            is GroupAgentCommand.AddArticle -> {
-                viewModelScope.launch {
-                    val position = articleRepository.getNextArticlePosition(command.article.groupId)
-                    articleRepository.upsertArticle(article = command.article.copy(position = position))
-                    triggerSync()
-                    processNextQueuedAgentCommand()
-                }
+            is GroupAgentCommand.AddArticle -> runAgentStep("agentAddArticle") {
+                val position = articleRepository.getNextArticlePosition(command.article.groupId)
+                articleRepository.upsertArticle(article = command.article.copy(position = position))
             }
 
-            is GroupAgentCommand.RenameArticle -> {
-                viewModelScope.launch {
-                    articleRepository.upsertArticle(article = command.article.copy(name = command.newName))
-                    triggerSync()
-                    processNextQueuedAgentCommand()
-                }
+            is GroupAgentCommand.RenameArticle -> runAgentStep("agentRenameArticle") {
+                articleRepository.upsertArticle(article = command.article.copy(name = command.newName))
             }
 
-            is GroupAgentCommand.RemoveArticle -> {
-                viewModelScope.launch {
-                    articleRepository.deleteArticleById(articleId = command.article.id)
-                    commentRepository.deleteCommentsByArticleId(
-                        groupId = command.article.groupId,
-                        articleId = command.article.id
-                    )
-                    triggerSync()
-                    processNextQueuedAgentCommand()
-                }
+            is GroupAgentCommand.RemoveArticle -> runAgentStep("agentRemoveArticle") {
+                articleRepository.deleteArticleById(articleId = command.article.id)
+                commentRepository.deleteCommentsByArticleId(
+                    groupId = command.article.groupId,
+                    articleId = command.article.id
+                )
             }
 
             is GroupAgentCommand.AnswerQuestion -> processNextQueuedAgentCommand()

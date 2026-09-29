@@ -175,6 +175,7 @@ async function revertSharedGroupToPersonal(sharedGroupId, sharedGroupData) {
     isShared: false,
     sharedGroupId: null,
     ownerUid: fromUid,
+    isArchived: sharedGroupData.isArchived === true,
   });
   batch.delete(admin.firestore().collection("sharedGroups").doc(sharedGroupId));
   await batch.commit();

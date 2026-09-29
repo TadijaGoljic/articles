@@ -65,6 +65,11 @@ android {
         buildConfig = true
     }
 
+    testOptions {
+        // android.util.Log etc. are stubs in local unit tests; make them no-ops instead of throwing.
+        unitTests.isReturnDefaultValues = true
+    }
+
     packaging {
         jniLibs {
             keepDebugSymbols += setOf(
@@ -99,8 +104,14 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 
     testImplementation(libs.junit)
+    testImplementation(libs.mockk)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.org.json)
     androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
 
     implementation(libs.hilt.android)

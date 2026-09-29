@@ -88,6 +88,7 @@ fun ArchivedGroupsPage(
                     items(state.groups) { group ->
                         ArchivedGroupItem(
                             group = group,
+                            canUnarchive = group.isGroupOwner(state.currentUid),
                             onUnarchiveClick = {
                                 viewModel.handleAction(ArchivedGroupsAction.UnarchiveGroup(group))
                             },
@@ -104,6 +105,7 @@ fun ArchivedGroupsPage(
 @Composable
 private fun ArchivedGroupItem(
     group: UIGroup,
+    canUnarchive: Boolean,
     onUnarchiveClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -124,11 +126,13 @@ private fun ArchivedGroupItem(
                     maxLines = 1,
                     modifier = Modifier.weight(1f)
                 )
-                IconButton(onClick = onUnarchiveClick) {
-                    Icon(
-                        imageVector = Icons.Default.Unarchive,
-                        contentDescription = stringResource(id = R.string.unarchive_group)
-                    )
+                if (canUnarchive) {
+                    IconButton(onClick = onUnarchiveClick) {
+                        Icon(
+                            imageVector = Icons.Default.Unarchive,
+                            contentDescription = stringResource(id = R.string.unarchive_group)
+                        )
+                    }
                 }
             }
             if (group.articles.isNotEmpty()) {

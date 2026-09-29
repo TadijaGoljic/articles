@@ -2,6 +2,7 @@ package com.example.articles.ai
 
 import android.content.Context
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import com.example.articles.ArticlesApplication
 import com.example.articles.BuildConfig
 import com.example.articles.R
@@ -19,7 +20,12 @@ import kotlinx.serialization.json.putJsonObject
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import org.json.JSONObject
+import retrofit2.HttpException
 import retrofit2.Retrofit
+import java.io.IOException
+import java.util.Locale
+import java.util.concurrent.TimeUnit
+import kotlin.coroutines.cancellation.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -73,7 +79,14 @@ class GroupAgentRepository @Inject constructor(
     private val service: GeminiApiService by lazy {
         Retrofit.Builder()
             .baseUrl("https://generativelanguage.googleapis.com/")
-            .client(okHttpClient)
+            .client(
+                // Gemini (especially with Google Search grounding) routinely takes longer than
+                // OkHttp's 10 s default read timeout.
+                okHttpClient.newBuilder()
+                    .readTimeout(GEMINI_READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .callTimeout(GEMINI_CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .build()
+            )
             .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
             .create(GeminiApiService::class.java)
@@ -84,44 +97,56 @@ class GroupAgentRepository @Inject constructor(
         groups: List<UIGroup>,
         location: UILocation?
     ): List<GroupAgentCommand> {
-        val commands = parseCommand(promptText, groups)
+        val commands = try {
+            requestCommands(promptText, groups)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // The request itself failed (network, overload, ...): falling back to a free-form
+            // question would just send a second request that fails the same way.
+            Log.e(ArticlesApplication.LOG_TAG, "parseCommand failed: ${e.message}", e)
+            return listOf(GroupAgentCommand.Unresolved(errorMessageFor(e)))
+        }
         val isFullyUnresolved = commands.all { it is GroupAgentCommand.Unresolved }
         if (!isFullyUnresolved) return commands
         return listOf(answerQuestion(promptText, groups, location))
     }
 
-    suspend fun parseCommand(promptText: String, groups: List<UIGroup>): List<GroupAgentCommand> {
-        val result = runCatching {
-            val response = service.generateContent(
-                model = MODEL_NAME,
-                apiKey = BuildConfig.GEMINI_API_KEY,
-                request = GeminiGenerateContentRequest(
-                    contents = listOf(
-                        GeminiContent(parts = listOf(GeminiPart(text = buildPrompt(promptText, groups))))
-                    ),
-                    generationConfig = GeminiGenerationConfig(responseSchema = responseSchema)
-                )
+    private suspend fun requestCommands(promptText: String, groups: List<UIGroup>): List<GroupAgentCommand> {
+        val response = service.generateContent(
+            model = MODEL_NAME,
+            apiKey = BuildConfig.GEMINI_API_KEY,
+            request = GeminiGenerateContentRequest(
+                contents = listOf(
+                    GeminiContent(parts = listOf(GeminiPart(text = buildPrompt(promptText, groups))))
+                ),
+                generationConfig = GeminiGenerationConfig(responseSchema = responseSchema)
             )
-            val rawJson = response.candidates
-                .firstOrNull()
-                ?.content
-                ?.parts
-                ?.firstOrNull()
-                ?.text
-                .orEmpty()
-            parseResponse(rawJson, groups)
-        }
-        return result.getOrElse { e ->
-            Log.e(ArticlesApplication.LOG_TAG, "parseCommand failed: ${e.message}", e)
-            listOf(GroupAgentCommand.Unresolved(context.getString(R.string.something_went_wrong)))
-        }
+        )
+        val rawJson = response.candidates
+            .firstOrNull()
+            ?.content
+            ?.parts
+            ?.firstOrNull()
+            ?.text
+            .orEmpty()
+        return parseResponse(rawJson, groups)
     }
+
+    private fun errorMessageFor(error: Throwable): String = context.getString(
+        when {
+            error is HttpException && error.code() in RETRYABLE_HTTP_CODES -> R.string.agent_service_busy
+            error is IOException -> R.string.agent_network_error
+            else -> R.string.something_went_wrong
+        }
+    )
 
     private suspend fun answerQuestion(
         promptText: String,
         groups: List<UIGroup>,
         location: UILocation?
     ): GroupAgentCommand {
+        var failure: Throwable? = null
         val result = runCatching {
             val response = service.generateContent(
                 model = MODEL_NAME,
@@ -141,13 +166,18 @@ class GroupAgentRepository @Inject constructor(
                 .orEmpty()
             if (answer.isBlank()) null else GroupAgentCommand.AnswerQuestion(answer = answer, sources = sources)
         }.getOrElse { e ->
+            if (e is CancellationException) throw e
             Log.e(ArticlesApplication.LOG_TAG, "answerQuestion failed: ${e.message}", e)
+            failure = e
             null
         }
-        return result ?: GroupAgentCommand.Unresolved(context.getString(R.string.something_went_wrong))
+        return result ?: GroupAgentCommand.Unresolved(
+            failure?.let(::errorMessageFor) ?: context.getString(R.string.something_went_wrong)
+        )
     }
 
-    private fun buildQuestionPrompt(promptText: String, groups: List<UIGroup>, location: UILocation?): String {
+    @VisibleForTesting
+    internal fun buildQuestionPrompt(promptText: String, groups: List<UIGroup>, location: UILocation?): String {
         val locationContext = location?.let {
             "The user's approximate current location is latitude ${it.latitude}, longitude ${it.longitude}. " +
                 "Ground your answer in stores, prices, and availability relevant to that specific area — " +
@@ -156,7 +186,8 @@ class GroupAgentRepository @Inject constructor(
             "(e.g. where to buy something), say you need their city instead of guessing one."
         val groupsDescription = groups.joinToString(separator = "\n") { group ->
             val articleLines = group.articles.joinToString(separator = ", ") { article ->
-                val price = article.price?.let { " (%.2f)".format(it) }.orEmpty()
+                // Locale.ROOT: a "1,50" decimal comma would be ambiguous inside this comma-separated list.
+                val price = article.price?.let { " (%.2f)".format(Locale.ROOT, it) }.orEmpty()
                 "${article.name}$price"
             }
             "- ${group.name}: ${articleLines.ifBlank { "(no articles)" }}"
@@ -204,7 +235,8 @@ class GroupAgentRepository @Inject constructor(
         """.trimIndent()
     }
 
-    private fun parseResponse(rawJson: String, groups: List<UIGroup>): List<GroupAgentCommand> {
+    @VisibleForTesting
+    internal fun parseResponse(rawJson: String, groups: List<UIGroup>): List<GroupAgentCommand> {
         val json = runCatching { JSONObject(rawJson) }.getOrNull()
         val actionsArray = json?.optJSONArray("actions")
         if (actionsArray == null || actionsArray.length() == 0) {
@@ -336,6 +368,9 @@ class GroupAgentRepository @Inject constructor(
 
     private companion object {
         const val MODEL_NAME = "gemini-3.6-flash"
+        const val GEMINI_READ_TIMEOUT_SECONDS = 60L
+        const val GEMINI_CALL_TIMEOUT_SECONDS = 90L
+        val RETRYABLE_HTTP_CODES = setOf(429, 500, 502, 503, 504)
         const val ACTION_CREATE_GROUP = "create_group"
         const val ACTION_RENAME_GROUP = "rename_group"
         const val ACTION_DELETE_GROUP = "delete_group"

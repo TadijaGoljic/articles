@@ -197,5 +197,10 @@
     <string name="import_successful">Data imported successfully.</string>
     <string name="import_failed">Import failed: %1$s</string>
     <string name="invalid_backup_file">Invalid backup file.</string>
+    <string name="group_name_blank">Group name can\'t be empty</string>
+    <string name="cannot_share_with_yourself">You can\'t share a group with yourself</string>
+    <string name="user_already_member">This user is already a member of the group</string>
+    <string name="agent_service_busy">The AI assistant is busy right now. Please try again in a moment.</string>
+    <string name="agent_network_error">Couldn\'t reach the AI assistant. Check your connection and try again.</string>
 
 </resources>

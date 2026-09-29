@@ -58,7 +58,8 @@ class SharedGroupRepository @Inject constructor(
             updatedAt = data["updatedAt"] as? Long ?: 0L,
             isShared = true,
             sharedGroupId = sharedGroupId,
-            ownerUid = data["fromUid"] as? String
+            ownerUid = data["fromUid"] as? String,
+            isArchived = data["isArchived"] as? Boolean ?: false
         )
 
         val articlesSnapshot = firestore
@@ -224,6 +225,15 @@ class SharedGroupRepository @Inject constructor(
             .collection(SHARED_GROUPS_COLLECTION)
             .document(sharedGroupId)
             .update("name", newName)
+            .await()
+    }
+
+    /** Archives or restores the group for every member; only the owner is allowed to do this. */
+    suspend fun setSharedGroupArchived(sharedGroupId: String, archived: Boolean) {
+        firestore
+            .collection(SHARED_GROUPS_COLLECTION)
+            .document(sharedGroupId)
+            .update(mapOf("isArchived" to archived, "updatedAt" to System.currentTimeMillis()))
             .await()
     }
 

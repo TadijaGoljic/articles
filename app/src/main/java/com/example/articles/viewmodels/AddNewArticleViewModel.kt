@@ -18,6 +18,9 @@ import com.example.articles.utils.FileManager
 import com.example.articles.ui.composables.ArticlesDestinations
 import com.example.articles.utils.TriggerSync
 import com.example.articles.utils.isValidUri
+import com.example.articles.utils.launchCatching
+import com.example.articles.utils.toCoordinatesString
+import com.example.articles.utils.toDecimalOrNull
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -100,8 +103,8 @@ class AddNewArticleViewModel @Inject constructor(
         }
         val articleName = state.value.articleName.text.toString()
         val articleDescription = state.value.articleDescription.text.toString()
-        val articleQuantity = state.value.articleQuantity.text.toString().toDoubleOrNull()
-        val articlePrice = state.value.price.text.toString().toDoubleOrNull()
+        val articleQuantity = state.value.articleQuantity.text.toString().toDecimalOrNull()
+        val articlePrice = state.value.price.text.toString().toDecimalOrNull()
         val articleWebsiteLink = state.value.articleWebsiteLink.text.toString()
         if (articleName.isBlank()) {
             state.update { currentState ->
@@ -129,7 +132,10 @@ class AddNewArticleViewModel @Inject constructor(
             price = articlePrice,
             websiteLink = articleWebsiteLink,
         )
-        viewModelScope.launch {
+        launchCatching(
+            operation = "saveArticle",
+            onError = { state.update { it.copy(isLoading = false) } }
+        ) {
             val articleToSave = if (state.value.isEditMode) article
                 else article.copy(position = articleRepository.getNextArticlePosition(groupId))
             articleRepository.upsertArticle(articleToSave)
@@ -158,16 +164,21 @@ class AddNewArticleViewModel @Inject constructor(
                         isLocationStringLoading = true
                     )
                 }
-                val locationString = nominatimAPI.reverseGeocode(
-                    location.latitude,
-                    location.longitude
-                ).let {
+                // Reverse geocoding is only cosmetic: without network (or if Nominatim fails) keep the
+                // picked location and fall back to showing raw coordinates instead of crashing.
+                val locationString = runCatching {
+                    nominatimAPI.reverseGeocode(location.latitude, location.longitude)
+                }.map {
                     Log.d(LOG_TAG, "updateLocation: $it")
                     val address = it.address
                     val street = listOfNotNull(address?.road, address?.houseNumber).joinToString(" ")
                     val town = address?.city ?: address?.cityDistrict ?: address?.suburb ?: address?.county
                     listOfNotNull(street.ifEmpty { null }, town).joinToString(", ")
-                }
+                }.onFailure { e ->
+                    Log.e(LOG_TAG, "updateLocation: reverse geocoding failed: ${e.message}")
+                }.getOrNull()
+                    ?.ifBlank { null }
+                    ?: location.toCoordinatesString()
                 state.update { currentState ->
                     currentState.copy(
                         article = currentState.article.copy(location = location),

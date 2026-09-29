@@ -100,7 +100,7 @@ fun GroupsListPage(
     val state by groupsPageViewModel.uiState.collectAsStateWithLifecycle()
     val groupNames by remember {
         derivedStateOf {
-            state.groups.map { group -> group.name.uppercase() }
+            state.groups.map { group -> group.name.trim().uppercase() }
         }
     }
 
@@ -144,7 +144,7 @@ fun GroupsListPage(
                 else "",
             dismissButtonText = stringResource(id = R.string.cancel),
             confirmButtonText = stringResource(id = R.string.save),
-            confirmButtonEnabled = state.groupToCreateName.text.isNotEmpty(),
+            confirmButtonEnabled = state.groupToCreateName.text.isNotBlank(),
             onConfirmButtonClick = {
                 groupsPageViewModel.handleAction(GroupsPageAction.SaveGroup(state.groupToCreateName.text.toString()))
             },
@@ -191,8 +191,8 @@ fun GroupsListPage(
     }
 
     if (state.showEditGroupDialog) {
-        val editNameUpper = state.groupToEditName.text.toString().uppercase()
-        val originalNameUpper = state.longPressedGroup?.name?.uppercase()
+        val editNameUpper = state.groupToEditName.text.toString().trim().uppercase()
+        val originalNameUpper = state.longPressedGroup?.name?.trim()?.uppercase()
         val isDuplicateInEdit = editNameUpper in groupNames && editNameUpper != originalNameUpper
         OneTextFieldDialog(
             title = stringResource(id = R.string.edit_group),
@@ -204,7 +204,7 @@ fun GroupsListPage(
             errorMessage = stringResource(id = R.string.group_already_exists),
             dismissButtonText = stringResource(id = R.string.cancel),
             confirmButtonText = stringResource(id = R.string.save),
-            confirmButtonEnabled = state.groupToEditName.text.isNotEmpty(),
+            confirmButtonEnabled = state.groupToEditName.text.isNotBlank(),
             onConfirmButtonClick = {
                 groupsPageViewModel.handleAction(GroupsPageAction.EditGroup(state.longPressedGroup ?: UIGroup(), state.groupToEditName.text.toString()))
             },
@@ -358,18 +358,20 @@ fun GroupsListPage(
                         modifier = Modifier.padding(bottom = 60.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        BottomSheetRowItem(
-                            icon = Icons.Default.Edit,
-                            text = stringResource(id = R.string.edit_group),
-                            onClick = {
-                                coroutineScope
-                                    .launch { sheetState.hide() }
-                                    .invokeOnCompletion {
-                                        groupsPageViewModel.handleAction(GroupsPageAction.ShowEditGroupDialog(group = state.longPressedGroup ?: UIGroup()))
-                                    }
-                            },
-                            contentDescription = stringResource(id = R.string.edit_group),
-                        )
+                        if (state.longPressedGroup?.isGroupOwner(state.currentUid) != false) {
+                            BottomSheetRowItem(
+                                icon = Icons.Default.Edit,
+                                text = stringResource(id = R.string.edit_group),
+                                onClick = {
+                                    coroutineScope
+                                        .launch { sheetState.hide() }
+                                        .invokeOnCompletion {
+                                            groupsPageViewModel.handleAction(GroupsPageAction.ShowEditGroupDialog(group = state.longPressedGroup ?: UIGroup()))
+                                        }
+                                },
+                                contentDescription = stringResource(id = R.string.edit_group),
+                            )
+                        }
                         BottomSheetRowItem(
                             icon = Icons.Default.Delete,
                             text = stringResource(id = R.string.delete_group),
@@ -394,18 +396,21 @@ fun GroupsListPage(
                             },
                             contentDescription = stringResource(id = R.string.share_group),
                         )
-                        BottomSheetRowItem(
-                            icon = Icons.Default.Archive,
-                            text = stringResource(id = R.string.archive_group),
-                            onClick = {
-                                coroutineScope
-                                    .launch { sheetState.hide() }
-                                    .invokeOnCompletion {
-                                        groupsPageViewModel.handleAction(GroupsPageAction.ArchiveGroup(group = state.longPressedGroup ?: UIGroup()))
-                                    }
-                            },
-                            contentDescription = stringResource(id = R.string.archive_group),
-                        )
+                        // A shared group is archived for everyone, so only its owner may archive it.
+                        if (state.longPressedGroup?.isGroupOwner(state.currentUid) != false) {
+                            BottomSheetRowItem(
+                                icon = Icons.Default.Archive,
+                                text = stringResource(id = R.string.archive_group),
+                                onClick = {
+                                    coroutineScope
+                                        .launch { sheetState.hide() }
+                                        .invokeOnCompletion {
+                                            groupsPageViewModel.handleAction(GroupsPageAction.ArchiveGroup(group = state.longPressedGroup ?: UIGroup()))
+                                        }
+                                },
+                                contentDescription = stringResource(id = R.string.archive_group),
+                            )
+                        }
                         val longPressedGroup = state.longPressedGroup
                         if (longPressedGroup != null &&
                             longPressedGroup.isShared &&

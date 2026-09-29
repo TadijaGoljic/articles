@@ -36,6 +36,20 @@ class GroupRepository @Inject constructor(
             .document(group.id.toString())
             .set(firestoreModelMapper.toGroupsFirestoreMap(groupEntity.copy(ownerUid = uid)))
             .await()
+        syncGroupPosition(uid, group)
+    }
+
+    /**
+     * Saves a shared group locally along with this user's ordering for it. Shared groups have no
+     * personal groups/ document — their data lives in sharedGroups/ (see SharedGroupRepository).
+     */
+    suspend fun upsertSharedGroupLocal(group: UIGroup) {
+        val uid = Firebase.auth.currentUser?.uid ?: return
+        groupDao.upsertGroup(group.toGroupEntity())
+        syncGroupPosition(uid, group)
+    }
+
+    private suspend fun syncGroupPosition(uid: String, group: UIGroup) {
         if (group.position != null) {
             pushGroupPosition(uid, group.id, group.position)
         } else if (group.isArchived) {

@@ -10,6 +10,8 @@ import androidx.exifinterface.media.ExifInterface
 import java.io.ByteArrayOutputStream
 import java.io.FileInputStream
 import androidx.core.net.toUri
+import com.example.articles.models.UILocation
+import java.util.Locale
 
 fun copyUriToUri(sourceUri: Uri, destinationUri: Uri, context: Context): Uri? {
     return try {
@@ -67,6 +69,15 @@ fun String.isValidUri(): Boolean {
         false
     }
 }
+
+fun UILocation.toCoordinatesString(): String =
+    String.format(Locale.US, "%.5f, %.5f", latitude, longitude)
+
+/** Firebase Auth treats emails case-insensitively, so every stored/looked-up email goes through this. */
+fun String.normalizeEmail(): String = trim().lowercase(Locale.ROOT)
+
+/** Parses a user-typed decimal, accepting both "1.5" and the locale-common "1,5". */
+fun String.toDecimalOrNull(): Double? = trim().replace(',', '.').toDoubleOrNull()
 
 fun Double.isInteger() = this % 1 == 0.0
 

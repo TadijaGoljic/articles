@@ -72,6 +72,10 @@ class FirestoreModelMapper @Inject constructor(
     fun toArticleEntity(snapshot: DocumentSnapshot): ArticleEntity? {
         val data = snapshot.data ?: return null
         val articleId = data["idArticle"] as? String ?: return null
+        val name = data["name"] as? String ?: return null
+        val groupId = (data["groupId"] as? String)
+            ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+            ?: return null
         val updatedAt = (data["updatedAt"] as? Long) ?: 0L
         val photo = data["photo"] as? String
         val filePrefix = "$IMAGE_PREFIX$articleId-"
@@ -84,7 +88,7 @@ class FirestoreModelMapper @Inject constructor(
         }
         return ArticleEntity(
             idArticle = UUID.fromString(articleId),
-            name = data["name"] as String,
+            name = name,
             dateCreated = (data["dateCreated"] as? Long) ?: 0L,
             location = (data["location"] as? String)?.let { locationString ->
                 UILocation(
@@ -93,10 +97,12 @@ class FirestoreModelMapper @Inject constructor(
                 )
             },
             quantity = data["quantity"] as? Double,
-            unit = ArticleUnit.valueOf(data["unit"] as? String ?: "PIECE"),
+            unit = (data["unit"] as? String)
+                ?.let { unit -> ArticleUnit.entries.firstOrNull { it.name == unit } }
+                ?: ArticleUnit.default,
             photoUri = if (photo == null) null else file.toUri().toString(),
             updatedAt = updatedAt,
-            groupId = UUID.fromString(data["groupId"] as? String) ?: UUID.randomUUID(),
+            groupId = groupId,
             description = data["description"] as? String,
             websiteLink = data["websiteLink"] as? String,
             price = data["price"] as? Double,

@@ -5,7 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.example.articles.models.UIGroup
 import com.example.articles.repositories.ArticleRepository
 import com.example.articles.repositories.GroupRepository
+import com.example.articles.repositories.SharedGroupRepository
 import com.example.articles.utils.TriggerSync
+import com.example.articles.utils.launchCatching
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,6 +23,7 @@ import javax.inject.Inject
 class ArchivedGroupsViewModel @Inject constructor(
     private val groupRepository: GroupRepository,
     private val articleRepository: ArticleRepository,
+    private val sharedGroupRepository: SharedGroupRepository,
     private val triggerSync: TriggerSync
 ) : ViewModel() {
 
@@ -26,6 +31,7 @@ class ArchivedGroupsViewModel @Inject constructor(
     val uiState = state.asStateFlow()
 
     init {
+        state.update { it.copy(currentUid = Firebase.auth.currentUser?.uid) }
         viewModelScope.launch {
             combine(
                 flow = groupRepository.getArchivedGroups(),
@@ -47,9 +53,18 @@ class ArchivedGroupsViewModel @Inject constructor(
     }
 
     private fun unarchiveGroup(group: UIGroup) {
-        viewModelScope.launch {
+        // A shared group is archived for all members, so only its owner can bring it back.
+        if (!group.isGroupOwner(Firebase.auth.currentUser?.uid)) return
+        launchCatching(operation = "unarchiveGroup") {
             val position = groupRepository.getPositionForRestore()
-            groupRepository.upsertGroup(group = group.copy(isArchived = false, position = position))
+            val restored = group.copy(isArchived = false, position = position)
+            val sharedGroupId = group.sharedGroupId
+            if (group.isShared && sharedGroupId != null) {
+                sharedGroupRepository.setSharedGroupArchived(sharedGroupId, archived = false)
+                groupRepository.upsertSharedGroupLocal(restored)
+            } else {
+                groupRepository.upsertGroup(group = restored)
+            }
             triggerSync()
         }
     }
@@ -58,6 +73,7 @@ class ArchivedGroupsViewModel @Inject constructor(
 
 data class ArchivedGroupsState(
     val groups: List<UIGroup> = emptyList(),
+    val currentUid: String? = null,
 )
 
 sealed interface ArchivedGroupsAction {

@@ -13,16 +13,17 @@ import com.example.articles.models.ArticleUnit
 import com.example.articles.models.UIArticle
 import com.example.articles.models.UIGroup
 import com.example.articles.models.UserPreferences
+import com.example.articles.repositories.AccountRepository
 import com.example.articles.repositories.ArticleRepository
 import com.example.articles.repositories.GroupRepository
 import com.example.articles.repositories.InvitationRepository
 import com.example.articles.utils.FileManager
 import com.example.articles.fcm.SessionManager
 import com.example.articles.utils.TriggerSync
+import com.example.articles.utils.launchCatching
 import com.google.firebase.Firebase
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.auth
-import com.google.firebase.firestore.firestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -48,6 +49,7 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val database: ArticleDatabase,
+    private val accountRepository: AccountRepository,
     private val groupRepository: GroupRepository,
     private val articleRepository: ArticleRepository,
     private val invitationRepository: InvitationRepository,
@@ -127,37 +129,36 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    private fun deleteAccount() = viewModelScope.launch {
+    private fun deleteAccount() {
+        val user = Firebase.auth.currentUser ?: return
         state.update { currentState ->
             currentState.copy(
                 deleteAccountLoading = true
             )
         }
-        val uid = Firebase.auth.currentUser?.uid
-        withContext(Dispatchers.IO) { database.clearAllTables() }
-        if (uid != null) {
-            val userRef = Firebase.firestore.collection("users").document(uid)
-            userRef.delete().await()
-        }
-        Firebase.auth.currentUser
-            ?.delete()
-            ?.addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    state.update { currentState ->
-                        currentState.copy(
-                            deleteAccountLoading = false,
-                            deleteOk = true
-                        )
-                    }
-                } else {
-                    state.update { currentState ->
-                        currentState.copy(
-                            deleteAccountLoading = false,
-                            errorMessage = task.exception?.message.toString()
-                        )
-                    }
+        launchCatching(
+            operation = "deleteAccount",
+            onError = { e ->
+                state.update { currentState ->
+                    currentState.copy(
+                        deleteAccountLoading = false,
+                        errorMessage = e.message ?: context.getString(R.string.something_went_wrong)
+                    )
                 }
             }
+        ) {
+            // Cloud data first: once the auth user is gone the security rules no longer let us
+            // delete it. Local data is only wiped after the account itself is really deleted.
+            accountRepository.deleteUserData(user.uid)
+            user.delete().await()
+            withContext(Dispatchers.IO) { database.clearAllTables() }
+            state.update { currentState ->
+                currentState.copy(
+                    deleteAccountLoading = false,
+                    deleteOk = true
+                )
+            }
+        }
     }
 
     private fun updateChangePasswordDialogVisibility(visible: Boolean) {
@@ -378,7 +379,8 @@ class SettingsViewModel @Inject constructor(
                                     state.update {
                                         it.copy(
                                             isLoading = false,
-                                            errorMessage = task.exception?.message.toString()
+                                            errorMessage = task2.exception?.message
+                                                ?: context.getString(R.string.something_went_wrong)
                                         )
                                     }
                                 }
@@ -387,7 +389,8 @@ class SettingsViewModel @Inject constructor(
                         state.update {
                             it.copy(
                                 isLoading = false,
-                                errorMessage = task.exception?.message.toString()
+                                errorMessage = task.exception?.message
+                                    ?: context.getString(R.string.something_went_wrong)
                             )
                         }
                     }
