@@ -105,7 +105,6 @@ class ArticleRepository @Inject constructor(
             .await()
     }
 
-    /** Marks every bought article of the group as not bought (used when a group is archived). */
     suspend fun resetBoughtArticles(groupId: UUID) {
         articleDao.getArticlesByGroupIdSuspend(groupId)
             .filter { it.bought }

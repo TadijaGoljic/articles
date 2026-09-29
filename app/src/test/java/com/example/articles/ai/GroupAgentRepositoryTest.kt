@@ -38,7 +38,6 @@ class GroupAgentRepositoryTest {
     private fun message(resId: Int) = "string:$resId"
     private fun message(resId: Int, arg: String) = "string:$resId:$arg"
 
-    /** Requests the repository sent, as (url, body) pairs. */
     private val requests = mutableListOf<Pair<String, String>>()
     private val responses = ArrayDeque<(okhttp3.Request) -> Response>()
 
@@ -103,8 +102,6 @@ class GroupAgentRepositoryTest {
     private val household = UIGroup(name = "Household")
         .let { group -> group.copy(articles = listOf(UIArticle(name = "Soap", groupId = group.id))) }
     private val groups = listOf(groceries, household)
-
-    // region parseResponse
 
     @Test
     fun `creates a group and adds articles into it in the same batch`() {
@@ -240,10 +237,6 @@ class GroupAgentRepositoryTest {
         assertEquals(notUnderstood, repository.parseResponse("""{"somethingElse": 1}""", groups))
     }
 
-    // endregion
-
-    // region buildQuestionPrompt
-
     @Test
     fun `question prompt lists every group with article prices`() {
         val prompt = repository.buildQuestionPrompt("I have 10, what should I buy?", groups, null)
@@ -275,10 +268,6 @@ class GroupAgentRepositoryTest {
         val withoutLocation = repository.buildQuestionPrompt("q", groups, null)
         assertTrue(withoutLocation.contains("location is unknown"))
     }
-
-    // endregion
-
-    // region handlePrompt (HTTP)
 
     @Test
     fun `a recognised command is returned without asking a question`() = runTest {
@@ -368,5 +357,4 @@ class GroupAgentRepositoryTest {
         assertEquals(listOf(GroupAgentCommand.Unresolved(message(R.string.something_went_wrong))), commands)
     }
 
-    // endregion
 }

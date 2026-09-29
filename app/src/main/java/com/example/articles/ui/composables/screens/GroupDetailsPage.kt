@@ -3,22 +3,29 @@ package com.example.articles.ui.composables.screens
 import android.annotation.SuppressLint
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -28,44 +35,47 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Comment
+import androidx.compose.material.icons.automirrored.outlined.Comment
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.DragHandle
+import androidx.compose.material.icons.filled.DragIndicator
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.RemoveShoppingCart
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.filled.UnfoldLess
+import androidx.compose.material.icons.filled.UnfoldMore
+import androidx.compose.material.icons.outlined.ShoppingBasket
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.ui.window.Dialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -77,28 +87,33 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.articles.R
-import com.example.articles.models.UIComment
-import com.example.articles.models.UILocation
 import com.example.articles.models.UIArticle
+import com.example.articles.models.UIComment
 import com.example.articles.models.UIGroup
+import com.example.articles.models.UILocation
 import com.example.articles.repositories.GroupMember
 import com.example.articles.ui.composables.utils.BottomSheetRowItem
 import com.example.articles.ui.composables.utils.EmailAvatar
+import com.example.articles.ui.composables.utils.EmptyState
 import com.example.articles.ui.composables.utils.Toolbar
 import com.example.articles.ui.composables.utils.UserInfoItem
 import com.example.articles.utils.ScreenSize
+import com.example.articles.utils.tryToInt
 import com.example.articles.viewmodels.FilterType
 import com.example.articles.viewmodels.GroupDetailsAction
 import com.example.articles.viewmodels.GroupDetailsMode
@@ -109,6 +124,8 @@ import com.google.firebase.auth.auth
 import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 @SuppressLint("CoroutineCreationDuringComposition")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -146,9 +163,18 @@ fun GroupDetailsPage(
             containerColor = MaterialTheme.colorScheme.surface
         ) {
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(bottom = 60.dp)
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.padding(bottom = 32.dp)
             ) {
+                state.articleToEditOrDelete?.let { article ->
+                    Text(
+                        text = article.name,
+                        style = MaterialTheme.typography.titleLarge,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 12.dp)
+                    )
+                }
                 if (state.articleToEditOrDelete?.bought == true) {
                     BottomSheetRowItem(
                         icon = Icons.Default.RemoveShoppingCart,
@@ -190,6 +216,10 @@ fun GroupDetailsPage(
                         }
                     )
                 }
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp)
+                )
                 BottomSheetRowItem(
                     icon = Icons.Default.Delete,
                     contentDescription = stringResource(id = R.string.remove_article),
@@ -197,7 +227,8 @@ fun GroupDetailsPage(
                     onClick = {
                         groupDetailsViewModel.handleAction(GroupDetailsAction.RemoveArticle)
                         groupDetailsViewModel.handleAction(GroupDetailsAction.HideBottomSheet)
-                    }
+                    },
+                    isDestructive = true
                 )
             }
         }
@@ -241,22 +272,50 @@ fun GroupDetailsPage(
         )
     }
 
-    Scaffold { innerPadding ->
+    val boughtCount = state.articles.count { it.bought }
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        floatingActionButton = {
+            AnimatedVisibility(
+                visible = state.mode == GroupDetailsMode.ARTICLES,
+                enter = scaleIn() + fadeIn(),
+                exit = scaleOut() + fadeOut()
+            ) {
+                ExtendedFloatingActionButton(
+                    onClick = { onAddArticle(state.group) },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = null
+                        )
+                    },
+                    text = { Text(text = stringResource(id = R.string.add_new_article)) },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    shape = MaterialTheme.shapes.large
+                )
+            }
+        }
+    ) { innerPadding ->
         Column(
             modifier = modifier
                 .fillMaxSize()
-                .background(color = MaterialTheme.colorScheme.surface)
                 .padding(innerPadding)
         ) {
             Toolbar(
                 title = state.group.name,
+                subtitle =
+                    if (state.selectedFilter == FilterType.ALL && state.articles.isNotEmpty())
+                        stringResource(id = R.string.bought_progress, boughtCount, state.articles.size)
+                    else null,
                 leadingIcon = Icons.Default.ChevronLeft,
                 onLeadingIconClick = onBackClick
             )
             GroupDetailsModeTabs(
                 mode = state.mode,
                 onModeSelected = { groupDetailsViewModel.handleAction(GroupDetailsAction.SelectMode(it)) },
-                commentsCount = state.groupComments.size
+                commentsCount = state.groupComments.size,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
             )
             val pagerState = rememberPagerState(
                 initialPage = state.mode.toPageIndex(),
@@ -284,21 +343,16 @@ fun GroupDetailsPage(
                     GroupDetailsMode.ARTICLES -> ArticlesModeContent(
                         state = state,
                         screenSize = screenSize,
-                        onAddArticle = onAddArticle,
                         onOpenNavigation = onOpenNavigation,
                         onOpenLink = onOpenLink,
                         onAction = groupDetailsViewModel::handleAction,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(color = MaterialTheme.colorScheme.background)
+                        modifier = Modifier.fillMaxSize()
                     )
                     GroupDetailsMode.COMMENTS -> GroupCommentsContent(
                         comments = state.groupComments,
                         currentUid = currentUid,
                         onAction = groupDetailsViewModel::handleAction,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(color = MaterialTheme.colorScheme.background)
+                        modifier = Modifier.fillMaxSize()
                     )
                 }
             }
@@ -312,7 +366,6 @@ private fun GroupDetailsMode.toPageIndex(): Int = if (this == GroupDetailsMode.A
 private fun Int.toGroupDetailsMode(): GroupDetailsMode =
     if (this == 0) GroupDetailsMode.ARTICLES else GroupDetailsMode.COMMENTS
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun GroupDetailsModeTabs(
     mode: GroupDetailsMode,
@@ -320,30 +373,54 @@ private fun GroupDetailsModeTabs(
     commentsCount: Int,
     modifier: Modifier = Modifier
 ) {
-    PrimaryTabRow(
-        selectedTabIndex = if (mode == GroupDetailsMode.ARTICLES) 0 else 1,
-        modifier = modifier.fillMaxWidth(),
-        containerColor = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.primary,
-        indicator = {
-            TabRowDefaults.PrimaryIndicator(
-                modifier = Modifier.tabIndicatorOffset(
-                    selectedTabIndex = if (mode == GroupDetailsMode.ARTICLES) 0 else 1,
-                    matchContentSize = false
-                ),
-                width = Dp.Unspecified
-            )
-        }
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .padding(4.dp)
     ) {
-        Tab(
+        SegmentTab(
+            text = stringResource(id = R.string.articles_tab),
             selected = mode == GroupDetailsMode.ARTICLES,
             onClick = { onModeSelected(GroupDetailsMode.ARTICLES) },
-            text = { Text(text = stringResource(id = R.string.articles_tab)) }
+            modifier = Modifier.weight(1f)
         )
-        Tab(
+        SegmentTab(
+            text = stringResource(id = R.string.comments_tab) + " (${commentsCount})",
             selected = mode == GroupDetailsMode.COMMENTS,
             onClick = { onModeSelected(GroupDetailsMode.COMMENTS) },
-            text = { Text(text = stringResource(id = R.string.comments_tab) +  " (${commentsCount})") }
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun SegmentTab(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val background by animateColorAsState(
+        targetValue = if (selected) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceContainer,
+        label = "segmentBackground"
+    )
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .then(if (selected) Modifier.shadow(2.dp, CircleShape) else Modifier)
+            .clip(CircleShape)
+            .background(background)
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelLarge,
+            color =
+                if (selected) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -352,7 +429,6 @@ private fun GroupDetailsModeTabs(
 private fun ArticlesModeContent(
     state: GroupDetailsState,
     screenSize: ScreenSize,
-    onAddArticle: (UIGroup) -> Unit,
     onOpenNavigation: (UILocation) -> Unit,
     onOpenLink: (String) -> Unit,
     onAction: (GroupDetailsAction) -> Unit,
@@ -362,196 +438,230 @@ private fun ArticlesModeContent(
     val membersByUid = remember(state.groupMembers) { state.groupMembers.associateBy { it.uid } }
     val lazyListState = rememberLazyListState()
     val reorderableLazyListState = rememberReorderableLazyListState(lazyListState) { from, to ->
-        orderedArticles = orderedArticles.toMutableList().apply {
-            add(to.index, removeAt(from.index))
+        val fromIndex = orderedArticles.indexOfFirst { it.id == from.key }
+        val toIndex = orderedArticles.indexOfFirst { it.id == to.key }
+        if (fromIndex != -1 && toIndex != -1) {
+            orderedArticles = orderedArticles.toMutableList().apply {
+                add(toIndex, removeAt(fromIndex))
+            }
         }
     }
 
-    Box(
+    LazyColumn(
+        state = lazyListState,
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        contentPadding = PaddingValues(top = 8.dp, bottom = 104.dp),
         modifier = modifier
+            .then(
+                when (screenSize) {
+                    ScreenSize.NORMAL -> Modifier
+                    ScreenSize.LARGE -> Modifier.padding(horizontal = 40.dp)
+                    ScreenSize.VERY_LARGE -> Modifier.padding(horizontal = 160.dp)
+                }
+            )
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-        ) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .padding(horizontal = 16.dp)
-                    .fillMaxWidth()
-            ) {
-                Box {
-                    Button(
-                        onClick = {
-                            onAction(GroupDetailsAction.ShowFilterDropdownMenu)
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            contentColor = MaterialTheme.colorScheme.primary,
-                        ),
-                        shape = RoundedCornerShape(10.dp),
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .width(50.dp)
-                        ) {
-                            Text(
-                                text = stringResource(id = R.string.filter),
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Icon(
-                                imageVector = Icons.Default.FilterList,
-                                contentDescription = stringResource(id = R.string.filter),
-                            )
-                        }
-                    }
-                    DropdownMenu(
-                        expanded = state.filterDropdownMenuVisible,
-                        onDismissRequest = {
-                            onAction(GroupDetailsAction.HideFilterDropdownMenu)
-                        }
-                    ) {
-                        DropdownMenuItem(
-                            text = {
-                                Text(text = stringResource(id = R.string.filters_all))
-                            },
-                            onClick = {
-                                onAction(GroupDetailsAction.FilterSelected(FilterType.ALL))
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = {
-                                Text(text = stringResource(id = R.string.filters_bought))
-                            },
-                            onClick = {
-                                onAction(GroupDetailsAction.FilterSelected(FilterType.BOUGHT))
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = {
-                                Text(text = stringResource(id = R.string.filters_unbought))
-                            },
-                            onClick = {
-                                onAction(GroupDetailsAction.FilterSelected(FilterType.UNBOUGHT))
-                            }
-                        )
-                        if (state.group.isShared) {
-                            DropdownMenuItem(
-                                text = {
-                                    Text(text = stringResource(id = R.string.filters_assigned_to_me))
-                                },
-                                onClick = {
-                                    onAction(GroupDetailsAction.FilterSelected(FilterType.ASSIGNED_TO_ME))
-                                }
-                            )
-                        }
-                    }
-                }
-                Spacer(modifier = Modifier.weight(1f))
-                TextButton(
-                    onClick = {
-                        onAction(
-                            if (state.articles.all { it.expanded }) GroupDetailsAction.CollapseAllArticles
-                            else GroupDetailsAction.ExpandAllArticles
-                        )
-                    },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.onBackground,
-                    )
-                ) {
-                    Text(
-                        text =
-                            if (state.articles.all { it.expanded }) stringResource(id = R.string.collapse_all_articles)
-                            else stringResource(id = R.string.expand_all_articles)
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            if (state.articles.isNotEmpty()) {
-                LazyColumn(
-                    state = lazyListState,
-                    modifier = Modifier
-                        .padding(bottom = 60.dp)
-                        .then(
-                            when (screenSize) {
-                                ScreenSize.NORMAL -> Modifier
-                                ScreenSize.LARGE -> Modifier.padding(horizontal = 40.dp)
-                                ScreenSize.VERY_LARGE -> Modifier.padding(horizontal = 160.dp)
-                            }
-                        )
-                ) {
-                    items(items = orderedArticles, key = { it.id }) { article ->
-                        ReorderableItem(reorderableLazyListState, key = article.id) {
-                            ArticleItem(
-                                article = article,
-                                commentCount = state.articleCommentCounts[article.id] ?: 0,
-                                assigneeEmail = article.assignedToUid?.let { membersByUid[it]?.email },
-                                onLongClick = {
-                                    onAction(GroupDetailsAction.ArticleLongClick(article = article))
-                                },
-                                onCommentsClick = {
-                                    onAction(GroupDetailsAction.ShowArticleComments(article = article))
-                                },
-                                onOpenNavigation = onOpenNavigation,
-                                onOpenLink = onOpenLink,
-                                onChangeExpandedStatus = {
-                                    onAction(
-                                        GroupDetailsAction.UpdateExpandedStatus(
-                                            article = article,
-                                            expanded = !article.expanded
-                                        )
-                                    )
-                                },
-                                dragHandleModifier = Modifier.draggableHandle(
-                                    onDragStopped = {
-                                        val index = orderedArticles.indexOfFirst { it.id == article.id }
-                                        if (index != -1) {
-                                            onAction(
-                                                GroupDetailsAction.ReorderArticle(
-                                                    articleId = article.id,
-                                                    previousPosition = orderedArticles.getOrNull(index - 1)?.position,
-                                                    nextPosition = orderedArticles.getOrNull(index + 1)?.position
-                                                )
-                                            )
-                                        }
-                                    }
-                                )
-                            )
-                        }
-                    }
-                }
-            } else {
-                NoArticles(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .height(78.dp)
-                        .clip(shape = RoundedCornerShape(16.dp))
+        if (state.selectedFilter == FilterType.ALL && state.articles.isNotEmpty()) {
+            item(key = "summary") {
+                ShoppingSummaryCard(
+                    articles = state.articles,
+                    modifier = Modifier.padding(horizontal = 16.dp)
                 )
             }
         }
-        Button(
-            onClick = {
-                onAddArticle(state.group)
-            },
-            shape = RoundedCornerShape(10.dp),
+        item(key = "filters") {
+            FiltersRow(
+                selectedFilter = state.selectedFilter,
+                showAssignedToMe = state.group.isShared,
+                showExpandToggle = state.articles.any { it.hasDetails() },
+                allExpanded = state.articles.isNotEmpty() && state.articles.all { it.expanded },
+                onFilterSelected = { onAction(GroupDetailsAction.FilterSelected(it)) },
+                onToggleExpandAll = { allExpanded ->
+                    onAction(
+                        if (allExpanded) GroupDetailsAction.CollapseAllArticles
+                        else GroupDetailsAction.ExpandAllArticles
+                    )
+                }
+            )
+        }
+        if (orderedArticles.isNotEmpty()) {
+            items(items = orderedArticles, key = { it.id }) { article ->
+                ReorderableItem(reorderableLazyListState, key = article.id) {
+                    ArticleItem(
+                        article = article,
+                        commentCount = state.articleCommentCounts[article.id] ?: 0,
+                        assigneeEmail = article.assignedToUid?.let { membersByUid[it]?.email },
+                        onLongClick = {
+                            onAction(GroupDetailsAction.ArticleLongClick(article = article))
+                        },
+                        onToggleBought = {
+                            onAction(GroupDetailsAction.ToggleBought(article = article))
+                        },
+                        onCommentsClick = {
+                            onAction(GroupDetailsAction.ShowArticleComments(article = article))
+                        },
+                        onOpenNavigation = onOpenNavigation,
+                        onOpenLink = onOpenLink,
+                        onChangeExpandedStatus = {
+                            onAction(
+                                GroupDetailsAction.UpdateExpandedStatus(
+                                    article = article,
+                                    expanded = !article.expanded
+                                )
+                            )
+                        },
+                        dragHandleModifier = Modifier.draggableHandle(
+                            onDragStopped = {
+                                val index = orderedArticles.indexOfFirst { it.id == article.id }
+                                if (index != -1) {
+                                    onAction(
+                                        GroupDetailsAction.ReorderArticle(
+                                            articleId = article.id,
+                                            previousPosition = orderedArticles.getOrNull(index - 1)?.position,
+                                            nextPosition = orderedArticles.getOrNull(index + 1)?.position
+                                        )
+                                    )
+                                }
+                            }
+                        ),
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                }
+            }
+        } else {
+            item(key = "empty") {
+                NoArticles(modifier = Modifier.fillMaxWidth())
+            }
+        }
+    }
+}
+
+@Composable
+private fun ShoppingSummaryCard(
+    articles: List<UIArticle>,
+    modifier: Modifier = Modifier
+) {
+    val boughtCount = articles.count { it.bought }
+    val hasPrices = articles.any { it.price != null }
+    Surface(
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(18.dp)) {
+            Row(verticalAlignment = Alignment.Bottom) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(
+                            text = boughtCount.toString(),
+                            style = MaterialTheme.typography.headlineLarge
+                        )
+                        Text(
+                            text = " / ${articles.size}",
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                    }
+                    Text(
+                        text =
+                            if (boughtCount == articles.size) stringResource(id = R.string.all_bought)
+                            else stringResource(id = R.string.filters_bought),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+                if (hasPrices) {
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            text = articles.sumOf { it.price ?: 0.0 }.tryToInt().toString(),
+                            style = MaterialTheme.typography.headlineSmall
+                        )
+                        Text(
+                            text = stringResource(id = R.string.total),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(14.dp))
+            LinearProgressIndicator(
+                progress = { boughtCount / articles.size.toFloat() },
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+                strokeCap = StrokeCap.Round,
+                gapSize = 0.dp,
+                drawStopIndicator = {},
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FiltersRow(
+    selectedFilter: FilterType,
+    showAssignedToMe: Boolean,
+    showExpandToggle: Boolean,
+    allExpanded: Boolean,
+    onFilterSelected: (FilterType) -> Unit,
+    onToggleExpandAll: (allExpanded: Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val filters = buildList {
+        add(FilterType.ALL to R.string.filters_all)
+        add(FilterType.UNBOUGHT to R.string.filters_unbought)
+        add(FilterType.BOUGHT to R.string.filters_bought)
+        if (showAssignedToMe) add(FilterType.ASSIGNED_TO_ME to R.string.filters_assigned_to_me)
+    }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 8.dp)
+                .weight(1f)
+                .horizontalScroll(rememberScrollState())
+                .padding(start = 16.dp, end = 8.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
+            filters.forEach { (filter, label) ->
+                val selected = filter == selectedFilter
+                FilterChip(
+                    selected = selected,
+                    onClick = { onFilterSelected(filter) },
+                    label = { Text(text = stringResource(id = label)) },
+                    leadingIcon =
+                        if (selected) {
+                            { Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                        } else null,
+                    shape = CircleShape,
+                    colors = FilterChipDefaults.filterChipColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                        selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    border = FilterChipDefaults.filterChipBorder(
+                        enabled = true,
+                        selected = selected,
+                        borderColor = MaterialTheme.colorScheme.outlineVariant
+                    )
+                )
+            }
+        }
+        if (showExpandToggle) {
+            IconButton(
+                onClick = { onToggleExpandAll(allExpanded) },
+                modifier = Modifier.padding(end = 8.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = stringResource(id = R.string.add_new_article)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = stringResource(id = R.string.add_new_article)
+                    imageVector = if (allExpanded) Icons.Default.UnfoldLess else Icons.Default.UnfoldMore,
+                    contentDescription =
+                        if (allExpanded) stringResource(id = R.string.collapse_all_articles)
+                        else stringResource(id = R.string.expand_all_articles),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -577,7 +687,6 @@ private fun GroupCommentsContent(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             )
         }
-        HorizontalDivider()
         CommentComposer(
             value = commentText,
             onValueChange = { commentText = it },
@@ -589,6 +698,7 @@ private fun GroupCommentsContent(
             },
             modifier = Modifier
                 .fillMaxWidth()
+                .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
                 .background(color = MaterialTheme.colorScheme.surface)
                 .imePadding()
                 .padding(16.dp)
@@ -607,11 +717,10 @@ private fun AssignArticleDialog(
 ) {
     Dialog(onDismissRequest = onDismiss) {
         Surface(
-            shape = RoundedCornerShape(8.dp),
+            shape = MaterialTheme.shapes.extraLarge,
             modifier = modifier
         ) {
             Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.padding(bottom = 16.dp)
             ) {
                 Toolbar(title = stringResource(id = R.string.assign_article_title))
@@ -626,75 +735,83 @@ private fun AssignArticleDialog(
                     }
                 } else {
                     Column(
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
+                            .padding(horizontal = 12.dp)
                     ) {
                         if (currentAssigneeUid != null) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(10.dp))
+                                    .clip(MaterialTheme.shapes.medium)
                                     .clickable { onAssign(null) }
-                                    .padding(horizontal = 14.dp, vertical = 12.dp)
+                                    .padding(horizontal = 12.dp, vertical = 14.dp)
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Person,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.surfaceContainer)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Person,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                                 Text(
                                     text = stringResource(id = R.string.unassign),
-                                    fontSize = 16.sp,
+                                    style = MaterialTheme.typography.bodyLarge,
                                     modifier = Modifier.padding(start = 12.dp)
                                 )
                             }
                         }
                         members.forEach { member ->
+                            val isAssignee = member.uid == currentAssigneeUid
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(10.dp))
+                                    .clip(MaterialTheme.shapes.medium)
+                                    .background(
+                                        if (isAssignee) MaterialTheme.colorScheme.primaryContainer
+                                        else MaterialTheme.colorScheme.surface
+                                    )
                                     .clickable { onAssign(member.uid) }
+                                    .padding(horizontal = 12.dp)
                             ) {
                                 UserInfoItem(
                                     email = member.email,
                                     modifier = Modifier.weight(1f)
                                 )
-                                if (member.uid == currentAssigneeUid) {
+                                if (isAssignee) {
                                     Icon(
                                         imageVector = Icons.Default.Check,
                                         contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.padding(end = 12.dp)
+                                        tint = MaterialTheme.colorScheme.primary
                                     )
                                 }
                             }
                         }
                     }
                 }
-                Button(
+                TextButton(
                     onClick = onDismiss,
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Transparent,
-                        contentColor = MaterialTheme.colorScheme.primary
-                    ),
                     modifier = Modifier
-                        .padding(top = 16.dp)
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
+                        .align(Alignment.End)
+                        .padding(top = 8.dp, end = 16.dp)
                 ) {
-                    Text(text = stringResource(id = R.string.close), fontSize = 14.sp)
+                    Text(text = stringResource(id = R.string.close))
                 }
             }
         }
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ArticleItem(
     article: UIArticle,
@@ -703,238 +820,187 @@ fun ArticleItem(
     onOpenLink: (String) -> Unit,
     onChangeExpandedStatus: () -> Unit,
     modifier: Modifier = Modifier,
+    onToggleBought: () -> Unit = {},
     commentCount: Int = 0,
     assigneeEmail: String? = null,
     onCommentsClick: () -> Unit = {},
     dragHandleModifier: Modifier = Modifier,
 ) {
 
-    val hasDescription = !article.description.isNullOrBlank()
-    val hasQuantitySection = article.quantity != null
-    val hasLocationWebsiteSection = !article.websiteLink.isNullOrBlank() || article.location != null
+    val hasDetails = article.hasDetails()
+    val showDetails = hasDetails && article.expanded
+    val unitAbbreviation = stringResource(id = article.unit.abbreviation)
+    val metaLine = listOfNotNull(
+        article.quantity?.let { "${it.tryToInt()} $unitAbbreviation" },
+        article.price?.let { "${stringResource(id = R.string.price)} ${it.tryToInt()}" }
+    ).joinToString(separator = "  ·  ")
 
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)
-            .clip(shape = RoundedCornerShape(10.dp))
-            .background(
-                color =
-                    if (article.bought) Color.Green.copy(alpha = 0.2f)
-                    else MaterialTheme.colorScheme.surface
-            )
-            .combinedClickable(
-                onClick = {},
-                onLongClick = { onLongClick(article) }
-            )
+    Surface(
+        shape = MaterialTheme.shapes.large,
+        color =
+            if (article.bought) MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
+            else MaterialTheme.colorScheme.surface,
+        modifier = modifier.fillMaxWidth()
     ) {
         Column {
-            Box {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center,
                     modifier = Modifier
-                        .align(Alignment.CenterStart)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.DragHandle,
-                        contentDescription = null,
-                        modifier = dragHandleModifier
-                            .padding(start = 4.dp)
-                            .size(20.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = article.name,
-                        textAlign = TextAlign.Start,
-                        fontSize = 20.sp,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 12.dp)
-                    )
-                }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center,
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                ) {
-                    if (!assigneeEmail.isNullOrBlank()) {
-                        EmailAvatar(
-                            email = assigneeEmail,
-                            size = 24.dp,
-                            fontSize = 11.sp
+                        .weight(1f)
+                        .combinedClickable(
+                            onClick = { if (hasDetails) onChangeExpandedStatus() },
+                            onLongClick = { onLongClick(article) }
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        .heightIn(min = 64.dp)
+                        .padding(start = 4.dp, end = 4.dp, top = 6.dp, bottom = 6.dp)
+                ) {
+                    IconButton(onClick = onToggleBought) {
+                        Icon(
+                            imageVector =
+                                if (article.bought) Icons.Default.CheckCircle
+                                else Icons.Default.RadioButtonUnchecked,
+                            contentDescription = stringResource(
+                                id = if (article.bought) R.string.mark_as_not_bought else R.string.mark_as_bought
+                            ),
+                            tint =
+                                if (article.bought) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.size(28.dp)
+                        )
                     }
-                    IconButton(
-                        onClick = onCommentsClick
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = 2.dp)
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center,
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.Comment,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.height(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = article.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            textDecoration = if (article.bought) TextDecoration.LineThrough else null,
+                            color =
+                                if (article.bought) MaterialTheme.colorScheme.onSurfaceVariant
+                                else MaterialTheme.colorScheme.onSurface,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        if (metaLine.isNotEmpty()) {
                             Text(
-                                text = commentCount.toString(),
-                                style = MaterialTheme.typography.labelMedium,
+                                text = metaLine,
+                                style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    IconButton(
-                        onClick = onChangeExpandedStatus,
-                    ) {
+                    if (article.photoUri != null && !showDetails) {
+                        AsyncImage(
+                            model = article.photoUri,
+                            contentDescription = stringResource(id = R.string.photo),
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .padding(start = 8.dp)
+                                .size(40.dp)
+                                .clip(MaterialTheme.shapes.small)
+                        )
+                    }
+                    if (!assigneeEmail.isNullOrBlank()) {
+                        EmailAvatar(
+                            email = assigneeEmail,
+                            size = 26.dp,
+                            fontSize = 11.sp,
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
+                    }
+                    CommentPill(
+                        count = commentCount,
+                        onClick = onCommentsClick,
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                    if (hasDetails) {
                         Icon(
-                            imageVector =
-                                if (!article.expanded) Icons.Default.KeyboardArrowDown
-                                else Icons.Default.KeyboardArrowUp,
-                            contentDescription = stringResource(id = R.string.expand)
+                            imageVector = Icons.Default.KeyboardArrowDown,
+                            contentDescription =
+                                if (article.expanded) stringResource(id = R.string.collapse)
+                                else stringResource(id = R.string.expand),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .padding(start = 4.dp)
+                                .rotate(if (article.expanded) 180f else 0f)
                         )
                     }
                 }
+                Icon(
+                    imageVector = Icons.Default.DragIndicator,
+                    contentDescription = null,
+                    modifier = dragHandleModifier
+                        .padding(end = 10.dp)
+                        .size(20.dp),
+                    tint = MaterialTheme.colorScheme.outline
+                )
             }
             AnimatedVisibility(
-                visible = article.expanded,
+                visible = showDetails,
                 enter = expandVertically() + fadeIn(),
                 exit = shrinkVertically() + fadeOut()
             ) {
-                Column {
-                    HorizontalDivider(modifier = Modifier.fillMaxWidth())
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 54.dp, end = 16.dp, bottom = 14.dp)
+                ) {
+                    if (!article.description.isNullOrBlank()) {
+                        Text(
+                            text = article.description,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    val hasChips = !article.websiteLink.isNullOrBlank() || article.location != null || article.dateTo != null
+                    if (hasChips) {
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            if (!article.websiteLink.isNullOrBlank()) {
+                                DetailChip(
+                                    icon = Icons.Default.Language,
+                                    text = stringResource(id = R.string.website_link),
+                                    onClick = { onOpenLink(article.websiteLink) }
+                                )
+                            }
+                            if (article.location != null) {
+                                DetailChip(
+                                    icon = Icons.Default.LocationOn,
+                                    text = stringResource(id = R.string.location),
+                                    onClick = { onOpenNavigation(article.location) }
+                                )
+                            }
+                            article.dateTo?.let { dateTo ->
+                                val formatted = remember(dateTo) {
+                                    SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(dateTo)
+                                }
+                                DetailChip(
+                                    icon = Icons.Default.Event,
+                                    text = formatted,
+                                    onClick = {}
+                                )
+                            }
+                        }
+                    }
+                    article.photoUri?.let { uri ->
+                        AsyncImage(
+                            model = uri,
+                            contentDescription = stringResource(id = R.string.photo),
+                            contentScale = ContentScale.Crop,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .weight(2f)
-                        ) {
-                            if (!article.description.isNullOrBlank()) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(start = 8.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Description,
-                                        contentDescription = stringResource(id = R.string.article_description)
-                                    )
-                                    Text(
-                                        text = article.description,
-                                        fontSize = 18.sp,
-                                        modifier = Modifier.padding(start = 4.dp)
-                                    )
-                                }
-                                Spacer(modifier = Modifier.height(8.dp))
-                            }
-                            if (hasQuantitySection) {
-                                if (hasDescription) {
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                }
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(start = 12.dp),
-                                ) {
-                                    Column(
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Text(text = stringResource(id = R.string.quantity) + " :")
-                                        Text(text = stringResource(id = R.string.unit) + " :")
-                                        if (article.price != null) {
-                                            Text(text = stringResource(id = R.string.price) + " :")
-                                        }
-                                    }
-                                    Column(
-                                        modifier = Modifier.weight(2f)
-                                    ) {
-                                        Text(text = article.quantity.toString())
-                                        Text(
-                                            text = article.unit.toString().first().uppercase()
-                                                    + article.unit.toString().drop(1).lowercase()
-                                        )
-                                        if (article.price != null) {
-                                            Text(text = article.price.toString())
-                                        }
-                                    }
-                                }
-                                Spacer(modifier = Modifier.height(8.dp))
-                            }
-                            if (hasLocationWebsiteSection) {
-                                if (hasQuantitySection || hasDescription) {
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                }
-                                if (!article.websiteLink.isNullOrBlank()) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = modifier
-                                            .padding(start = 8.dp)
-                                            .clickable {
-                                                onOpenLink(article.websiteLink)
-                                            },
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Language,
-                                            contentDescription = stringResource(id = R.string.website_link),
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                        Text(
-                                            text = stringResource(id = R.string.website_link),
-                                            fontSize = 14.sp,
-                                            modifier = Modifier.padding(start = 4.dp),
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                }
-                                if (article.location != null) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = modifier
-                                            .padding(start = 8.dp)
-                                            .clickable {
-                                                onOpenNavigation(article.location)
-                                            },
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.LocationOn,
-                                            contentDescription = stringResource(id = R.string.website_link),
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                        Text(
-                                            text = stringResource(id = R.string.location),
-                                            fontSize = 14.sp,
-                                            modifier = Modifier.padding(start = 4.dp),
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                }
-                            }
-                        }
-                        article.photoUri?.let { uri ->
-                            AsyncImage(
-                                model = uri,
-                                contentDescription = stringResource(id = R.string.photo),
-                                contentScale = ContentScale.FillWidth,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(top = 4.dp, bottom = 8.dp, start = 8.dp, end = 8.dp)
-                                    .fillMaxSize()
-                            )
-                        }
+                                .heightIn(max = 200.dp)
+                                .clip(MaterialTheme.shapes.medium)
+                        )
                     }
                 }
             }
@@ -943,27 +1009,83 @@ fun ArticleItem(
 }
 
 @Composable
+private fun CommentPill(
+    count: Int,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val active = count > 0
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .clip(CircleShape)
+            .background(
+                if (active) MaterialTheme.colorScheme.primaryContainer
+                else MaterialTheme.colorScheme.surfaceContainerLow
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 6.dp)
+    ) {
+        Icon(
+            imageVector = Icons.AutoMirrored.Outlined.Comment,
+            contentDescription = stringResource(id = R.string.comments),
+            tint =
+                if (active) MaterialTheme.colorScheme.onPrimaryContainer
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(16.dp)
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = count.toString(),
+            style = MaterialTheme.typography.labelMedium,
+            color =
+                if (active) MaterialTheme.colorScheme.onPrimaryContainer
+                else MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun DetailChip(
+    icon: ImageVector,
+    text: String,
+    onClick: () -> Unit
+) {
+    AssistChip(
+        onClick = onClick,
+        label = { Text(text = text) },
+        leadingIcon = {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(AssistChipDefaults.IconSize)
+            )
+        },
+        shape = CircleShape,
+        colors = AssistChipDefaults.assistChipColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            leadingIconContentColor = MaterialTheme.colorScheme.primary
+        ),
+        border = null
+    )
+}
+
+@Composable
 fun NoArticles(
     modifier: Modifier = Modifier
 ) {
-    Surface(
+    EmptyState(
+        icon = Icons.Outlined.ShoppingBasket,
+        title = stringResource(id = R.string.no_articles_title),
+        message = stringResource(id = R.string.no_articles_message),
         modifier = modifier
-    ) {
-        Column(
-            modifier = Modifier.padding(10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = stringResource(id = R.string.no_articles_title),
-                color = Color.Gray,
-                style = MaterialTheme.typography.titleMedium
-            )
-            Text(
-                text = stringResource(id = R.string.no_articles_message),
-                color = Color.Gray,
-                style = MaterialTheme.typography.labelMedium
-            )
-        }
-    }
+    )
 }
+
+/** Whether the article has anything to show below its title row. */
+private fun UIArticle.hasDetails(): Boolean =
+    !description.isNullOrBlank() ||
+        !websiteLink.isNullOrBlank() ||
+        location != null ||
+        dateTo != null ||
+        photoUri != null

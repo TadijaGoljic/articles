@@ -19,7 +19,6 @@ import org.junit.rules.TestWatcher
 import org.junit.runner.Description
 import kotlin.reflect.KClass
 
-/** Routes `viewModelScope` (Dispatchers.Main) to a test dispatcher. */
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainDispatcherRule(
     val dispatcher: TestDispatcher = UnconfinedTestDispatcher()
@@ -28,10 +27,6 @@ class MainDispatcherRule(
     override fun finished(description: Description) = Dispatchers.resetMain()
 }
 
-/**
- * Stubs the static `Firebase.auth` accessor the ViewModels use, signed in as [uid] / [email]
- * (or signed out when [uid] is null). Call [release] in `@After`.
- */
 class FakeFirebaseAuth(uid: String? = "uid-a", email: String? = "a@example.com") {
 
     val user: FirebaseUser? = uid?.let {
@@ -46,8 +41,6 @@ class FakeFirebaseAuth(uid: String? = "uid-a", email: String? = "a@example.com")
     }
 
     init {
-        // `Firebase.auth` delegates to FirebaseAuth.getInstance(). Mocking the Java static avoids
-        // mockk reflecting over AuthKt, which references classes missing from the unit-test classpath.
         mockkStatic(FirebaseAuth::class)
         every { FirebaseAuth.getInstance() } returns auth
     }
@@ -55,7 +48,6 @@ class FakeFirebaseAuth(uid: String? = "uid-a", email: String? = "a@example.com")
     fun release() = unmockkStatic(FirebaseAuth::class)
 }
 
-/** A Context whose strings are "string:<id>" / "string:<id>:<args>", so tests can assert which resource was used. */
 fun fakeContext(): Context = mockk(relaxed = true) {
     every { getString(any()) } answers { stringRes(firstArg()) }
     every { getString(any(), *anyVararg()) } answers {
@@ -65,11 +57,6 @@ fun fakeContext(): Context = mockk(relaxed = true) {
 
 fun stringRes(id: Int) = "string:$id"
 
-/**
- * `SavedStateHandle.toRoute()` decodes through android.os.Bundle, which is only a stub in local
- * unit tests. Stub the navigation helper to hand the ViewModel [route] directly.
- * Call [releaseRoute] in `@After`.
- */
 fun <T : Any> savedStateHandleFor(route: T): SavedStateHandle {
     val handle = SavedStateHandle()
     mockkStatic(SAVED_STATE_HANDLE_KT)

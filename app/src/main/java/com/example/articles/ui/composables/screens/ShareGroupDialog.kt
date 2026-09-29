@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material3.Button
@@ -60,12 +59,12 @@ fun ShareGroupDialog(
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
-            shape = RoundedCornerShape(8.dp),
+            shape = MaterialTheme.shapes.extraLarge,
             modifier = modifier
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier.padding(bottom = 24.dp)
             ) {
                 Toolbar(title = stringResource(id = R.string.share_group))
                 val query = emailState.text.toString()
@@ -78,7 +77,7 @@ fun ShareGroupDialog(
                     onExpandedChange = { isRecentsMenuExpanded = it && filteredRecipients.isNotEmpty() },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
+                        .padding(horizontal = 24.dp)
                 ) {
                     OutlinedTextField(
                         state = emailState,
@@ -122,14 +121,14 @@ fun ShareGroupDialog(
                 ) {
                     Button(
                         onClick = onDismiss,
-                        shape = RoundedCornerShape(10.dp),
+                        shape = MaterialTheme.shapes.medium,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color.Transparent,
                             contentColor = MaterialTheme.colorScheme.primary
                         ),
                         modifier = Modifier
-                            .padding(start = 16.dp, end = 8.dp)
-                            .weight(3f)
+                            .padding(start = 24.dp, end = 8.dp)
+                            .weight(1f)
                     ) {
                         Text(text = stringResource(id = R.string.cancel), fontSize = 14.sp)
                     }
@@ -139,8 +138,8 @@ fun ShareGroupDialog(
                         text = stringResource(id = R.string.send),
                         enabled = emailState.text.isNotEmpty() && !isLoading,
                         modifier = Modifier
-                            .padding(start = 8.dp, end = 16.dp)
-                            .weight(4f)
+                            .padding(start = 8.dp, end = 24.dp)
+                            .weight(1f)
                     )
                 }
             }

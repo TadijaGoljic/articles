@@ -9,13 +9,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException
 
-/**
- * Launches [block] in [viewModelScope], logging failures instead of letting them crash the app.
- *
- * Repositories write to Room first and Firestore second, so a rejected remote write (e.g.
- * PERMISSION_DENIED) must not take the whole process down with it — the next sync reconciles
- * local state with the server.
- */
 fun ViewModel.launchCatching(
     operation: String,
     onError: (Throwable) -> Unit = {},

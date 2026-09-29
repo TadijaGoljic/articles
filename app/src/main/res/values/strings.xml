@@ -203,4 +203,20 @@
     <string name="agent_service_busy">The AI assistant is busy right now. Please try again in a moment.</string>
     <string name="agent_network_error">Couldn\'t reach the AI assistant. Check your connection and try again.</string>
 
+    <!-- Redesign -->
+    <string name="bought_progress">%1$d of %2$d bought</string>
+    <string name="all_bought">All done!</string>
+    <plurals name="items_left_to_buy">
+        <item quantity="one">%d item left to buy</item>
+        <item quantity="other">%d items left to buy</item>
+    </plurals>
+    <string name="nothing_left_to_buy">Everything is bought</string>
+    <string name="ai_agent_card_title">Ask the assistant</string>
+    <string name="ai_agent_card_subtitle">Create groups, add articles or ask anything</string>
+    <string name="new_group">New group</string>
+    <string name="article_details">Details</string>
+    <string name="additional_info">Additional info</string>
+    <string name="deadline">Deadline</string>
+    <string name="empty_group">No articles yet</string>
+
 </resources>

@@ -68,7 +68,6 @@ class SettingsViewModelTest {
     @After
     fun tearDown() = fakeAuth.release()
 
-    /** deleteAccount hops to Dispatchers.IO, so wait (in real time) for it to settle. */
     private fun awaitDeleteFinished() = runBlocking {
         withContext(Dispatchers.Default) {
             withTimeout(5_000) { viewModel.uiState.first { !it.deleteAccountLoading } }

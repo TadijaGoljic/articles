@@ -164,8 +164,6 @@ class AddNewArticleViewModel @Inject constructor(
                         isLocationStringLoading = true
                     )
                 }
-                // Reverse geocoding is only cosmetic: without network (or if Nominatim fails) keep the
-                // picked location and fall back to showing raw coordinates instead of crashing.
                 val locationString = runCatching {
                     nominatimAPI.reverseGeocode(location.latitude, location.longitude)
                 }.map {

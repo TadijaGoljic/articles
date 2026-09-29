@@ -227,8 +227,6 @@ class GroupsPageViewModel @Inject constructor(
     private suspend fun renameGroup(group: UIGroup, newName: String) {
         val sharedGroupId = group.sharedGroupId
         if (group.isShared && sharedGroupId != null) {
-            // A shared group's name lives in sharedGroups/{id}; writing the personal groups/ doc
-            // instead is rejected by the security rules and would be reverted by the next sync.
             sharedGroupRepository.renameSharedGroup(sharedGroupId, newName)
             groupRepository.upsertGroupLocal(group.copy(name = newName))
         } else {
@@ -259,8 +257,6 @@ class GroupsPageViewModel @Inject constructor(
 
     private fun archiveGroup(group: UIGroup) {
         state.update { it.copy(showEditDeleteBottonSheet = false) }
-        // Archiving a shared group archives it for every member, so only its owner may do it;
-        // other members can leave the group instead.
         if (!group.isGroupOwner(Firebase.auth.currentUser?.uid)) return
         launchCatching(operation = "archiveGroup") {
             articleRepository.resetBoughtArticles(group.id)
@@ -290,9 +286,6 @@ class GroupsPageViewModel @Inject constructor(
             val nextPosition = orderedGroupIds.getOrNull(index + 1)?.let { positionById[it] }
             val newPosition = PositionResolver.resolve(previousPosition, nextPosition)
             if (newPosition == null) {
-                // Neighbors are too close to fit a midpoint between them: renumber using the order
-                // the user just dropped into, not the stale DB order, or the drag would be silently
-                // discarded whenever two adjacent positions had already converged.
                 groupRepository.renumberGroups(orderedGroupIds)
             } else {
                 groupRepository.updateGroupPosition(groupId, newPosition)
@@ -541,7 +534,6 @@ class GroupsPageViewModel @Inject constructor(
         }
     }
 
-    /** Runs one agent command's side effects, then advances the queue; a failure stops the batch. */
     private fun runAgentStep(operation: String, block: suspend () -> Unit) {
         launchCatching(
             operation = operation,

@@ -73,10 +73,8 @@ fun String.isValidUri(): Boolean {
 fun UILocation.toCoordinatesString(): String =
     String.format(Locale.US, "%.5f, %.5f", latitude, longitude)
 
-/** Firebase Auth treats emails case-insensitively, so every stored/looked-up email goes through this. */
 fun String.normalizeEmail(): String = trim().lowercase(Locale.ROOT)
 
-/** Parses a user-typed decimal, accepting both "1.5" and the locale-common "1,5". */
 fun String.toDecimalOrNull(): Double? = trim().replace(',', '.').toDoubleOrNull()
 
 fun Double.isInteger() = this % 1 == 0.0

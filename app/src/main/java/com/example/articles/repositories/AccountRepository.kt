@@ -22,14 +22,6 @@ class AccountRepository @Inject constructor(
 
     private val firestore = Firebase.firestore
 
-    /**
-     * Removes everything [uid] owns in Firestore so a deleted account leaves nothing behind:
-     * shared groups they own are deleted for everyone (same as the owner deleting the group),
-     * shared groups they only joined are left, and their profile is removed so the email can
-     * no longer be looked up and invited.
-     *
-     * Must run while the user is still signed in — the security rules need their auth.
-     */
     suspend fun deleteUserData(uid: String) {
         sharedGroupRepository.getSharedGroupIdsForUser(uid).forEach { sharedGroupId ->
             val (ownerUid, _) = sharedGroupRepository.getSharedGroupMeta(sharedGroupId)

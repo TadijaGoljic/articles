@@ -53,7 +53,6 @@ class ArchivedGroupsViewModel @Inject constructor(
     }
 
     private fun unarchiveGroup(group: UIGroup) {
-        // A shared group is archived for all members, so only its owner can bring it back.
         if (!group.isGroupOwner(Firebase.auth.currentUser?.uid)) return
         launchCatching(operation = "unarchiveGroup") {
             val position = groupRepository.getPositionForRestore()

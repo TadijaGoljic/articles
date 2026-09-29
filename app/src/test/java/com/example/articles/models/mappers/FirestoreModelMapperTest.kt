@@ -80,7 +80,6 @@ class FirestoreModelMapperTest {
 
     @Test
     fun `article without a unit falls back to the default instead of crashing`() {
-        // Regression: the fallback used to be "PIECE", which is not an ArticleUnit and threw.
         val entity = mapper.toArticleEntity(snapshot(articleData("unit" to null)))!!
         assertEquals(ArticleUnit.default, entity.unit)
     }

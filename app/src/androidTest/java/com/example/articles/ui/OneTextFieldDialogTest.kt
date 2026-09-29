@@ -36,7 +36,6 @@ class OneTextFieldDialogTest {
                     errorMessage = "Group already exists",
                     dismissButtonText = "Cancel",
                     confirmButtonText = "Save",
-                    // Mirrors GroupsListPage: only a non-blank name can be saved.
                     confirmButtonEnabled = state.text.isNotBlank(),
                     onConfirmButtonClick = { confirmed++ },
                     isConfirmButtonLoading = false

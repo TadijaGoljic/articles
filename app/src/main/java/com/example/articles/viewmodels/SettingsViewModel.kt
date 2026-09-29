@@ -147,8 +147,6 @@ class SettingsViewModel @Inject constructor(
                 }
             }
         ) {
-            // Cloud data first: once the auth user is gone the security rules no longer let us
-            // delete it. Local data is only wiped after the account itself is really deleted.
             accountRepository.deleteUserData(user.uid)
             user.delete().await()
             withContext(Dispatchers.IO) { database.clearAllTables() }

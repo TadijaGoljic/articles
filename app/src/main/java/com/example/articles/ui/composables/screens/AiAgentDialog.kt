@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Mic
@@ -84,12 +83,12 @@ fun AiAgentDialog(
         onDismissRequest = onDismissRequest
     ) {
         Surface(
-            shape = RoundedCornerShape(8.dp),
+            shape = MaterialTheme.shapes.extraLarge,
             modifier = modifier
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier.padding(bottom = 24.dp)
             ) {
                 Toolbar(title = stringResource(id = R.string.ai_agent))
 
@@ -98,7 +97,7 @@ fun AiAgentDialog(
                         text = pendingCommand.confirmationMessage(),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
+                            .padding(horizontal = 24.dp)
                     )
                 } else {
                     OutlinedTextField(
@@ -123,7 +122,7 @@ fun AiAgentDialog(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
+                            .padding(horizontal = 24.dp)
                             .focusRequester(promptFocusRequester)
                     )
                 }
@@ -134,14 +133,14 @@ fun AiAgentDialog(
                 ) {
                     Button(
                         onClick = if (pendingCommand != null) onCancelPending else onDismissRequest,
-                        shape = RoundedCornerShape(10.dp),
+                        shape = MaterialTheme.shapes.medium,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color.Transparent,
                             contentColor = MaterialTheme.colorScheme.primary
                         ),
                         modifier = Modifier
-                            .padding(start = 16.dp, end = 8.dp)
-                            .weight(weight = 3f)
+                            .padding(start = 24.dp, end = 8.dp)
+                            .weight(weight = 1f)
                     ) {
                         Text(
                             text = stringResource(id = R.string.cancel),
@@ -160,8 +159,8 @@ fun AiAgentDialog(
                             else -> stringResource(id = R.string.send)
                         },
                         modifier = Modifier
-                            .padding(start = 8.dp, end = 16.dp)
-                            .weight(weight = 4f),
+                            .padding(start = 8.dp, end = 24.dp)
+                            .weight(weight = 1f),
                         enabled = pendingCommand != null || promptState.text.isNotEmpty()
                     )
                 }

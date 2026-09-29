@@ -80,8 +80,6 @@ class GroupAgentRepository @Inject constructor(
         Retrofit.Builder()
             .baseUrl("https://generativelanguage.googleapis.com/")
             .client(
-                // Gemini (especially with Google Search grounding) routinely takes longer than
-                // OkHttp's 10 s default read timeout.
                 okHttpClient.newBuilder()
                     .readTimeout(GEMINI_READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                     .callTimeout(GEMINI_CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
@@ -102,8 +100,6 @@ class GroupAgentRepository @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            // The request itself failed (network, overload, ...): falling back to a free-form
-            // question would just send a second request that fails the same way.
             Log.e(ArticlesApplication.LOG_TAG, "parseCommand failed: ${e.message}", e)
             return listOf(GroupAgentCommand.Unresolved(errorMessageFor(e)))
         }
@@ -186,7 +182,6 @@ class GroupAgentRepository @Inject constructor(
             "(e.g. where to buy something), say you need their city instead of guessing one."
         val groupsDescription = groups.joinToString(separator = "\n") { group ->
             val articleLines = group.articles.joinToString(separator = ", ") { article ->
-                // Locale.ROOT: a "1,50" decimal comma would be ambiguous inside this comma-separated list.
                 val price = article.price?.let { " (%.2f)".format(Locale.ROOT, it) }.orEmpty()
                 "${article.name}$price"
             }

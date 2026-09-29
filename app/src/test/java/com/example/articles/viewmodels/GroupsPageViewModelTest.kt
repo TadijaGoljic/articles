@@ -102,8 +102,6 @@ class GroupsPageViewModelTest {
 
     private val state get() = viewModel.uiState.value
 
-    // region create
-
     @Test
     fun `groups from the repository are exposed with their articles`() {
         val milk = UIArticle(name = "Milk", groupId = groceries.id)
@@ -146,10 +144,6 @@ class GroupsPageViewModelTest {
 
         assertFalse(state.isCreateGroupDialogLoading)
     }
-
-    // endregion
-
-    // region edit
 
     @Test
     fun `renaming a personal group writes the personal group`() {
@@ -203,10 +197,6 @@ class GroupsPageViewModelTest {
 
         coVerify { groupRepository.upsertGroup(match { it.name == "GROCERIES" }) }
     }
-
-    // endregion
-
-    // region share
 
     private fun share(group: UIGroup, email: String) {
         viewModel.handleAction(GroupsPageAction.LongClick(group))
@@ -274,10 +264,6 @@ class GroupsPageViewModelTest {
         coVerify(exactly = 0) { invitationRepository.sendInvitation(any(), any(), any(), any(), any()) }
     }
 
-    // endregion
-
-    // region delete / reorder
-
     @Test
     fun `deleting a personal group removes its articles, comments and the group`() {
         viewModel.handleAction(GroupsPageAction.DeleteGroup(groceries))
@@ -327,10 +313,6 @@ class GroupsPageViewModelTest {
         coVerify { groupRepository.renumberGroups(dropped) }
     }
 
-    // endregion
-
-    // region archive
-
     @Test
     fun `archiving a personal group resets its articles to unbought and hides it`() {
         viewModel.handleAction(GroupsPageAction.ArchiveGroup(groceries))
@@ -351,7 +333,6 @@ class GroupsPageViewModelTest {
             sharedGroupRepository.setSharedGroupArchived("shared-mine", archived = true)
             groupRepository.upsertSharedGroupLocal(match { it.id == sharedOwned.id && it.isArchived && it.position == null })
         }
-        // No personal groups/ document for a shared group.
         coVerify(exactly = 0) { groupRepository.upsertGroup(any()) }
     }
 
@@ -373,10 +354,6 @@ class GroupsPageViewModelTest {
 
         assertNull(state.archivedGroupEvent)
     }
-
-    // endregion
-
-    // region AI agent
 
     @Test
     fun `agent commands run in order and close the dialog`() {
@@ -528,8 +505,6 @@ class GroupsPageViewModelTest {
         assertEquals(stringRes(R.string.agent_permission_denied_rename), state.agentError)
         coVerify(exactly = 0) { sharedGroupRepository.renameSharedGroup(any(), any()) }
     }
-
-    // endregion
 
     private fun permissionDenied() = FirebaseFirestoreException(
         "PERMISSION_DENIED: Missing or insufficient permissions.",

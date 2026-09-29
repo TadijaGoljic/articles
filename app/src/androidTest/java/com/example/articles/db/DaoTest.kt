@@ -75,8 +75,6 @@ class DaoTest {
         updatedAt = 0L
     )
 
-    // region groups
-
     @Test
     fun groupsAreOrderedByPositionWithUnpositionedLast() = runTest {
         val unpositioned = group("C").also { groupDao.upsertGroup(it) }
@@ -123,8 +121,6 @@ class DaoTest {
 
     @Test
     fun pulledGroupPositionFillsAMissingOneEvenIfOlder_regression() = runTest {
-        // After signing in again the group is pulled without a position, and its content
-        // (updatedAt) is newer than the saved order entry. The order must still be restored.
         val group = group("Shared", position = null, updatedAt = 900L).also { groupDao.upsertGroup(it) }
 
         groupDao.updatePositionIfNewer(group.idGroup, 1000.0, updatedAt = 100L)
@@ -142,10 +138,6 @@ class DaoTest {
         assertEquals(shared, groupDao.getGroupBySharedGroupId("shared-1"))
         assertNull(groupDao.getGroupBySharedGroupId("other"))
     }
-
-    // endregion
-
-    // region articles
 
     @Test
     fun articleFiltersSplitBoughtUnboughtAndAssigned() = runTest {
@@ -208,10 +200,6 @@ class DaoTest {
         assertEquals(2, articleDao.getArticlesByGroupIdSuspend(new).size)
     }
 
-    // endregion
-
-    // region cascades and comments
-
     @Test
     fun deletingAGroupCascadesToArticlesAndComments() = runTest {
         val groupId = group("G").also { groupDao.upsertGroup(it) }.idGroup
@@ -249,5 +237,4 @@ class DaoTest {
         assertEquals(2, commentDao.getAllCommentsForGroupId(groupId).first().size)
     }
 
-    // endregion
 }

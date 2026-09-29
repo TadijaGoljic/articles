@@ -45,7 +45,6 @@ class UtilsTest {
 
     @Test
     fun `email normalization is locale independent`() {
-        // In a Turkish locale "I".lowercase() would give a dotless ı.
         Locale.setDefault(Locale.forLanguageTag("tr-TR"))
         assertEquals("ivan@example.com", "IVAN@EXAMPLE.COM".normalizeEmail())
     }

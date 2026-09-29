@@ -37,7 +37,6 @@ class GroupDetailsViewModelTest {
     private val bread = UIArticle(name = "Bread", groupId = group.id, bought = false, position = 2000.0)
     private val eggs = UIArticle(name = "Eggs", groupId = group.id, bought = false, position = 3000.0, assignedToUid = "uid-a")
 
-    // Each flow stands in for one Room query; Room re-emits every query on any table change.
     private val allArticles = MutableStateFlow(listOf(milk, bread, eggs))
     private val boughtArticles = MutableStateFlow(listOf(milk))
     private val unboughtArticles = MutableStateFlow(listOf(bread, eggs))
@@ -115,8 +114,6 @@ class GroupDetailsViewModelTest {
     fun `a database change keeps the selected filter - regression`() {
         viewModel.handleAction(GroupDetailsAction.FilterSelected(FilterType.BOUGHT))
 
-        // Marking Milk as not bought: Room re-runs every articles query. Whichever query reports
-        // last must not decide what is shown — here the unfiltered one does.
         val milkNotBought = milk.copy(bought = false)
         boughtArticles.value = emptyList()
         unboughtArticles.value = listOf(milkNotBought, bread, eggs)
@@ -141,8 +138,7 @@ class GroupDetailsViewModelTest {
         viewModel.handleAction(GroupDetailsAction.HideCommentsSheet)
         viewModel.handleAction(GroupDetailsAction.ShowArticleComments(bread))
 
-        // A new comment on Milk (e.g. synced from another member) re-emits Milk's query.
-        milkComments.value = milkComments.value + UIComment(groupId = group.id, articleId = milk.id, text = "another")
+        milkComments.value += UIComment(groupId = group.id, articleId = milk.id, text = "another")
 
         assertEquals(breadComments.value, state.articleComments)
         assertEquals(bread, state.articleCommentsTarget)

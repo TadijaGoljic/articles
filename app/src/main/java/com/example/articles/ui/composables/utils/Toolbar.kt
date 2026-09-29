@@ -1,14 +1,10 @@
 package com.example.articles.ui.composables.utils
 
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -16,89 +12,65 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
 @Composable
 fun Toolbar(
     title: String,
     modifier: Modifier = Modifier,
     color: Color = MaterialTheme.colorScheme.onBackground,
+    subtitle: String? = null,
     leadingIcon: ImageVector? = null,
     onLeadingIconClick: (() -> Unit)? = null,
     trailingIconBadge: String? = null,
     trailingIcon: ImageVector? = null,
     onTrailingIconClick: (() -> Unit)? = null,
 ) {
-    Box(
+    val hasIcons = leadingIcon != null || trailingIcon != null
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
         modifier = modifier
             .fillMaxWidth()
-            .padding(20.dp)
+            .padding(
+                horizontal = if (hasIcons) 12.dp else 24.dp,
+                vertical = if (hasIcons) 8.dp else 20.dp
+            )
     ) {
         leadingIcon?.let {
-            ToolbarIcon(
+            RoundIconButton(
                 icon = it,
-                modifier = Modifier.align(Alignment.CenterStart),
+                contentDescription = null,
+                onClick = { onLeadingIconClick?.invoke() }
+            )
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = if (leadingIcon != null) MaterialTheme.typography.titleLarge
+                else MaterialTheme.typography.headlineSmall,
                 color = color,
-                onClick = onLeadingIconClick
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
-        }
-        Text(
-            text = title,
-            modifier = Modifier.align(Alignment.Center),
-            fontSize = 25.sp,
-            color = color
-        )
-        trailingIcon?.let {
-            ToolbarIcon(
-                icon = it,
-                modifier = Modifier.align(Alignment.CenterEnd),
-                color = color,
-                badge = trailingIconBadge.takeIf { value -> !value.equals("0", ignoreCase = true) },
-                onClick = onTrailingIconClick
-            )
-        }
-    }
-}
-
-@Composable
-private fun ToolbarIcon(
-    icon: ImageVector,
-    modifier: Modifier = Modifier,
-    color: Color,
-    badge: String? = null,
-    onClick: (() -> Unit)? = null,
-) {
-    val content = @Composable {
-        IconButton(
-            onClick = { onClick?.invoke() },
-            modifier = Modifier.size(24.dp),
-            colors = IconButtonDefaults.iconButtonColors(
-                contentColor = color
-            )
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null
-            )
-        }
-    }
-
-    Box(
-        modifier = modifier
-    ) {
-        if (badge != null) {
-            BadgedBox(
-                badge = {
-                    Badge {
-                        Text(badge)
-                    }
-                }
-            ) {
-                content()
+            subtitle?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
-        } else {
-            content()
+        }
+        trailingIcon?.let {
+            RoundIconButton(
+                icon = it,
+                contentDescription = null,
+                badge = trailingIconBadge.takeIf { value -> !value.equals("0", ignoreCase = true) },
+                onClick = { onTrailingIconClick?.invoke() }
+            )
         }
     }
 }

@@ -26,7 +26,6 @@ class CommentRepository @Inject constructor(
 
     private val firestore = Firebase.firestore
 
-    /** Returns (ownerUid, sharedGroupId) firestore scoping for a comment's group; null if signed out. */
     private suspend fun ownerContext(groupId: UUID): Pair<String?, String?>? {
         val uid = Firebase.auth.currentUser?.uid ?: return null
         val group = groupDao.getGroupByIdSuspend(groupId)

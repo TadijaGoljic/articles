@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.KeyboardActionHandler
 import androidx.compose.foundation.text.input.OutputTransformation
@@ -57,11 +56,23 @@ import com.example.articles.ui.composables.utils.Position
 import com.example.articles.ui.composables.utils.SettingsItem
 import com.example.articles.ui.composables.utils.SettingsItemWithSwitch
 import com.example.articles.ui.composables.utils.Toolbar
-import com.example.articles.ui.composables.utils.UserInfoItem
 import com.example.articles.utils.ScreenSize
 import com.example.articles.viewmodels.SettingsAction
 import com.example.articles.viewmodels.SettingsState
 import com.example.articles.viewmodels.SettingsViewModel
+import com.example.articles.ui.composables.utils.SectionHeader
+import com.example.articles.ui.composables.utils.EmailAvatar
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.material.icons.filled.Upload
+import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Archive
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 
 @SuppressLint("LocalContextGetResourceValueCall")
 @Composable
@@ -188,10 +199,10 @@ fun SettingsScreen(
             onDismissRequest = { settingsViewModel.handleAction(SettingsAction.HideChangePasswordDialog) },
         ) {
             Surface(
-                modifier = Modifier.clip(shape = RoundedCornerShape(10.dp))
+                modifier = Modifier.clip(shape = MaterialTheme.shapes.medium)
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp)
+                    modifier = Modifier.padding(24.dp)
                 ) {
                     ChangePassword(
                         state = state,
@@ -235,7 +246,7 @@ fun SettingsScreen(
     if (state.importLoading) {
         Dialog(onDismissRequest = {}) {
             Surface(
-                modifier = Modifier.clip(shape = RoundedCornerShape(10.dp))
+                modifier = Modifier.clip(shape = MaterialTheme.shapes.medium)
             ) {
                 CircularProgressIndicator(
                     color = MaterialTheme.colorScheme.primary,
@@ -335,95 +346,107 @@ fun SettingsItems(
 ) {
     Column(
         modifier = modifier
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp)
+            .padding(bottom = 24.dp)
     ) {
         if (userEmail.isNotEmpty()) {
-            UserInfoItem(
-                email = userEmail,
-                modifier = Modifier
-                    .padding(horizontal = 16.dp)
-                    .fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(8.dp))
+            ProfileCard(email = userEmail)
+            Spacer(modifier = Modifier.height(24.dp))
         }
-        Text(
-            text = stringResource(id = R.string.account),
-            color = Color.Gray,
-            fontSize = 18.sp,
-            modifier = Modifier
-                .padding(horizontal = 14.dp)
-                .padding(bottom = 2.dp)
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        SettingsItem(
-            label = stringResource(id = R.string.sign_out),
-            onItemClick = showSignOutConfirmationDialog,
-            position = Position.TOP,
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
-        SettingsItem(
-            label = stringResource(id = R.string.delete_account),
-            onItemClick = showDeleteAccountConfirmationDialog,
-            position = Position.MIDDLE,
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
-        SettingsItem(
-            label = stringResource(id = R.string.change_password),
-            onItemClick = showChangePasswordDialog,
-            position = Position.BOTTOM,
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = stringResource(id = R.string.groups),
-            color = Color.Gray,
-            fontSize = 18.sp,
-            modifier = Modifier
-                .padding(horizontal = 14.dp)
-                .padding(bottom = 2.dp)
-        )
-        Spacer(modifier = Modifier.height(4.dp))
+        SectionHeader(text = stringResource(id = R.string.groups))
         SettingsItem(
             label = stringResource(id = R.string.archived_groups),
+            icon = Icons.Default.Archive,
             onItemClick = onArchivedGroupsClick,
-            position = Position.SINGLE,
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = stringResource(id = R.string.data),
-            color = Color.Gray,
-            fontSize = 18.sp,
-            modifier = Modifier
-                .padding(horizontal = 14.dp)
-                .padding(bottom = 2.dp)
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        SettingsItem(
-            label = stringResource(id = R.string.export_data),
-            onItemClick = onExportGroups,
             position = Position.TOP,
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
-        SettingsItem(
-            label = stringResource(id = R.string.import_data),
-            onItemClick = onImportGroups,
-            position = Position.MIDDLE,
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
-        SettingsItemWithSwitch(
-            label = stringResource(id = R.string.sync_data),
-            onItemClick = onSyncDataClick,
-            position = Position.MIDDLE,
-            isChecked = isSyncDataChecked,
-            modifier = Modifier.padding(horizontal = 16.dp)
         )
         SettingsItemWithSwitch(
             label = stringResource(id = R.string.confirm_ai_agent_actions),
+            icon = Icons.Default.AutoAwesome,
             onItemClick = onConfirmAgentActionsClick,
             position = Position.BOTTOM,
             isChecked = isConfirmAgentActionsChecked,
-            modifier = Modifier.padding(horizontal = 16.dp)
         )
+        Spacer(modifier = Modifier.height(24.dp))
+        SectionHeader(text = stringResource(id = R.string.data))
+        SettingsItemWithSwitch(
+            label = stringResource(id = R.string.sync_data),
+            icon = Icons.Default.Sync,
+            onItemClick = onSyncDataClick,
+            position = Position.TOP,
+            isChecked = isSyncDataChecked,
+        )
+        SettingsItem(
+            label = stringResource(id = R.string.export_data),
+            icon = Icons.Default.Upload,
+            onItemClick = onExportGroups,
+            position = Position.MIDDLE,
+        )
+        SettingsItem(
+            label = stringResource(id = R.string.import_data),
+            icon = Icons.Default.Download,
+            onItemClick = onImportGroups,
+            position = Position.BOTTOM,
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        SectionHeader(text = stringResource(id = R.string.account))
+        SettingsItem(
+            label = stringResource(id = R.string.change_password),
+            icon = Icons.Default.Lock,
+            onItemClick = showChangePasswordDialog,
+            position = Position.TOP,
+        )
+        SettingsItem(
+            label = stringResource(id = R.string.sign_out),
+            icon = Icons.AutoMirrored.Filled.Logout,
+            onItemClick = showSignOutConfirmationDialog,
+            position = Position.MIDDLE,
+        )
+        SettingsItem(
+            label = stringResource(id = R.string.delete_account),
+            icon = Icons.Default.DeleteForever,
+            onItemClick = showDeleteAccountConfirmationDialog,
+            position = Position.BOTTOM,
+            isDestructive = true,
+        )
+    }
+}
+
+@Composable
+private fun ProfileCard(
+    email: String,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.large)
+            .background(MaterialTheme.colorScheme.primaryContainer)
+            .padding(20.dp)
+    ) {
+        EmailAvatar(email = email, size = 56.dp, fontSize = 24.sp)
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 16.dp)
+        ) {
+            Text(
+                text = email.substringBefore("@"),
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = email,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }
 
@@ -441,9 +464,11 @@ fun ChangePassword(
     ) {
         Text(
             text = stringResource(id = R.string.change_password),
-            fontSize = 30.sp,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 8.dp)
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp)
         )
         OutlinedTextField(
             state = state.oldPassword,
@@ -491,13 +516,13 @@ fun ChangePassword(
         if (state.stringResErrorMessage != null) {
             Text(
                 text = stringResource(id = state.stringResErrorMessage),
-                color = Color.Red,
+                color = MaterialTheme.colorScheme.error,
                 fontSize = 14.sp,
             )
         } else if (state.errorMessage != null) {
             Text(
                 text = state.errorMessage,
-                color = Color.Red,
+                color = MaterialTheme.colorScheme.error,
                 fontSize = 14.sp,
             )
         }
@@ -506,7 +531,7 @@ fun ChangePassword(
         ) {
             Button(
                 onClick = onDismissRequest,
-                shape = RoundedCornerShape(10.dp),
+                shape = MaterialTheme.shapes.medium,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.Transparent,
                     contentColor = MaterialTheme.colorScheme.primary
@@ -519,7 +544,7 @@ fun ChangePassword(
             }
             Button(
                 onClick = onButtonClick,
-                shape = RoundedCornerShape(10.dp)
+                shape = MaterialTheme.shapes.medium
             ) {
                 if (state.isLoading) {
                     CircularProgressIndicator(

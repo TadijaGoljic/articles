@@ -56,8 +56,6 @@ class GroupDetailsViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            // One articles subscription that switches with the filter: separate collectors per
-            // filter would all keep receiving Room invalidations and overwrite each other.
             combine(
                 groupRepository.getGroupById(groupId),
                 selectedFilter.flatMapLatest { filter -> articlesFor(filter) }
@@ -100,6 +98,7 @@ class GroupDetailsViewModel @Inject constructor(
             is GroupDetailsAction.RemoveArticle -> removeArticle(article = state.value.articleToEditOrDelete ?: return)
             is GroupDetailsAction.MarkAsBought -> updateArticleStatus(article = state.value.articleToEditOrDelete ?: return, status = true)
             is GroupDetailsAction.MarkAsNotBought -> updateArticleStatus(article = state.value.articleToEditOrDelete ?: return, status = false)
+            is GroupDetailsAction.ToggleBought -> updateArticleStatus(article = action.article, status = !action.article.bought)
             is GroupDetailsAction.UpdateExpandedStatus -> updateExpandedStatus(article = action.article, expanded = action.expanded)
             is GroupDetailsAction.ExpandAllArticles -> updateAllArticlesExpandedStatus(status = true)
             is GroupDetailsAction.CollapseAllArticles -> updateAllArticlesExpandedStatus(status = false)
@@ -306,7 +305,7 @@ class GroupDetailsViewModel @Inject constructor(
 
     private fun onFilterSelected(filter: FilterType) {
         state.update {
-            it.copy(filterDropdownMenuVisible = false)
+            it.copy(filterDropdownMenuVisible = false, selectedFilter = filter)
         }
         selectedFilter.value = filter
     }
@@ -342,6 +341,7 @@ data class GroupDetailsState(
     val articleToEditOrDelete: UIArticle? = null,
     val showEditDeleteBottonSheet: Boolean = false,
     val filterDropdownMenuVisible: Boolean = false,
+    val selectedFilter: FilterType = FilterType.ALL,
     val mode: GroupDetailsMode = GroupDetailsMode.ARTICLES,
     val groupComments: List<UIComment> = emptyList(),
     val articleCommentCounts: Map<UUID, Int> = emptyMap(),
@@ -359,6 +359,7 @@ sealed interface GroupDetailsAction {
     data object RemoveArticle: GroupDetailsAction
     data object MarkAsBought: GroupDetailsAction
     data object MarkAsNotBought: GroupDetailsAction
+    data class ToggleBought(val article: UIArticle): GroupDetailsAction
     data class UpdateExpandedStatus(val expanded: Boolean, val article: UIArticle): GroupDetailsAction
     data object ExpandAllArticles: GroupDetailsAction
     data object CollapseAllArticles: GroupDetailsAction

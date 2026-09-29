@@ -53,8 +53,6 @@ interface ArticleDao {
     @Query("UPDATE articles SET position = :position, updatedAt = :updatedAt WHERE idArticle = :idArticle")
     suspend fun updatePosition(idArticle: UUID, position: Double, updatedAt: Long)
 
-    // A row with no position yet (e.g. freshly pulled after sign-in) always accepts the synced order,
-    // even when its content was edited after that order was saved.
     @Query("UPDATE articles SET position = :position, updatedAt = MAX(updatedAt, :updatedAt) WHERE idArticle = :idArticle AND (position IS NULL OR updatedAt < :updatedAt)")
     suspend fun updatePositionIfNewer(idArticle: UUID, position: Double, updatedAt: Long)
 

@@ -18,23 +18,31 @@ val fontFamily = FontFamily(
     Font(resId = R.font.alan_sans_extra_bold, weight = FontWeight.ExtraBold)
 )
 
+private fun style(
+    size: Int,
+    lineHeight: Int,
+    weight: FontWeight = FontWeight.Normal,
+    letterSpacing: Double = 0.0
+) = TextStyle(
+    fontFamily = fontFamily,
+    fontWeight = weight,
+    fontSize = size.sp,
+    lineHeight = lineHeight.sp,
+    letterSpacing = letterSpacing.sp
+)
+
 val Typography = Typography(
-    bodyLarge = TextStyle(
-        fontFamily = fontFamily,
-        fontSize = 16.sp,
-        lineHeight = 24.sp,
-        letterSpacing = 0.5.sp
-    ),
-    titleLarge = TextStyle(
-        fontFamily = fontFamily,
-        fontSize = 22.sp,
-        lineHeight = 28.sp,
-        letterSpacing = 0.sp
-    ),
-    labelSmall = TextStyle(
-        fontFamily = fontFamily,
-        fontSize = 11.sp,
-        lineHeight = 16.sp,
-        letterSpacing = 0.5.sp
-    )
+    displaySmall = style(size = 36, lineHeight = 44, weight = FontWeight.ExtraBold),
+    headlineLarge = style(size = 32, lineHeight = 40, weight = FontWeight.ExtraBold, letterSpacing = -0.5),
+    headlineMedium = style(size = 28, lineHeight = 36, weight = FontWeight.Bold, letterSpacing = -0.25),
+    headlineSmall = style(size = 24, lineHeight = 32, weight = FontWeight.Bold),
+    titleLarge = style(size = 22, lineHeight = 28, weight = FontWeight.Bold),
+    titleMedium = style(size = 17, lineHeight = 24, weight = FontWeight.SemiBold),
+    titleSmall = style(size = 14, lineHeight = 20, weight = FontWeight.SemiBold),
+    bodyLarge = style(size = 16, lineHeight = 24, letterSpacing = 0.15),
+    bodyMedium = style(size = 14, lineHeight = 20, letterSpacing = 0.15),
+    bodySmall = style(size = 12, lineHeight = 16, letterSpacing = 0.2),
+    labelLarge = style(size = 14, lineHeight = 20, weight = FontWeight.SemiBold, letterSpacing = 0.1),
+    labelMedium = style(size = 12, lineHeight = 16, weight = FontWeight.Medium, letterSpacing = 0.4),
+    labelSmall = style(size = 11, lineHeight = 16, weight = FontWeight.Medium, letterSpacing = 0.5),
 )

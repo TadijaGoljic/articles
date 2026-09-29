@@ -7,7 +7,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -30,8 +29,6 @@ import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -57,7 +54,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -84,6 +80,18 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.example.articles.ui.composables.utils.SectionHeader
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.clickable
 
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -140,7 +148,6 @@ fun AddNewArticle(
     }
 
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
             .fillMaxSize()
             .background(color = MaterialTheme.colorScheme.background)
@@ -153,9 +160,11 @@ fun AddNewArticle(
             onLeadingIconClick = onBackClick,
             color = MaterialTheme.colorScheme.onBackground,
         )
-        BoxWithConstraints(
+        Column(
             modifier = Modifier
                 .weight(1f)
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .then(
                     when (screenSize) {
                         ScreenSize.NORMAL -> Modifier
@@ -163,72 +172,64 @@ fun AddNewArticle(
                         ScreenSize.VERY_LARGE -> Modifier.padding(horizontal = 160.dp)
                     }
                 )
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = maxHeight)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp)
-            ) {
-                AddNewArticleItem(
-                    state = state,
-                    onLocationPickerClick = { onLocationPickerClick(state.article.location) },
-                    onClearLocation = {
-                        addNewArticleViewModel.handleAction(AddNewArticleAction.ClearLocation)
-                    },
-                    onDeadlinePickerClick = {
-                        addNewArticleViewModel.handleAction(AddNewArticleAction.ShowDeadlineDatePicker)
-                    },
-                    onClearDateTo = {
-                        addNewArticleViewModel.handleAction(AddNewArticleAction.ClearDateTo)
-                    },
-                    onPhotoClick = {
-                        addNewArticleViewModel.handleAction(AddNewArticleAction.ShowBottomSheet)
-                    },
-                    onClearPhoto = {
-                        addNewArticleViewModel.handleAction(AddNewArticleAction.ClearPhoto)
-                    },
-                    modifier = Modifier.padding(vertical = 5.dp),
-                    showUnitsDropdownMenu = {
-                        addNewArticleViewModel.handleAction(AddNewArticleAction.ShowUnitsDropdownMenu)
-                    },
-                    hideUnitsDropdownMenu = {
-                        addNewArticleViewModel.handleAction(AddNewArticleAction.HideUnitsDropdownMenu)
-                    },
-                    onArticleTypeChange = { unit ->
-                        addNewArticleViewModel.handleAction(
-                            AddNewArticleAction.UpdateArticleUnit(unit = unit)
-                        )
-                    }
-                )
-                Row {
-                    Button(
-                        onClick = onBackClick,
-                        modifier = Modifier
-                            .padding(top = 8.dp, bottom = 8.dp, start = 8.dp, end = 4.dp)
-                            .weight(weight = 1f),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Transparent,
-                            contentColor = MaterialTheme.colorScheme.primary
-                        )
-                    ) {
-                        Text(text = stringResource(id = R.string.cancel))
-                    }
-                    ProgressButton(
-                        onButtonClick = {
-                            addNewArticleViewModel.handleAction(AddNewArticleAction.SaveArticle)
-                        },
-                        isLoading = state.isLoading,
-                        text = stringResource(id = R.string.save),
-                        modifier = Modifier
-                            .padding(top = 8.dp, bottom = 8.dp, start = 4.dp, end = 8.dp)
-                            .weight(weight = 1f),
+            AddNewArticleItem(
+                state = state,
+                onLocationPickerClick = { onLocationPickerClick(state.article.location) },
+                onClearLocation = {
+                    addNewArticleViewModel.handleAction(AddNewArticleAction.ClearLocation)
+                },
+                onDeadlinePickerClick = {
+                    addNewArticleViewModel.handleAction(AddNewArticleAction.ShowDeadlineDatePicker)
+                },
+                onClearDateTo = {
+                    addNewArticleViewModel.handleAction(AddNewArticleAction.ClearDateTo)
+                },
+                onPhotoClick = {
+                    addNewArticleViewModel.handleAction(AddNewArticleAction.ShowBottomSheet)
+                },
+                onClearPhoto = {
+                    addNewArticleViewModel.handleAction(AddNewArticleAction.ClearPhoto)
+                },
+                showUnitsDropdownMenu = {
+                    addNewArticleViewModel.handleAction(AddNewArticleAction.ShowUnitsDropdownMenu)
+                },
+                hideUnitsDropdownMenu = {
+                    addNewArticleViewModel.handleAction(AddNewArticleAction.HideUnitsDropdownMenu)
+                },
+                onArticleTypeChange = { unit ->
+                    addNewArticleViewModel.handleAction(
+                        AddNewArticleAction.UpdateArticleUnit(unit = unit)
                     )
                 }
+            )
+        }
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                .background(MaterialTheme.colorScheme.surface)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            OutlinedButton(
+                onClick = onBackClick,
+                shape = MaterialTheme.shapes.medium,
+                modifier = Modifier
+                    .weight(weight = 1f)
+                    .heightIn(min = 48.dp)
+            ) {
+                Text(text = stringResource(id = R.string.cancel))
             }
+            ProgressButton(
+                onButtonClick = {
+                    addNewArticleViewModel.handleAction(AddNewArticleAction.SaveArticle)
+                },
+                isLoading = state.isLoading,
+                text = stringResource(id = R.string.save),
+                modifier = Modifier.weight(weight = 1f),
+            )
         }
         if (state.showDeadlineDatePicker) {
             val datePickerState = rememberDatePickerState(
@@ -320,16 +321,11 @@ fun AddNewArticleItem(
     modifier: Modifier = Modifier
 ) {
 
-    Box(
-        modifier = modifier
-            .clip(shape = RoundedCornerShape(10.dp))
-            .background(color = MaterialTheme.colorScheme.surface)
-            .padding(top = 5.dp, bottom = 10.dp)
+    Column(
+        verticalArrangement = Arrangement.spacedBy(20.dp),
+        modifier = modifier.fillMaxWidth()
     ) {
-        Column(
-            modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-        ) {
+        FormSection(title = stringResource(id = R.string.article_details)) {
             OutlinedTextField(
                 state = state.articleName,
                 placeholder = {
@@ -346,11 +342,7 @@ fun AddNewArticleItem(
                 isError = state.articleNameError,
                 supportingText = {
                     if (state.articleNameError) {
-                        Text(
-                            text = stringResource(id = R.string.provide_name),
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                        Text(text = stringResource(id = R.string.provide_name))
                     } else {
                         Text(
                             text = buildAnnotatedString {
@@ -366,10 +358,11 @@ fun AddNewArticleItem(
                         )
                     }
                 },
+                shape = MaterialTheme.shapes.medium,
                 modifier = Modifier.fillMaxWidth()
             )
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 OutlinedTextField(
@@ -388,7 +381,12 @@ fun AddNewArticleItem(
                             ) {
                                 Text(
                                     text = stringResource(id = state.article.unit.abbreviation),
-                                    color = Color.Gray,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.ArrowDropDown,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
                             }
                             DropdownMenu(
@@ -409,9 +407,9 @@ fun AddNewArticleItem(
                             }
                         }
                     },
+                    shape = MaterialTheme.shapes.medium,
                     modifier = Modifier.weight(1f)
                 )
-                Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     state = state.price,
                     placeholder = {
@@ -421,10 +419,12 @@ fun AddNewArticleItem(
                         Text(text = stringResource(id = R.string.price))
                     },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    shape = MaterialTheme.shapes.medium,
                     modifier = Modifier.weight(1f)
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
+        }
+        FormSection(title = stringResource(id = R.string.additional_info)) {
             OutlinedTextField(
                 state = state.articleWebsiteLink,
                 placeholder = {
@@ -433,19 +433,18 @@ fun AddNewArticleItem(
                 label = {
                     Text(text = stringResource(id = R.string.website_link))
                 },
-                isError = state.articleWebsiteLinkError,
-                supportingText = {
-                    if (state.articleWebsiteLinkError) {
-                        Text(
-                            text = stringResource(id = R.string.invalid_website_link),
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
+                leadingIcon = {
+                    Icon(imageVector = Icons.Default.Language, contentDescription = null)
                 },
+                isError = state.articleWebsiteLinkError,
+                supportingText =
+                    if (state.articleWebsiteLinkError) {
+                        { Text(text = stringResource(id = R.string.invalid_website_link)) }
+                    } else null,
+                shape = MaterialTheme.shapes.medium,
                 modifier = Modifier.fillMaxWidth()
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             OutlinedTextField(
                 state = state.articleDescription,
                 placeholder = {
@@ -454,13 +453,23 @@ fun AddNewArticleItem(
                 label = {
                     Text(text = stringResource(id = R.string.article_description))
                 },
+                shape = MaterialTheme.shapes.medium,
                 modifier = Modifier.fillMaxWidth(),
                 lineLimits = TextFieldLineLimits.MultiLine(
                     minHeightInLines = 2,
                     maxHeightInLines = 5
                 )
             )
+        }
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(MaterialTheme.shapes.large)
+                .background(color = MaterialTheme.colorScheme.surface)
+        ) {
             DataRow(
+                icon = Icons.Default.LocationOn,
+                title = stringResource(id = R.string.location),
                 labelText = state.locationString,
                 buttonText =
                     if (state.article.location != null) stringResource(id = R.string.change_location)
@@ -470,9 +479,14 @@ fun AddNewArticleItem(
                     if (state.article.location != null) onClearLocation()
                 },
                 labelTextLoading = state.isLocationStringLoading,
-                modifier = Modifier.padding(top = 16.dp)
+            )
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant,
+                modifier = Modifier.padding(start = 68.dp)
             )
             DataRow(
+                icon = Icons.Default.Event,
+                title = stringResource(id = R.string.deadline),
                 labelText = state.article.dateTo?.let { dateTo ->
                     remember(dateTo) {
                         SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(dateTo)
@@ -486,11 +500,16 @@ fun AddNewArticleItem(
                     if (state.article.dateTo != null) onClearDateTo()
                 },
                 labelTextLoading = false,
-                modifier = Modifier.padding(top = 8.dp)
+            )
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant,
+                modifier = Modifier.padding(start = 68.dp)
             )
             DataRow(
+                icon = Icons.Default.Image,
+                title = stringResource(id = R.string.photo),
                 labelText =
-                    if (state.article.photoUri != null) stringResource(id = R.string.photo)
+                    if (state.article.photoUri != null) stringResource(id = R.string.change_photo)
                     else null,
                 buttonText =
                     if (state.article.photoUri != null) stringResource(id = R.string.change_photo)
@@ -500,17 +519,17 @@ fun AddNewArticleItem(
                     if (state.article.photoUri != null) onClearPhoto()
                 },
                 labelTextLoading = false,
-                modifier = Modifier.padding(top = 8.dp)
             )
             state.article.photoUri?.let { uri ->
                 AsyncImage(
                     model = uri,
                     contentDescription = null,
+                    contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 200.dp, max = 300.dp)
-                        .padding(top = 8.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .heightIn(min = 180.dp, max = 260.dp)
+                        .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                        .clip(MaterialTheme.shapes.medium)
                 )
             }
         }
@@ -519,7 +538,29 @@ fun AddNewArticleItem(
 }
 
 @Composable
+private fun FormSection(
+    title: String,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        SectionHeader(text = title)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(MaterialTheme.shapes.large)
+                .background(color = MaterialTheme.colorScheme.surface)
+                .padding(16.dp)
+        ) {
+            content()
+        }
+    }
+}
+
+@Composable
 fun DataRow(
+    icon: ImageVector,
+    title: String,
     buttonText: String,
     onButtonClick: () -> Unit,
     labelText: String?,
@@ -529,40 +570,71 @@ fun DataRow(
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onButtonClick)
+            .heightIn(min = 68.dp)
+            .padding(horizontal = 16.dp, vertical = 10.dp)
     ) {
-        if (labelTextLoading) {
-            CircularProgressIndicator()
-        } else {
-            if (labelText != null) {
-                Text(
-                    text = labelText,
-                    overflow = TextOverflow.Visible,
-                    modifier = Modifier.weight(1f),
-                    color = MaterialTheme.colorScheme.onSurface
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 16.dp)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            if (labelTextLoading) {
+                CircularProgressIndicator(
+                    strokeWidth = 2.dp,
+                    modifier = Modifier
+                        .padding(top = 4.dp)
+                        .size(16.dp)
                 )
-                TextButton(
-                    onClick = onButtonClick
-                ) {
-                    Text(text = buttonText)
-                }
-                IconButton(
-                    onClick = onDeleteClick
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
             } else {
-                Button(
-                    onClick = onButtonClick,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(text = buttonText)
-                }
+                Text(
+                    text = labelText ?: buttonText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color =
+                        if (labelText != null) MaterialTheme.colorScheme.onSurfaceVariant
+                        else MaterialTheme.colorScheme.primary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
+        }
+        if (labelText != null && !labelTextLoading) {
+            IconButton(
+                onClick = onDeleteClick
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        } else {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = buttonText,
+                tint = MaterialTheme.colorScheme.primary
+            )
         }
     }
 }

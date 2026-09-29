@@ -228,7 +228,6 @@ class SharedGroupRepository @Inject constructor(
             .await()
     }
 
-    /** Archives or restores the group for every member; only the owner is allowed to do this. */
     suspend fun setSharedGroupArchived(sharedGroupId: String, archived: Boolean) {
         firestore
             .collection(SHARED_GROUPS_COLLECTION)

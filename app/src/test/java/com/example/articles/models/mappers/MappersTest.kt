@@ -36,7 +36,6 @@ class MappersTest {
 
         val mapped = article.toArticleEntity().toUIArticle()
 
-        // updatedAt is refreshed on every write and expanded is UI-only state.
         assertEquals(article.copy(updatedAt = mapped.updatedAt), mapped)
     }
 

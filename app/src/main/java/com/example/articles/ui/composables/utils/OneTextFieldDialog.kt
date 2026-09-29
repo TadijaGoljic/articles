@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -51,12 +50,12 @@ fun OneTextFieldDialog(
         onDismissRequest = onDismissRequest
     ) {
         Surface(
-            shape = RoundedCornerShape(8.dp),
+            shape = MaterialTheme.shapes.extraLarge,
             modifier = modifier
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier.padding(bottom = 24.dp)
             ) {
                 Toolbar(
                     title = title
@@ -71,7 +70,7 @@ fun OneTextFieldDialog(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
+                        .padding(horizontal = 24.dp)
                         .focusRequester(groupToCreateNameFocusRequester),
                     isError = isError
                 )
@@ -81,14 +80,14 @@ fun OneTextFieldDialog(
                 ) {
                     Button(
                         onClick = onDismissRequest,
-                        shape = RoundedCornerShape(10.dp),
+                        shape = MaterialTheme.shapes.medium,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color.Transparent,
                             contentColor = MaterialTheme.colorScheme.primary
                         ),
                         modifier = Modifier
-                            .padding(start = 16.dp, end = 8.dp)
-                            .weight(weight = 3f)
+                            .padding(start = 24.dp, end = 8.dp)
+                            .weight(weight = 1f)
                     ) {
                         Text(
                             text = dismissButtonText,
@@ -100,8 +99,8 @@ fun OneTextFieldDialog(
                         isLoading = isConfirmButtonLoading,
                         text = confirmButtonText,
                         modifier = Modifier
-                            .padding(start = 8.dp, end = 16.dp)
-                            .weight(weight = 4f),
+                            .padding(start = 8.dp, end = 24.dp)
+                            .weight(weight = 1f),
                         enabled = confirmButtonEnabled
                     )
                 }
