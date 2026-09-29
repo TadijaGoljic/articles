@@ -18,6 +18,7 @@ import com.example.articles.repositories.GroupMember
 import com.example.articles.repositories.GroupRepository
 import com.example.articles.repositories.InvitationRepository
 import com.example.articles.repositories.SharedGroupRepository
+import com.example.articles.utils.CurrentLocationProvider
 import com.example.articles.utils.PositionResolver
 import com.example.articles.utils.TriggerSync
 import com.google.firebase.Firebase
@@ -41,6 +42,7 @@ class GroupsPageViewModel @Inject constructor(
     private val invitationRepository: InvitationRepository,
     private val sharedGroupRepository: SharedGroupRepository,
     private val groupAgentRepository: GroupAgentRepository,
+    private val currentLocationProvider: CurrentLocationProvider,
     private val userPreferences: UserPreferences,
     private val triggerSync: TriggerSync,
     @ApplicationContext private val context: Context
@@ -423,7 +425,12 @@ class GroupsPageViewModel @Inject constructor(
         if (text.isBlank()) return
         state.update { currentState -> currentState.copy(isAgentProcessing = true, agentError = null) }
         viewModelScope.launch {
-            val commands = groupAgentRepository.parseCommand(promptText = text, groups = state.value.groups)
+            val location = currentLocationProvider.getCurrentLocation()
+            val commands = groupAgentRepository.handlePrompt(
+                promptText = text,
+                groups = state.value.groups,
+                location = location
+            )
             state.update { currentState -> currentState.copy(isAgentProcessing = false) }
             if (commands.all { it is GroupAgentCommand.Unresolved }) {
                 val message = (commands.firstOrNull() as? GroupAgentCommand.Unresolved)?.message
@@ -456,6 +463,7 @@ class GroupsPageViewModel @Inject constructor(
             is GroupAgentCommand.RenameGroup,
             is GroupAgentCommand.AddArticle,
             is GroupAgentCommand.RenameArticle -> userPreferences.confirmNonDestructiveAgentActions
+            is GroupAgentCommand.AnswerQuestion -> true
             is GroupAgentCommand.Unresolved -> false
         }
         if (needsConfirmation) {
@@ -562,6 +570,8 @@ class GroupsPageViewModel @Inject constructor(
                     processNextQueuedAgentCommand()
                 }
             }
+
+            is GroupAgentCommand.AnswerQuestion -> processNextQueuedAgentCommand()
 
             is GroupAgentCommand.Unresolved -> processNextQueuedAgentCommand()
         }

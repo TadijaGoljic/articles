@@ -7,6 +7,7 @@ import com.example.articles.BuildConfig
 import com.example.articles.R
 import com.example.articles.models.UIArticle
 import com.example.articles.models.UIGroup
+import com.example.articles.models.UILocation
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.serialization.json.Json
@@ -78,6 +79,17 @@ class GroupAgentRepository @Inject constructor(
             .create(GeminiApiService::class.java)
     }
 
+    suspend fun handlePrompt(
+        promptText: String,
+        groups: List<UIGroup>,
+        location: UILocation?
+    ): List<GroupAgentCommand> {
+        val commands = parseCommand(promptText, groups)
+        val isFullyUnresolved = commands.all { it is GroupAgentCommand.Unresolved }
+        if (!isFullyUnresolved) return commands
+        return listOf(answerQuestion(promptText, location))
+    }
+
     suspend fun parseCommand(promptText: String, groups: List<UIGroup>): List<GroupAgentCommand> {
         val result = runCatching {
             val response = service.generateContent(
@@ -103,6 +115,50 @@ class GroupAgentRepository @Inject constructor(
             Log.e(ArticlesApplication.LOG_TAG, "parseCommand failed: ${e.message}", e)
             listOf(GroupAgentCommand.Unresolved(context.getString(R.string.something_went_wrong)))
         }
+    }
+
+    private suspend fun answerQuestion(promptText: String, location: UILocation?): GroupAgentCommand {
+        val result = runCatching {
+            val response = service.generateContent(
+                model = MODEL_NAME,
+                apiKey = BuildConfig.GEMINI_API_KEY,
+                request = GeminiGenerateContentRequest(
+                    contents = listOf(
+                        GeminiContent(parts = listOf(GeminiPart(text = buildQuestionPrompt(promptText, location))))
+                    ),
+                    tools = listOf(GeminiTool())
+                )
+            )
+            val candidate = response.candidates.firstOrNull()
+            val answer = candidate?.content?.parts?.firstOrNull()?.text?.trim().orEmpty()
+            val sources = candidate?.groundingMetadata?.groundingChunks
+                ?.mapNotNull { it.web?.uri }
+                ?.distinct()
+                .orEmpty()
+            if (answer.isBlank()) null else GroupAgentCommand.AnswerQuestion(answer = answer, sources = sources)
+        }.getOrElse { e ->
+            Log.e(ArticlesApplication.LOG_TAG, "answerQuestion failed: ${e.message}", e)
+            null
+        }
+        return result ?: GroupAgentCommand.Unresolved(context.getString(R.string.something_went_wrong))
+    }
+
+    private fun buildQuestionPrompt(promptText: String, location: UILocation?): String {
+        val locationContext = location?.let {
+            "The user's approximate current location is latitude ${it.latitude}, longitude ${it.longitude}. " +
+                "Ground your answer in stores, prices, and availability relevant to that specific area — " +
+                "never substitute a different city or country."
+        } ?: "The user's current location is unknown. If the answer genuinely depends on location " +
+            "(e.g. where to buy something), say you need their city instead of guessing one."
+        return """
+            You are the shopping assistant inside a grocery shopping-list app, answering a general question the user asked (this request did not match any group/article management action, so treat it as a free-form question instead).
+
+            $locationContext
+
+            Use Google Search to find current, factual information before answering. Keep the answer short (2-4 sentences) and practical, in the same language the user asked in. If you cannot find reliable, location-specific information, say so honestly instead of guessing a price, store, or address.
+
+            User question: "$promptText"
+        """.trimIndent()
     }
 
     private fun buildPrompt(promptText: String, groups: List<UIGroup>): String {

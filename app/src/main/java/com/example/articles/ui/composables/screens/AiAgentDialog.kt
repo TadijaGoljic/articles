@@ -154,9 +154,11 @@ fun AiAgentDialog(
                             else onSubmit(promptState.text.toString())
                         },
                         isLoading = isProcessing,
-                        text =
-                            if (pendingCommand != null) stringResource(id = R.string.confirm)
-                            else stringResource(id = R.string.send),
+                        text = when {
+                            pendingCommand is GroupAgentCommand.AnswerQuestion -> stringResource(id = R.string.close)
+                            pendingCommand != null -> stringResource(id = R.string.confirm)
+                            else -> stringResource(id = R.string.send)
+                        },
                         modifier = Modifier
                             .padding(start = 8.dp, end = 16.dp)
                             .weight(weight = 4f),
@@ -177,5 +179,8 @@ private fun GroupAgentCommand.confirmationMessage(): String = when (this) {
     is GroupAgentCommand.AddArticle -> stringResource(id = R.string.agent_confirm_add_article, article.name, group.name)
     is GroupAgentCommand.RenameArticle -> stringResource(id = R.string.agent_confirm_rename_article, article.name, newName)
     is GroupAgentCommand.RemoveArticle -> stringResource(id = R.string.agent_confirm_remove_article, article.name, groupName)
+    is GroupAgentCommand.AnswerQuestion ->
+        if (sources.isEmpty()) answer
+        else answer + "\n\n" + stringResource(id = R.string.agent_answer_sources, sources.joinToString(", "))
     is GroupAgentCommand.Unresolved -> message
 }
