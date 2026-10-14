@@ -176,10 +176,11 @@ class GroupAgentRepository @Inject constructor(
     internal fun buildQuestionPrompt(promptText: String, groups: List<UIGroup>, location: UILocation?): String {
         val locationContext = location?.let {
             "The user's approximate current location is latitude ${it.latitude}, longitude ${it.longitude}. " +
-                "Ground your answer in stores, prices, and availability relevant to that specific area — " +
-                "never substitute a different city or country."
-        } ?: "The user's current location is unknown. If the answer genuinely depends on location " +
-            "(e.g. where to buy something), say you need their city instead of guessing one."
+                    "Ground your answer in stores, prices, and availability relevant to that specific area — " +
+                    "never substitute a different city or country."
+        }
+            ?: ("The user's current location is unknown. If the answer genuinely depends on location " +
+                    "(e.g. where to buy something), say you need their city instead of guessing one.")
         val groupsDescription = groups.joinToString(separator = "\n") { group ->
             val articleLines = group.articles.joinToString(separator = ", ") { article ->
                 val price = article.price?.let { " (%.2f)".format(Locale.ROOT, it) }.orEmpty()

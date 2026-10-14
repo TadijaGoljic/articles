@@ -8,6 +8,7 @@ import com.example.articles.models.UIArticle
 import com.example.articles.models.mappers.toArticleEntity
 import com.example.articles.models.mappers.toUIArticle
 import com.example.articles.reminders.DeadlineReminderScheduler
+import com.example.articles.sync.RemoteContentWriter
 import com.example.articles.utils.ARTICLES_COLLECTION
 import com.example.articles.utils.ARTICLE_ORDER_SUBCOLLECTION
 import com.example.articles.utils.USERS_COLLECTION
@@ -15,7 +16,6 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.tasks.await
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -25,7 +25,8 @@ class ArticleRepository @Inject constructor(
     private val articleDao: ArticleDao,
     private val groupDao: GroupDao,
     private val firestoreModelMapper: FirestoreModelMapper,
-    private val deadlineReminderScheduler: DeadlineReminderScheduler
+    private val deadlineReminderScheduler: DeadlineReminderScheduler,
+    private val remoteWriter: RemoteContentWriter
 ) {
 
     private val firestore = Firebase.firestore
@@ -47,10 +48,10 @@ class ArticleRepository @Inject constructor(
         articleDao.upsertArticle(articleEntity)
         deadlineReminderScheduler.scheduleOrCancel(articleEntity)
         val (ownerUid, sharedGroupId) = ownerContext(article.groupId) ?: return
-        firestore.collection(ARTICLES_COLLECTION)
-            .document(article.id.toString())
-            .set(firestoreModelMapper.toArticlesFirestoreMap(articleEntity, ownerUid, sharedGroupId))
-            .await()
+        remoteWriter.set(
+            firestore.collection(ARTICLES_COLLECTION).document(article.id.toString()),
+            firestoreModelMapper.toArticlesFirestoreMap(articleEntity, ownerUid, sharedGroupId)
+        )
         if (article.position != null) {
             val currentUid = Firebase.auth.currentUser?.uid ?: return
             pushArticlePosition(currentUid, article.id, article.groupId, article.position)
@@ -86,23 +87,21 @@ class ArticleRepository @Inject constructor(
     }
 
     private suspend fun pushArticlePosition(uid: String, articleId: UUID, groupId: UUID, position: Double) {
-        firestore
-            .collection(USERS_COLLECTION)
-            .document(uid)
-            .collection(ARTICLE_ORDER_SUBCOLLECTION)
-            .document(articleId.toString())
-            .set(firestoreModelMapper.toArticleOrderFirestoreMap(position, groupId))
-            .await()
+        remoteWriter.set(
+            firestore
+                .collection(USERS_COLLECTION)
+                .document(uid)
+                .collection(ARTICLE_ORDER_SUBCOLLECTION)
+                .document(articleId.toString()),
+            firestoreModelMapper.toArticleOrderFirestoreMap(position, groupId)
+        )
     }
 
     suspend fun deleteArticleById(articleId: UUID) {
         articleDao.getArticleByIdSuspend(articleId) ?: return
         articleDao.deleteArticleById(articleId)
         deadlineReminderScheduler.cancel(articleId)
-        firestore.collection(ARTICLES_COLLECTION)
-            .document(articleId.toString())
-            .delete()
-            .await()
+        remoteWriter.delete(firestore.collection(ARTICLES_COLLECTION).document(articleId.toString()))
     }
 
     suspend fun resetBoughtArticles(groupId: UUID) {
@@ -141,14 +140,8 @@ class ArticleRepository @Inject constructor(
         val articles = articleDao.getArticlesByGroupIdSuspend(groupId)
         articleDao.deleteArticlesByGroupId(groupId)
         articles.forEach { deadlineReminderScheduler.cancel(it.idArticle) }
-        if (articles.isNotEmpty()) {
-            val collection = firestore.collection(ARTICLES_COLLECTION)
-            val batch = firestore.batch()
-            articles.forEach { article ->
-                batch.delete(collection.document(article.idArticle.toString()))
-            }
-            batch.commit().await()
-        }
+        val collection = firestore.collection(ARTICLES_COLLECTION)
+        remoteWriter.deleteAll(articles.map { collection.document(it.idArticle.toString()) })
     }
 
     fun getArticlesByGroupId(groupId: UUID) = articleDao.getArticlesByGroupId(groupId).map { list ->

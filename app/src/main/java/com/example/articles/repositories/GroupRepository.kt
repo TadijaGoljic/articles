@@ -6,6 +6,7 @@ import com.example.articles.models.mappers.FirestoreModelMapper
 import com.example.articles.models.UIGroup
 import com.example.articles.models.mappers.toGroupEntity
 import com.example.articles.models.mappers.toUIGroup
+import com.example.articles.sync.RemoteContentWriter
 import com.example.articles.utils.GROUPS_COLLECTION
 import com.example.articles.utils.GROUP_ORDER_SUBCOLLECTION
 import com.example.articles.utils.USERS_COLLECTION
@@ -14,7 +15,6 @@ import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
-import kotlinx.coroutines.tasks.await
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -22,7 +22,8 @@ import javax.inject.Singleton
 @Singleton
 class GroupRepository @Inject constructor(
     private val groupDao: GroupDao,
-    private val firestoreModelMapper: FirestoreModelMapper
+    private val firestoreModelMapper: FirestoreModelMapper,
+    private val remoteWriter: RemoteContentWriter
 ) {
 
     private val firestore = Firebase.firestore
@@ -31,11 +32,10 @@ class GroupRepository @Inject constructor(
         val uid = Firebase.auth.currentUser?.uid ?: return
         val groupEntity = group.toGroupEntity()
         groupDao.upsertGroup(groupEntity)
-        firestore
-            .collection(GROUPS_COLLECTION)
-            .document(group.id.toString())
-            .set(firestoreModelMapper.toGroupsFirestoreMap(groupEntity.copy(ownerUid = uid)))
-            .await()
+        remoteWriter.set(
+            firestore.collection(GROUPS_COLLECTION).document(group.id.toString()),
+            firestoreModelMapper.toGroupsFirestoreMap(groupEntity.copy(ownerUid = uid))
+        )
         syncGroupPosition(uid, group)
     }
 
@@ -80,33 +80,23 @@ class GroupRepository @Inject constructor(
     }
 
     private suspend fun pushGroupPosition(uid: String, groupId: UUID, position: Double) {
-        firestore
-            .collection(USERS_COLLECTION)
-            .document(uid)
-            .collection(GROUP_ORDER_SUBCOLLECTION)
-            .document(groupId.toString())
-            .set(firestoreModelMapper.toGroupOrderFirestoreMap(position))
-            .await()
+        remoteWriter.set(groupPositionDoc(uid, groupId), firestoreModelMapper.toGroupOrderFirestoreMap(position))
     }
 
     private suspend fun deleteGroupPositionDoc(uid: String, groupId: UUID) {
-        firestore
-            .collection(USERS_COLLECTION)
-            .document(uid)
-            .collection(GROUP_ORDER_SUBCOLLECTION)
-            .document(groupId.toString())
-            .delete()
-            .await()
+        remoteWriter.delete(groupPositionDoc(uid, groupId))
     }
+
+    private fun groupPositionDoc(uid: String, groupId: UUID) = firestore
+        .collection(USERS_COLLECTION)
+        .document(uid)
+        .collection(GROUP_ORDER_SUBCOLLECTION)
+        .document(groupId.toString())
 
     suspend fun deleteGroupById(groupId: UUID) {
         Firebase.auth.currentUser ?: return
         groupDao.deleteGroupById(groupId)
-        firestore
-            .collection(GROUPS_COLLECTION)
-            .document(groupId.toString())
-            .delete()
-            .await()
+        remoteWriter.delete(firestore.collection(GROUPS_COLLECTION).document(groupId.toString()))
     }
 
     fun getAllGroupsNoMapping() = groupDao.getAllGroups()
