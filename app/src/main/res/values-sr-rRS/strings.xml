@@ -69,7 +69,7 @@
     <string name="price">Цена</string>
     <string name="total">Укупно</string>
     <string name="website_link">Вебсајт линк</string>
-    <string name="invalid_website_link">Линк није важећег формара</string>
+    <string name="invalid_website_link">Линк није важећег формата</string>
     <string name="mark_as_bought">Означи као купљено</string>
     <string name="mark_as_not_bought">Означи као некупљено</string>
     <string name="filter">Филтрирај</string>
@@ -100,7 +100,7 @@
     <string name="create_group">Направи групу</string>
     <string name="delete_group">Обриши групу</string>
     <string name="edit_group">Измени групу</string>
-    <string name="your_groups">Вaше групе</string>
+    <string name="your_groups">Ваше групе</string>
     <string name="enter_group_name">Унесите име групе</string>
     <string name="group_already_exists">Група већ постоји</string>
     <string name="invalid_group_name">Назив групе мора имати између 1 и 16 карактера</string>
@@ -140,7 +140,7 @@
     <string name="decline">Одбиј</string>
     <string name="user_not_found">Корисник није пронађен</string>
     <string name="invitation_sent">Позивница послата</string>
-    <string name="enter_email_to_share">Унесите имеjл за дељење</string>
+    <string name="enter_email_to_share">Унесите имејл за дељење</string>
     <string name="no_pending_invitations">Нема позивница на чекању</string>
     <string name="invitation_from">Позивница од %1$s за дељење \"%2$s\"</string>
     <string name="new_invitation_notification">%1$s жели да подели \"%2$s\" са вама</string>
@@ -167,7 +167,7 @@
     <!-- Time -->
     <plurals name="seconds" tools:ignore="UnusedQuantity">
         <item quantity="zero">секунди</item>
-        <item quantity="one" tools:ignore="ImpliedQuantity">секундe</item>
+        <item quantity="one" tools:ignore="ImpliedQuantity">секунде</item>
         <item quantity="few">секунде</item>
         <item quantity="other">секунди</item>
     </plurals>

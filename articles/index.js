@@ -54,12 +54,33 @@ exports.onCommentChanged = onDocumentWrittenWithAuthContext(
   }
 );
 
+const EDITABLE_ARTICLE_FIELDS = [
+  "name",
+  "quantity",
+  "unit",
+  "price",
+  "description",
+  "websiteLink",
+  "location",
+  "dateTo",
+  "photo",
+];
+
+function isArticleEdited(before, after) {
+  return EDITABLE_ARTICLE_FIELDS.some(
+    (field) => (before[field] ?? null) !== (after[field] ?? null)
+  );
+}
+
 function describeArticleActivity(before, after) {
   const name = (after ?? before)?.name || "an article";
   if (!before && after) return { action: "added", name };
   if (before && !after) return { action: "removed", name };
   if (before && after && before.bought !== after.bought) {
     return { action: after.bought ? "bought" : "unbought", name };
+  }
+  if (before && after && isArticleEdited(before, after)) {
+    return { action: "edited", name };
   }
   return null;
 }
@@ -74,6 +95,8 @@ function formatArticleActivityMessage(actorEmail, { action, name }) {
       return `${actorEmail} marked "${name}" as bought`;
     case "unbought":
       return `${actorEmail} marked "${name}" as not bought`;
+    case "edited":
+      return `${actorEmail} edited "${name}"`;
     default:
       return null;
   }

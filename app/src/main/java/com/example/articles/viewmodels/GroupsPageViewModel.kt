@@ -461,6 +461,7 @@ class GroupsPageViewModel @Inject constructor(
                 agentError = null,
                 agentPendingCommand = null,
                 agentCommandQueue = emptyList(),
+                agentSkippedMessages = emptyList(),
                 isAgentProcessing = false
             )
         }
@@ -468,7 +469,9 @@ class GroupsPageViewModel @Inject constructor(
 
     private fun submitAgentPrompt(text: String) {
         if (text.isBlank()) return
-        state.update { currentState -> currentState.copy(isAgentProcessing = true, agentError = null) }
+        state.update { currentState ->
+            currentState.copy(isAgentProcessing = true, agentError = null, agentSkippedMessages = emptyList())
+        }
         viewModelScope.launch {
             val location = currentLocationProvider.getCurrentLocation()
             val commands = groupAgentRepository.handlePrompt(
@@ -492,12 +495,26 @@ class GroupsPageViewModel @Inject constructor(
         val queue = state.value.agentCommandQueue
         val next = queue.firstOrNull()
         if (next == null) {
-            closeAiAgentDialog()
+            val skippedMessages = state.value.agentSkippedMessages
+            if (skippedMessages.isEmpty()) {
+                closeAiAgentDialog()
+            } else {
+                state.update { currentState ->
+                    currentState.copy(
+                        agentPromptText = TextFieldState(),
+                        agentError = skippedMessages.distinct().joinToString(separator = "\n"),
+                        agentSkippedMessages = emptyList()
+                    )
+                }
+            }
             return
         }
         state.update { currentState -> currentState.copy(agentCommandQueue = queue.drop(1)) }
 
         if (next is GroupAgentCommand.Unresolved) {
+            state.update { currentState ->
+                currentState.copy(agentSkippedMessages = currentState.agentSkippedMessages + next.message)
+            }
             processNextQueuedAgentCommand()
             return
         }
@@ -525,12 +542,18 @@ class GroupsPageViewModel @Inject constructor(
     }
 
     private fun cancelPendingAgentCommand() {
-        state.update { currentState -> currentState.copy(agentPendingCommand = null, agentCommandQueue = emptyList()) }
+        state.update { currentState ->
+            currentState.copy(
+                agentPendingCommand = null,
+                agentCommandQueue = emptyList(),
+                agentSkippedMessages = emptyList()
+            )
+        }
     }
 
     private fun failAgentBatch(message: String) {
         state.update { currentState ->
-            currentState.copy(agentError = message, agentCommandQueue = emptyList())
+            currentState.copy(agentError = message, agentCommandQueue = emptyList(), agentSkippedMessages = emptyList())
         }
     }
 
@@ -615,6 +638,7 @@ class GroupsPageViewModel @Inject constructor(
                 agentPromptText = TextFieldState(),
                 agentPendingCommand = null,
                 agentCommandQueue = emptyList(),
+                agentSkippedMessages = emptyList(),
                 agentError = null
             )
         }
@@ -653,6 +677,7 @@ data class GroupsPageState(
     val agentError: String? = null,
     val agentPendingCommand: GroupAgentCommand? = null,
     val agentCommandQueue: List<GroupAgentCommand> = emptyList(),
+    val agentSkippedMessages: List<String> = emptyList(),
 )
 
 sealed interface GroupsPageAction {

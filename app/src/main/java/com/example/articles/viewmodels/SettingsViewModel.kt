@@ -11,10 +11,13 @@ import com.example.articles.R
 import com.example.articles.db.ArticleDatabase
 import com.example.articles.models.ArticleUnit
 import com.example.articles.models.UIArticle
+import com.example.articles.models.UIComment
 import com.example.articles.models.UIGroup
+import com.example.articles.models.UILocation
 import com.example.articles.models.UserPreferences
 import com.example.articles.repositories.AccountRepository
 import com.example.articles.repositories.ArticleRepository
+import com.example.articles.repositories.CommentRepository
 import com.example.articles.repositories.GroupRepository
 import com.example.articles.repositories.InvitationRepository
 import com.example.articles.utils.FileManager
@@ -23,6 +26,7 @@ import com.example.articles.utils.TriggerSync
 import com.example.articles.utils.launchCatching
 import com.google.firebase.Firebase
 import com.google.firebase.auth.EmailAuthProvider
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.auth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -52,6 +56,7 @@ class SettingsViewModel @Inject constructor(
     private val accountRepository: AccountRepository,
     private val groupRepository: GroupRepository,
     private val articleRepository: ArticleRepository,
+    private val commentRepository: CommentRepository,
     private val invitationRepository: InvitationRepository,
     private val userPreferences: UserPreferences,
     private val triggerSync: TriggerSync,
@@ -131,9 +136,15 @@ class SettingsViewModel @Inject constructor(
 
     private fun deleteAccount() {
         val user = Firebase.auth.currentUser ?: return
+        val password = state.value.deleteAccountPassword.text.toString()
+        if (password.isEmpty()) {
+            state.update { it.copy(errorMessage = context.getString(R.string.fields_empty_error)) }
+            return
+        }
         state.update { currentState ->
             currentState.copy(
-                deleteAccountLoading = true
+                deleteAccountLoading = true,
+                errorMessage = null
             )
         }
         launchCatching(
@@ -147,9 +158,26 @@ class SettingsViewModel @Inject constructor(
                 }
             }
         ) {
-            accountRepository.deleteUserData(user.uid)
-            user.delete().await()
-            withContext(Dispatchers.IO) { database.clearAllTables() }
+            val credentials = EmailAuthProvider.getCredential(user.email.orEmpty(), password)
+            try {
+                user.reauthenticate(credentials).await()
+            } catch (e: FirebaseAuthInvalidCredentialsException) {
+                state.update { currentState ->
+                    currentState.copy(
+                        deleteAccountLoading = false,
+                        errorMessage = context.getString(R.string.invalid_credentials)
+                    )
+                }
+                return@launchCatching
+            }
+            sessionManager.isDeletingAccount = true
+            try {
+                accountRepository.deleteUserData(user.uid)
+                user.delete().await()
+                withContext(Dispatchers.IO) { database.clearAllTables() }
+            } finally {
+                sessionManager.isDeletingAccount = false
+            }
             state.update { currentState ->
                 currentState.copy(
                     deleteAccountLoading = false,
@@ -183,7 +211,9 @@ class SettingsViewModel @Inject constructor(
     private fun updateDeleteAccountDialogVisibility(visible: Boolean) {
         state.update { currentState ->
             currentState.copy(
-                showDeleteAccountConfirmationDialog = visible
+                showDeleteAccountConfirmationDialog = visible,
+                deleteAccountPassword = TextFieldState(""),
+                errorMessage = null
             )
         }
     }
@@ -206,13 +236,34 @@ class SettingsViewModel @Inject constructor(
                     article.websiteLink?.takeIf { it.isNotBlank() }?.let { put("websiteLink", it) }
                     article.price?.let { put("price", it) }
                     put("bought", article.bought)
+                    article.location?.let { location ->
+                        put("location", JSONObject().apply {
+                            put("latitude", location.latitude)
+                            put("longitude", location.longitude)
+                        })
+                    }
+                    article.dateTo?.let { put("dateTo", it.time) }
+                    article.assignedToUid?.let { put("assignedToUid", it) }
                     if (article.photoUri != null) put("photoFile", "photos/${article.id}.jpg")
+                })
+            }
+            val commentsArray = JSONArray()
+            commentRepository.getAllCommentsForGroup(group.id).first().forEach { comment ->
+                commentsArray.put(JSONObject().apply {
+                    put("id", comment.id.toString())
+                    comment.articleId?.let { put("articleId", it.toString()) }
+                    put("authorUid", comment.authorUid)
+                    put("authorEmail", comment.authorEmail)
+                    put("text", comment.text)
+                    put("createdAt", comment.createdAt)
                 })
             }
             groupsArray.put(JSONObject().apply {
                 put("id", group.id.toString())
                 put("name", group.name)
+                put("archived", group.isArchived)
                 put("articles", articlesArray)
+                put("comments", commentsArray)
             })
         }
         val json = JSONObject().apply {
@@ -297,14 +348,18 @@ class SettingsViewModel @Inject constructor(
 
                 if (!groupAlreadyExistsLocally && articlesToImport.isEmpty()) continue
 
-                groupRepository.upsertGroup(
-                    UIGroup(
-                        id = groupId,
-                        name = groupJson.getString("name"),
-                        position = existingLocalGroup?.position
-                            ?: groupRepository.getNextGroupPosition()
+                if (existingLocalGroup?.isShared != true) {
+                    val archived = groupJson.optBoolean("archived", false)
+                    groupRepository.upsertGroup(
+                        UIGroup(
+                            id = groupId,
+                            name = groupJson.getString("name"),
+                            isArchived = archived,
+                            position = if (archived) null else existingLocalGroup?.position
+                                ?: groupRepository.getNextGroupPosition()
+                        )
                     )
-                )
+                }
 
                 articlesToImport.forEach { articleJson ->
                     val unitAbbreviation = articleJson.getString("unit")
@@ -332,9 +387,39 @@ class SettingsViewModel @Inject constructor(
                             websiteLink = articleJson.optString("websiteLink").takeIf { it.isNotBlank() },
                             price = if (articleJson.has("price")) articleJson.getDouble("price") else null,
                             bought = articleJson.optBoolean("bought", false),
+                            location = articleJson.optJSONObject("location")?.let { location ->
+                                UILocation(
+                                    latitude = location.getDouble("latitude"),
+                                    longitude = location.getDouble("longitude")
+                                )
+                            },
+                            dateTo = if (articleJson.has("dateTo")) Date(articleJson.getLong("dateTo")) else null,
+                            assignedToUid = articleJson.optString("assignedToUid").takeIf { it.isNotBlank() },
                             photoUri = photoUri,
                             groupId = groupId,
                             position = existingPosition ?: articleRepository.getNextArticlePosition(groupId)
+                        )
+                    )
+                }
+
+                val commentsArray = groupJson.optJSONArray("comments") ?: JSONArray()
+                for (j in 0 until commentsArray.length()) {
+                    val commentJson = commentsArray.getJSONObject(j)
+                    val articleId = commentJson.optString("articleId").takeIf { it.isNotBlank() }
+                        ?.let(UUID::fromString)
+                    if (articleId != null && articleRepository.getArticleByIdSuspend(articleId)?.groupId != groupId) {
+                        continue
+                    }
+                    val createdAt = commentJson.getLong("createdAt")
+                    commentRepository.upsertComment(
+                        UIComment(
+                            id = UUID.fromString(commentJson.getString("id")),
+                            groupId = groupId,
+                            articleId = articleId,
+                            authorUid = commentJson.getString("authorUid"),
+                            authorEmail = commentJson.optString("authorEmail"),
+                            text = commentJson.getString("text"),
+                            createdAt = createdAt
                         )
                     )
                 }
@@ -434,6 +519,7 @@ data class SettingsState(
     val errorMessage: String? = null,
     val oldPassword: TextFieldState = TextFieldState(""),
     val newPassword: TextFieldState = TextFieldState(""),
+    val deleteAccountPassword: TextFieldState = TextFieldState(""),
     val exportUri: Uri? = null,
     val deleteAccountLoading: Boolean = false,
     val signOutLoading: Boolean = false,

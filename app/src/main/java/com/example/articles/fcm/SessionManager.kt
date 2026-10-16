@@ -12,6 +12,9 @@ import javax.inject.Singleton
 class SessionManager @Inject constructor(
     private val database: ArticleDatabase
 ) {
+    @Volatile
+    var isDeletingAccount: Boolean = false
+
     suspend fun clearLocalDataAndSignOut() {
         withContext(Dispatchers.IO) { database.clearAllTables() }
         Firebase.auth.signOut()

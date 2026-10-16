@@ -181,6 +181,19 @@ fun SettingsScreen(
             text = {
                 Column {
                     Text(text = stringResource(id = R.string.confirm_delete_account))
+                    OutlinedTextField(
+                        state = state.deleteAccountPassword,
+                        label = {
+                            Text(text = stringResource(id = R.string.password))
+                        },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        outputTransformation = OutputTransformation { replace(0, length, "•".repeat(length)) },
+                        lineLimits = TextFieldLineLimits.SingleLine,
+                        isError = state.errorMessage != null,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 12.dp)
+                    )
                     state.errorMessage?.let { message ->
                         Text(
                             text = message,

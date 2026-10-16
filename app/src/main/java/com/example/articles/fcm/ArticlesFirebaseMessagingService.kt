@@ -66,6 +66,7 @@ class ArticlesFirebaseMessagingService : FirebaseMessagingService() {
     }
 
     private fun forceSignOut() {
+        if (sessionManager.isDeletingAccount) return
         CoroutineScope(Dispatchers.IO).launch {
             sessionManager.clearLocalDataAndSignOut()
             val intent = Intent(this@ArticlesFirebaseMessagingService, AuthenticationActivity::class.java).apply {
