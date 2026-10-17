@@ -129,7 +129,6 @@
     <string name="agent_confirm_add_article">Додати \"%1$s\" у \"%2$s\"?</string>
     <string name="agent_confirm_rename_article">Преименовати \"%1$s\" у \"%2$s\"?</string>
     <string name="agent_confirm_remove_article">Уклонити \"%1$s\" из \"%2$s\"?</string>
-    <string name="agent_answer_sources">Извори: %1$s</string>
     <string name="confirm">Потврди</string>
     <string name="confirm_ai_agent_actions">Потврди радње AI асистента</string>
 

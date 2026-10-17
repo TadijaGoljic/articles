@@ -71,14 +71,9 @@ class GroupAgentRepositoryTest {
         }
     }
 
-    private fun respondWithText(text: String, sources: List<String> = emptyList()) {
+    private fun respondWithText(text: String) {
         val candidate = JSONObject()
             .put("content", JSONObject().put("parts", JSONArray().put(JSONObject().put("text", text))))
-        if (sources.isNotEmpty()) {
-            val chunks = JSONArray()
-            sources.forEach { chunks.put(JSONObject().put("web", JSONObject().put("uri", it))) }
-            candidate.put("groundingMetadata", JSONObject().put("groundingChunks", chunks))
-        }
         respond(200, JSONObject().put("candidates", JSONArray().put(candidate)).toString())
     }
 
@@ -255,6 +250,16 @@ class GroupAgentRepositoryTest {
     }
 
     @Test
+    fun `question prompt marks bought articles so they can be left out`() {
+        val list = listOf(groceries.copy(articles = listOf(milk.copy(bought = true), bread.copy())))
+        val prompt = repository.buildQuestionPrompt("how much is left to buy?", list, null)
+        assertTrue(prompt, prompt.contains("Milk (1.50) [bought]"))
+        assertTrue(prompt, prompt.contains("Bread"))
+        assertFalse(prompt, prompt.contains("Bread [bought]"))
+        assertTrue(prompt, prompt.contains("use only articles that are not marked [bought]"))
+    }
+
+    @Test
     fun `question prompt marks empty groups and an empty account`() {
         assertTrue(repository.buildQuestionPrompt("q", listOf(UIGroup(name = "Empty")), null).contains("- Empty: (no articles)"))
         assertTrue(repository.buildQuestionPrompt("q", emptyList(), null).contains("(no groups yet)"))
@@ -282,24 +287,21 @@ class GroupAgentRepositoryTest {
     }
 
     @Test
-    fun `an unrecognised request falls back to a grounded free-form answer`() = runTest {
+    fun `an unrecognised request falls back to a free-form answer`() = runTest {
         respondWithText(actions(mapOf("action" to "unknown")))
-        respondWithText("Buy Milk and Bread.", sources = listOf("https://a.example", "https://a.example", "https://b.example"))
+        respondWithText("Buy Milk and Bread.")
 
         val commands = repository.handlePrompt("I have 10, what should I buy?", groups, null)
 
         assertEquals(
             listOf(
-                GroupAgentCommand.AnswerQuestion(
-                    answer = "Buy Milk and Bread.",
-                    sources = listOf("https://a.example", "https://b.example")
-                )
+                GroupAgentCommand.AnswerQuestion(answer = "Buy Milk and Bread.")
             ),
             commands
         )
         assertEquals(2, requests.size)
         val questionBody = requests[1].second
-        assertTrue("uses google search grounding", questionBody.contains("google_search"))
+        assertFalse("does not use google search grounding", questionBody.contains("google_search"))
         assertTrue("sends the user's lists", questionBody.contains("Milk (1.50)"))
     }
 

@@ -411,7 +411,7 @@ class GroupsPageViewModelTest {
 
     @Test
     fun `answers are shown until the user dismisses them`() {
-        val answer = GroupAgentCommand.AnswerQuestion("Buy milk first.", listOf("https://example.com"))
+        val answer = GroupAgentCommand.AnswerQuestion("Buy milk first.")
         coEvery { groupAgentRepository.handlePrompt(any(), any(), any()) } returns listOf(answer)
 
         viewModel.handleAction(GroupsPageAction.ShowAiAgentDialog)

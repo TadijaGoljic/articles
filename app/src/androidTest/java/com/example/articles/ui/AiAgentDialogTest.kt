@@ -99,16 +99,14 @@ class AiAgentDialogTest {
     }
 
     @Test
-    fun answersAreShownWithTheirSourcesAndCanBeClosed() {
+    fun answersAreShownAndCanBeClosed() {
         show(
             pendingCommand = GroupAgentCommand.AnswerQuestion(
-                answer = "With 10 you can buy Milk (1.50) and Bread (0.80).",
-                sources = listOf("https://shop.example")
+                answer = "With 10 you can buy Milk (1.50) and Bread (0.80)."
             )
         )
 
         composeRule.onNodeWithText("With 10 you can buy Milk (1.50) and Bread (0.80).", substring = true).assertIsDisplayed()
-        composeRule.onNodeWithText("https://shop.example", substring = true).assertIsDisplayed()
         composeRule.onNodeWithText(string(R.string.close)).performClick()
 
         assertEquals(1, confirmed)

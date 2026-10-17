@@ -178,8 +178,6 @@ private fun GroupAgentCommand.confirmationMessage(): String = when (this) {
     is GroupAgentCommand.AddArticle -> stringResource(id = R.string.agent_confirm_add_article, article.name, group.name)
     is GroupAgentCommand.RenameArticle -> stringResource(id = R.string.agent_confirm_rename_article, article.name, newName)
     is GroupAgentCommand.RemoveArticle -> stringResource(id = R.string.agent_confirm_remove_article, article.name, groupName)
-    is GroupAgentCommand.AnswerQuestion ->
-        if (sources.isEmpty()) answer
-        else answer + "\n\n" + stringResource(id = R.string.agent_answer_sources, sources.joinToString(", "))
+    is GroupAgentCommand.AnswerQuestion -> answer
     is GroupAgentCommand.Unresolved -> message
 }

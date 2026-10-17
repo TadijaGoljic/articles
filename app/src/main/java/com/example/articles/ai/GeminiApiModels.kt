@@ -1,6 +1,5 @@
 package com.example.articles.ai
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import retrofit2.http.Body
@@ -20,17 +19,8 @@ interface GeminiApiService {
 @Serializable
 data class GeminiGenerateContentRequest(
     val contents: List<GeminiContent>,
-    val generationConfig: GeminiGenerationConfig? = null,
-    val tools: List<GeminiTool>? = null
+    val generationConfig: GeminiGenerationConfig? = null
 )
-
-@Serializable
-data class GeminiTool(
-    @SerialName("google_search") val googleSearch: GeminiGoogleSearch = GeminiGoogleSearch()
-)
-
-@Serializable
-class GeminiGoogleSearch
 
 @Serializable
 data class GeminiContent(
@@ -55,22 +45,5 @@ data class GeminiGenerateContentResponse(
 
 @Serializable
 data class GeminiCandidate(
-    val content: GeminiContent? = null,
-    val groundingMetadata: GeminiGroundingMetadata? = null
-)
-
-@Serializable
-data class GeminiGroundingMetadata(
-    val groundingChunks: List<GeminiGroundingChunk>? = null
-)
-
-@Serializable
-data class GeminiGroundingChunk(
-    val web: GeminiWebSource? = null
-)
-
-@Serializable
-data class GeminiWebSource(
-    val uri: String? = null,
-    val title: String? = null
+    val content: GeminiContent? = null
 )

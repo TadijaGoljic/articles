@@ -127,7 +127,6 @@
     <string name="agent_confirm_add_article">Add \"%1$s\" to \"%2$s\"?</string>
     <string name="agent_confirm_rename_article">Rename \"%1$s\" to \"%2$s\"?</string>
     <string name="agent_confirm_remove_article">Remove \"%1$s\" from \"%2$s\"?</string>
-    <string name="agent_answer_sources">Sources: %1$s</string>
     <string name="confirm">Confirm</string>
     <string name="confirm_ai_agent_actions">Confirm AI assistant actions</string>
 

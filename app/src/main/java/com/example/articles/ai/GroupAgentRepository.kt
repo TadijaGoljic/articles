@@ -150,17 +150,11 @@ class GroupAgentRepository @Inject constructor(
                 request = GeminiGenerateContentRequest(
                     contents = listOf(
                         GeminiContent(parts = listOf(GeminiPart(text = buildQuestionPrompt(promptText, groups, location))))
-                    ),
-                    tools = listOf(GeminiTool())
+                    )
                 )
             )
-            val candidate = response.candidates.firstOrNull()
-            val answer = candidate?.content?.parts?.firstOrNull()?.text?.trim().orEmpty()
-            val sources = candidate?.groundingMetadata?.groundingChunks
-                ?.mapNotNull { it.web?.uri }
-                ?.distinct()
-                .orEmpty()
-            if (answer.isBlank()) null else GroupAgentCommand.AnswerQuestion(answer = answer, sources = sources)
+            val answer = response.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text?.trim().orEmpty()
+            if (answer.isBlank()) null else GroupAgentCommand.AnswerQuestion(answer = answer)
         }.getOrElse { e ->
             if (e is CancellationException) throw e
             Log.e(ArticlesApplication.LOG_TAG, "answerQuestion failed: ${e.message}", e)
@@ -176,29 +170,31 @@ class GroupAgentRepository @Inject constructor(
     internal fun buildQuestionPrompt(promptText: String, groups: List<UIGroup>, location: UILocation?): String {
         val locationContext = location?.let {
             "The user's approximate current location is latitude ${it.latitude}, longitude ${it.longitude}. " +
-                    "Ground your answer in stores, prices, and availability relevant to that specific area — " +
-                    "never substitute a different city or country."
+                    "Tailor your answer to that area — never substitute a different city or country."
         }
             ?: ("The user's current location is unknown. If the answer genuinely depends on location " +
                     "(e.g. where to buy something), say you need their city instead of guessing one.")
         val groupsDescription = groups.joinToString(separator = "\n") { group ->
             val articleLines = group.articles.joinToString(separator = ", ") { article ->
                 val price = article.price?.let { " (%.2f)".format(Locale.ROOT, it) }.orEmpty()
-                "${article.name}$price"
+                val bought = if (article.bought) " [bought]" else ""
+                "${article.name}$price$bought"
             }
             "- ${group.name}: ${articleLines.ifBlank { "(no articles)" }}"
         }.ifBlank { "(no groups yet)" }
         return """
             You are the shopping assistant inside a grocery shopping-list app, answering a general question the user asked (this request did not match any group/article management action, so treat it as a free-form question instead).
 
-            The user's existing groups and the articles in each are listed below, with each article's known price in parentheses when set (prices have no currency attached — assume the user's local currency and do not invent a different one):
+            The user's existing groups and the articles in each are listed below, with each article's known price in parentheses when set (prices have no currency attached — assume the user's local currency and do not invent a different one). Articles marked [bought] are already bought; every other article is still left to buy:
             $groupsDescription
 
             $locationContext
 
+            When the user asks about articles that are left, unbought or still to buy, or asks what to buy or how much the remaining shopping costs, use only articles that are not marked [bought]. Include bought articles only when the user explicitly asks about them or about all articles.
+
             If the request involves a budget (e.g. "I have X to spend, what should I buy") or asks you to prioritize a specific group, build your answer from the articles listed above — do not invent items that are not in the user's lists. Prefer articles from any group the user names as a priority, only spilling over into other groups' articles if budget remains. If an article has no known price, say you cannot include it in a budget calculation without a price instead of guessing one. If the requested budget cannot cover the priority group's articles, say so plainly rather than silently dropping items.
 
-            Use Google Search to find current, factual information when the question needs outside facts (e.g. where to buy something, or current prices for items with no stored price). Keep the answer short and practical, in the same language the user asked in. If you cannot find reliable information, say so honestly instead of guessing a price, store, or address.
+            You have no internet access, so answer from general knowledge and the user's lists. Keep the answer short and practical, in the same language the user asked in. Do not present specific current prices, store names, addresses or opening hours as facts; if the question needs such up-to-date information, say honestly that you cannot check it and suggest what the user could look up instead.
 
             User question: "$promptText"
         """.trimIndent()
