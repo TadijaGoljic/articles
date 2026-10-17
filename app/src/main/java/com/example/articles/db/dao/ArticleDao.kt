@@ -53,8 +53,8 @@ interface ArticleDao {
     @Query("UPDATE articles SET position = :position, updatedAt = :updatedAt WHERE idArticle = :idArticle")
     suspend fun updatePosition(idArticle: UUID, position: Double, updatedAt: Long)
 
-    @Query("UPDATE articles SET position = :position, updatedAt = MAX(updatedAt, :updatedAt) WHERE idArticle = :idArticle AND (position IS NULL OR updatedAt < :updatedAt)")
-    suspend fun updatePositionIfNewer(idArticle: UUID, position: Double, updatedAt: Long)
+    @Query("UPDATE articles SET position = :position WHERE idArticle = :idArticle")
+    suspend fun applyServerPosition(idArticle: UUID, position: Double)
 
     @Query("SELECT * FROM articles WHERE idArticle = :id")
     fun getArticleById(id: UUID): Flow<ArticleEntity?>

@@ -317,6 +317,9 @@ class SyncManager(
         }
     }
 
+    // The server copy of the personal order is the truth, like for all other data: the last
+    // write that reached the server wins. Pending local writes are already included in the
+    // snapshot returned by get(), so a reorder that has not been uploaded yet is not lost.
     private suspend fun syncOrdering(uid: String) {
         val userDoc = firestore.collection(USERS_COLLECTION).document(uid)
         val groupOrderSnapshot = userDoc.collection(GROUP_ORDER_SUBCOLLECTION)
@@ -325,8 +328,7 @@ class SyncManager(
         groupOrderSnapshot.documents.forEach { doc ->
             val position = doc.getDouble("position") ?: return@forEach
             val groupId = runCatching { UUID.fromString(doc.id) }.getOrNull() ?: return@forEach
-            val updatedAt = doc.getLong("updatedAt") ?: System.currentTimeMillis()
-            groupRepository.applyPulledGroupPosition(groupId, position, updatedAt)
+            groupRepository.applyPulledGroupPosition(groupId, position)
         }
 
         val articleOrderSnapshot = userDoc.collection(ARTICLE_ORDER_SUBCOLLECTION)
@@ -335,8 +337,7 @@ class SyncManager(
         articleOrderSnapshot.documents.forEach { doc ->
             val position = doc.getDouble("position") ?: return@forEach
             val articleId = runCatching { UUID.fromString(doc.id) }.getOrNull() ?: return@forEach
-            val updatedAt = doc.getLong("updatedAt") ?: System.currentTimeMillis()
-            articleRepository.applyPulledArticlePosition(articleId, position, updatedAt)
+            articleRepository.applyPulledArticlePosition(articleId, position)
         }
 
         val unresolvedGroups = groupRepository.getAllGroupsNoMapping().first()

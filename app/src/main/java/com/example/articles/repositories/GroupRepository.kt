@@ -59,8 +59,8 @@ class GroupRepository @Inject constructor(
     suspend fun getPositionForRestore(): Double =
         groupDao.getMinActiveGroupPosition()?.minus(GAP) ?: GAP
 
-    suspend fun applyPulledGroupPosition(groupId: UUID, position: Double, updatedAt: Long) {
-        groupDao.updatePositionIfNewer(groupId, position, updatedAt)
+    suspend fun applyPulledGroupPosition(groupId: UUID, position: Double) {
+        groupDao.applyServerPosition(groupId, position)
     }
 
     suspend fun updateGroupPosition(groupId: UUID, position: Double) {

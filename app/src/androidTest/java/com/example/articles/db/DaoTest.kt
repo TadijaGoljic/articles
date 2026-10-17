@@ -109,21 +109,21 @@ class DaoTest {
     }
 
     @Test
-    fun pulledGroupPositionOnlyReplacesAnOlderOne() = runTest {
+    fun pulledGroupPositionReplacesTheLocalOneWithoutTouchingTheContentTimestamp() = runTest {
         val group = group("A", position = 1000.0, updatedAt = 500L).also { groupDao.upsertGroup(it) }
 
-        groupDao.updatePositionIfNewer(group.idGroup, 9000.0, updatedAt = 100L)
-        assertEquals(1000.0, groupDao.getGroupByIdSuspend(group.idGroup)!!.position!!, 0.0)
+        groupDao.applyServerPosition(group.idGroup, 9000.0)
 
-        groupDao.updatePositionIfNewer(group.idGroup, 9000.0, updatedAt = 900L)
-        assertEquals(9000.0, groupDao.getGroupByIdSuspend(group.idGroup)!!.position!!, 0.0)
+        val pulled = groupDao.getGroupByIdSuspend(group.idGroup)!!
+        assertEquals(9000.0, pulled.position!!, 0.0)
+        assertEquals(500L, pulled.updatedAt)
     }
 
     @Test
-    fun pulledGroupPositionFillsAMissingOneEvenIfOlder_regression() = runTest {
+    fun pulledGroupPositionFillsAMissingOne_regression() = runTest {
         val group = group("Shared", position = null, updatedAt = 900L).also { groupDao.upsertGroup(it) }
 
-        groupDao.updatePositionIfNewer(group.idGroup, 1000.0, updatedAt = 100L)
+        groupDao.applyServerPosition(group.idGroup, 1000.0)
 
         val restored = groupDao.getGroupByIdSuspend(group.idGroup)!!
         assertEquals(1000.0, restored.position!!, 0.0)
@@ -175,17 +175,18 @@ class DaoTest {
     }
 
     @Test
-    fun pulledArticlePositionFillsAMissingOneEvenIfOlder_regression() = runTest {
+    fun pulledArticlePositionsFillAndReplaceLocalOnes_regression() = runTest {
         val groupId = group("G").also { groupDao.upsertGroup(it) }.idGroup
         val edited = article(groupId, "Milk", position = null, updatedAt = 900L)
         val ordered = article(groupId, "Bread", position = 2000.0, updatedAt = 900L)
         articleDao.upsertAllArticles(listOf(edited, ordered))
 
-        articleDao.updatePositionIfNewer(edited.idArticle, 1000.0, updatedAt = 100L)
-        articleDao.updatePositionIfNewer(ordered.idArticle, 9999.0, updatedAt = 100L)
+        articleDao.applyServerPosition(edited.idArticle, 1000.0)
+        articleDao.applyServerPosition(ordered.idArticle, 9999.0)
 
         assertEquals(1000.0, articleDao.getArticleByIdSuspend(edited.idArticle)!!.position!!, 0.0)
-        assertEquals("an existing, newer position is kept", 2000.0, articleDao.getArticleByIdSuspend(ordered.idArticle)!!.position!!, 0.0)
+        assertEquals(9999.0, articleDao.getArticleByIdSuspend(ordered.idArticle)!!.position!!, 0.0)
+        assertEquals("content timestamp is not touched", 900L, articleDao.getArticleByIdSuspend(ordered.idArticle)!!.updatedAt)
     }
 
     @Test

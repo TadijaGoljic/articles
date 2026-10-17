@@ -39,8 +39,8 @@ interface GroupDao {
     @Query("UPDATE `groups` SET position = :position, updatedAt = :updatedAt WHERE idGroup = :idGroup")
     suspend fun updatePosition(idGroup: UUID, position: Double, updatedAt: Long)
 
-    @Query("UPDATE `groups` SET position = :position, updatedAt = MAX(updatedAt, :updatedAt) WHERE idGroup = :idGroup AND (position IS NULL OR updatedAt < :updatedAt)")
-    suspend fun updatePositionIfNewer(idGroup: UUID, position: Double, updatedAt: Long)
+    @Query("UPDATE `groups` SET position = :position WHERE idGroup = :idGroup")
+    suspend fun applyServerPosition(idGroup: UUID, position: Double)
 
     @Query("SELECT * FROM `groups` WHERE idGroup = :idGroup")
     fun getGroupById(idGroup: UUID): Flow<GroupEntity?>

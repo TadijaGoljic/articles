@@ -65,8 +65,8 @@ class ArticleRepository @Inject constructor(
     suspend fun getNextArticlePosition(groupId: UUID): Double =
         articleDao.getMaxArticlePosition(groupId)?.plus(GAP) ?: GAP
 
-    suspend fun applyPulledArticlePosition(articleId: UUID, position: Double, updatedAt: Long) {
-        articleDao.updatePositionIfNewer(articleId, position, updatedAt)
+    suspend fun applyPulledArticlePosition(articleId: UUID, position: Double) {
+        articleDao.applyServerPosition(articleId, position)
     }
 
     suspend fun updateArticlePosition(articleId: UUID, groupId: UUID, position: Double) {

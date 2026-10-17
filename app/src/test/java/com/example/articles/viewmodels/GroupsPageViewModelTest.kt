@@ -376,6 +376,23 @@ class GroupsPageViewModelTest {
     }
 
     @Test
+    fun `skipped agent commands are reported after the rest of the batch runs`() {
+        val party = UIGroup(name = "Party")
+        coEvery { groupAgentRepository.handlePrompt(any(), any(), any()) } returns listOf(
+            GroupAgentCommand.Unresolved("Group \"Trip\" not found"),
+            GroupAgentCommand.CreateGroup(party),
+            GroupAgentCommand.Unresolved("Group \"Trip\" not found")
+        )
+
+        viewModel.handleAction(GroupsPageAction.ShowAiAgentDialog)
+        viewModel.handleAction(GroupsPageAction.SubmitAgentPrompt("create Party and delete Trip"))
+
+        coVerify { groupRepository.upsertGroup(match { it.id == party.id }) }
+        assertTrue(state.showAiAgentDialog)
+        assertEquals("Group \"Trip\" not found", state.agentError)
+    }
+
+    @Test
     fun `destructive agent commands wait for confirmation`() {
         coEvery { groupAgentRepository.handlePrompt(any(), any(), any()) } returns listOf(
             GroupAgentCommand.DeleteGroup(groceries)
