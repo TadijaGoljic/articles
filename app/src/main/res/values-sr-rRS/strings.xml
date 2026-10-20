@@ -105,7 +105,7 @@
     <string name="group_already_exists">Група већ постоји</string>
     <string name="invalid_group_name">Назив групе мора имати између 1 и 16 карактера</string>
     <string name="no_groups_title">Нема група за приказивање</string>
-    <string name="no_groups_message">За креирање нове групе притисните иконицу \"+\"</string>
+    <string name="no_groups_message">За креирање нове групе притисните дугме \"Нова група\"</string>
     <string name="archive_group">Архивирај групу</string>
     <string name="group_archived">\"%1$s\" је архивирана</string>
     <string name="unarchive_group">Врати из архиве</string>
@@ -141,7 +141,7 @@
     <string name="invitation_sent">Позивница послата</string>
     <string name="enter_email_to_share">Унесите имејл за дељење</string>
     <string name="no_pending_invitations">Нема позивница на чекању</string>
-    <string name="invitation_from">Позивница од %1$s за дељење \"%2$s\"</string>
+    <string name="invitation_from">Позивница од %1$s за дељење групе \"%2$s\"</string>
     <string name="new_invitation_notification">%1$s жели да подели \"%2$s\" са вама</string>
     <string name="shared">Дељено</string>
     <string name="group_members">Дели се са</string>

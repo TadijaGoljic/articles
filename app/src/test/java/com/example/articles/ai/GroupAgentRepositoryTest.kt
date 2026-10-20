@@ -103,17 +103,27 @@ class GroupAgentRepositoryTest {
         val commands = repository.parseResponse(
             actions(
                 mapOf("action" to "create_group", "groupName" to "Party"),
-                mapOf("action" to "add_article", "groupName" to "Party", "articleName" to "Chips")
+                mapOf("action" to "add_article", "groupName" to "Party", "articleName" to "Chips"),
+                mapOf("action" to "add_article", "groupName" to "Party", "articleName" to "Pizza"),
+                mapOf("action" to "add_article", "groupName" to "Party", "articleName" to "Cake")
             ),
             groups
         )
 
         val create = commands[0] as GroupAgentCommand.CreateGroup
-        val add = commands[1] as GroupAgentCommand.AddArticle
+        val add1 = commands[1] as GroupAgentCommand.AddArticle
+        val add2 = commands[2] as GroupAgentCommand.AddArticle
+        val add3 = commands[3] as GroupAgentCommand.AddArticle
         assertEquals("Party", create.group.name)
-        assertEquals(create.group.id, add.group.id)
-        assertEquals(create.group.id, add.article.groupId)
-        assertEquals("Chips", add.article.name)
+        assertEquals(create.group.id, add1.group.id)
+        assertEquals(create.group.id, add1.article.groupId)
+        assertEquals(create.group.id, add2.group.id)
+        assertEquals(create.group.id, add2.article.groupId)
+        assertEquals(create.group.id, add3.group.id)
+        assertEquals(create.group.id, add3.article.groupId)
+        assertEquals("Chips", add1.article.name)
+        assertEquals("Pizza", add2.article.name)
+        assertEquals("Cake", add3.article.name)
     }
 
     @Test

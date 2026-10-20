@@ -103,7 +103,7 @@
     <string name="group_already_exists">Group already exists</string>
     <string name="invalid_group_name">Group name must be between 1 and 16 characters</string>
     <string name="no_groups_title">No Groups to Show</string>
-    <string name="no_groups_message">To Create a Group click on \"+\" icon</string>
+    <string name="no_groups_message">To Create a Group click on \"New group\" button</string>
     <string name="archive_group">Archive group</string>
     <string name="group_archived">\"%1$s\" archived</string>
     <string name="unarchive_group">Unarchive group</string>
@@ -139,7 +139,7 @@
     <string name="invitation_sent">Invitation sent</string>
     <string name="enter_email_to_share">Enter email to share with</string>
     <string name="no_pending_invitations">No pending invitations</string>
-    <string name="invitation_from">Invitation from %1$s to share \"%2$s\"</string>
+    <string name="invitation_from">Invitation from %1$s to share group \"%2$s\"</string>
     <string name="new_invitation_notification">%1$s wants to share \"%2$s\" with you</string>
     <string name="shared">Shared</string>
     <string name="group_members">Shared with</string>
