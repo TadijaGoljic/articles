@@ -130,9 +130,9 @@ class GroupAgentRepository @Inject constructor(
     }
 
     private fun errorMessageFor(error: Throwable): String = context.getString(
-        when {
-            error is HttpException && error.code() in RETRYABLE_HTTP_CODES -> R.string.agent_service_busy
-            error is IOException -> R.string.agent_network_error
+        when (error) {
+            is HttpException if error.code() in RETRYABLE_HTTP_CODES -> R.string.agent_service_busy
+            is IOException -> R.string.agent_network_error
             else -> R.string.something_went_wrong
         }
     )

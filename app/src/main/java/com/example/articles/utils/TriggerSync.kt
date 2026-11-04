@@ -19,9 +19,6 @@ class TriggerSync @Inject constructor(
 ) {
     private val executor = Executors.newSingleThreadExecutor()
 
-    // A request that arrives while a pass is running must not be dropped, otherwise changes
-    // written by another device during that pass are only pulled on the next app start.
-    // At most one pass waits behind the running one, so bursts of requests collapse into it.
     operator fun invoke() {
         if (!userPreferences.syncDataEnabled) return
         executor.execute {
